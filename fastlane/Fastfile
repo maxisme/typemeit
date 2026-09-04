@@ -16,7 +16,7 @@ def build_number
 end
 
 # Generate the project inside the lane, where DEVELOPMENT_TEAM is exported;
-# project.yml interpolates it and automatic signing needs it.
+# project.yml interpolates it.
 def generate_project
   root = File.expand_path("..", __dir__)
   sh("xcodegen", "generate", "--spec", "#{root}/project.yml", "--project", root)
@@ -59,7 +59,7 @@ platform :mac do
       output_directory: "build",
       output_name: "TypeMeIt",
       export_method: "developer-id",
-      export_options: { signingStyle: "automatic", teamID: TEAM_ID },
+      export_options: { signingStyle: "manual", signingCertificate: "Developer ID Application", teamID: TEAM_ID },
       xcargs: "#{ALLOW_PROVISIONING} CURRENT_PROJECT_VERSION=#{build_number}",
       export_xcargs: ALLOW_PROVISIONING
     )

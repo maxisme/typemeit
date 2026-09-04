@@ -62,7 +62,7 @@ final class OverlayPanel {
                     self.model.elapsedSeconds = Int(Date().timeIntervalSince(start))
                 }
             }
-        case .transcribing, .cleaningUp, .copyPrompt, .learned, .undone, .hidden:
+        case .loadingModel, .transcribing, .cleaningUp, .copyPrompt, .learned, .undone, .hidden:
             elapsedTimer?.invalidate()
             elapsedTimer = nil
         default:

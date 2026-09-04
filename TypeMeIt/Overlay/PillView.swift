@@ -84,6 +84,11 @@ struct PillView: View {
                     .font(.system(size: 12)).monospacedDigit()
                     .foregroundStyle(scheme == .dark ? .white.opacity(0.45) : Color(white: 0.6))
             }
+        case .loadingModel:
+            HStack(spacing: 8) {
+                dots
+                shimmerLabel("Loading model")
+            }
         case .transcribing:
             HStack(spacing: 8) {
                 wave
@@ -107,7 +112,7 @@ struct PillView: View {
 
     @ViewBuilder private var rightSlot: some View {
         switch model.state {
-        case .arming, .recording, .pinned, .transcribing, .cleaningUp:
+        case .arming, .recording, .pinned, .loadingModel, .transcribing, .cleaningUp:
             cancelButton
         case .copyPrompt:
             HStack(spacing: 8) {
@@ -211,9 +216,9 @@ struct PillView: View {
                 .foregroundStyle(
                     LinearGradient(
                         stops: [
-                            .init(color: labelColor.opacity(0.6), location: max(0, x - 0.3)),
-                            .init(color: labelColor.opacity(1.0), location: max(0, min(1, x))),
-                            .init(color: labelColor.opacity(0.6), location: min(1, x + 0.3)),
+                            .init(color: labelColor.opacity(0.6), location: min(1, max(0, x - 0.3))),
+                            .init(color: labelColor.opacity(1.0), location: min(1, max(0, x))),
+                            .init(color: labelColor.opacity(0.6), location: min(1, max(0, x + 0.3))),
                         ],
                         startPoint: .leading, endPoint: .trailing)
                 )

@@ -81,9 +81,12 @@ enum Fixed {
     static let holdThresholdMs = 300
     static let wordCorrectionThreshold = 0.18
     static let pasteDelayBeforeMs = 60
-    static let pasteDelayAfterMs = 60
+    /// Electron and Chromium apps read the pasteboard in their renderer some
+    /// time after the Cmd+V key event arrives; restoring earlier than this on a
+    /// loaded Mac pasted the old clipboard instead of the transcript.
+    static let pasteDelayAfterMs = 400
     static let autoSubmitDelayMs = 50
-    static let modelUnloadIdle: Duration = .seconds(5 * 60)
+    static let modelUnloadIdle: Duration = .seconds(30 * 60)
     static let copyPromptTimeout: Duration = .seconds(8)
     static let minimumRecordingSeconds = 0.3
     static let silencePeak: Float = 0.01
@@ -93,5 +96,5 @@ enum Fixed {
         "com.googlecode.iterm2", "dev.warp.Warp-Stable", "com.mitchellh.ghostty",
     ]
     static let updatesOwner = "maxisme"
-    static let updatesRepo = "typeme"
+    static let updatesRepo = "typemeit"
 }
