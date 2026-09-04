@@ -1,0 +1,110 @@
+# Type Me It release lane. Copied from notifi's `mac dmg` lane without the
+# Sparkle appcast steps: the app checks the GitHub releases feed itself and
+# opens the release page, so publishing the release is what ships an update.
+#
+#   bundle exec fastlane mac dmg
+
+skip_docs
+
+TEAM_ID = "Z28DW76Y3W".freeze
+IDENTITY = "Developer ID Application: Max Mitchell (#{TEAM_ID})".freeze
+BUNDLE_ID = "it.typeme.typemeit".freeze
+ALLOW_PROVISIONING = "-allowProvisioningUpdates".freeze
+
+def build_number
+  ENV.fetch("BUILD_NUMBER", Time.now.strftime("%Y%m%d%H%M"))
+end
+
+# Generate the project inside the lane, where DEVELOPMENT_TEAM is exported;
+# project.yml interpolates it and automatic signing needs it.
+def generate_project
+  root = File.expand_path("..", __dir__)
+  sh("xcodegen", "generate", "--spec", "#{root}/project.yml", "--project", root)
+end
+
+def asc_key
+  app_store_connect_api_key(
+    key_id: ENV.fetch("ASC_KEY_ID"),
+    issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+    key_filepath: ENV.fetch("ASC_KEY_PATH")
+  )
+end
+
+# Fail locally in a second on a binary Apple would reject after minutes.
+def assert_distributable(app)
+  UI.user_error!("#{app} does not exist -- check gym's output_name.") unless File.exist?(app)
+  info = `codesign -dvv "#{app}" 2>&1`
+  UI.user_error!("#{app} is not signed with a Developer ID certificate:\n#{info}") unless info.include?("Developer ID Application")
+  UI.user_error!("#{app} has no secure timestamp; notarization rejects that.") unless info.include?("Timestamp=")
+  UI.user_error!("#{app} does not have the hardened runtime enabled.") unless info.include?("flags=0x10000(runtime)")
+  deep = `codesign --verify --deep --strict --verbose=2 "#{app}" 2>&1`
+  UI.user_error!("#{app} failed deep signature verification:\n#{deep}") unless $?.success?
+  UI.success("#{File.basename(app)}: Developer ID, timestamped, hardened runtime, nested code valid")
+end
+
+# `spctl` asks Apple and reports "accepted" even when no ticket is stapled;
+# `syspolicy_check distribution` is the offline-truthful check.
+def verify_distribution(dmg:)
+  sh("syspolicy_check", "distribution", dmg)
+end
+
+platform :mac do
+  desc "Build a Developer ID app, notarize it, and package a stapled DMG"
+  lane :dmg do
+    generate_project
+    build_mac_app(
+      project: "TypeMeIt.xcodeproj",
+      scheme: "TypeMeIt",
+      configuration: "Release",
+      output_directory: "build",
+      output_name: "TypeMeIt",
+      export_method: "developer-id",
+      export_options: { signingStyle: "automatic", teamID: TEAM_ID },
+      xcargs: "#{ALLOW_PROVISIONING} CURRENT_PROJECT_VERSION=#{build_number}",
+      export_xcargs: ALLOW_PROVISIONING
+    )
+
+    app = File.expand_path("../build/TypeMeIt.app", __dir__)
+    version = get_version_number(xcodeproj: "TypeMeIt.xcodeproj", target: "TypeMeIt")
+    dmg = File.expand_path("../build/TypeMeIt-#{version}.dmg", __dir__)
+
+    # Round 1: notarize the .app so its ticket is stapled into the bundle and an
+    # offline Mac can verify it after the drag to Applications.
+    assert_distributable(app)
+    notarize(package: app, api_key: asc_key, print_log: true)
+
+    stage = File.expand_path("../build/dmg-stage", __dir__)
+    sh("rm", "-rf", stage, dmg)
+    sh("mkdir", "-p", stage)
+    sh("cp", "-R", app, "#{stage}/TypeMeIt.app")
+    sh("ln", "-s", "/Applications", "#{stage}/Applications")
+    background = File.expand_path("../Scripts/dmg-background.png", __dir__)
+    if File.exist?(background)
+      sh("mkdir", "-p", "#{stage}/.background")
+      sh("cp", background, "#{stage}/.background/background.png")
+    end
+
+    # Two passes: Finder stores the window layout in the volume's .DS_Store and a
+    # UDZO image is read-only, so lay out a UDRW image first, then convert.
+    rw = File.expand_path("../build/TypeMeIt-rw.dmg", __dir__)
+    mnt = "/Volumes/Type Me It"
+    sh("rm", "-f", rw)
+    sh("hdiutil", "create", "-volname", "Type Me It", "-srcfolder", stage, "-ov", "-format", "UDRW", rw)
+    sh("hdiutil", "attach", rw, "-nobrowse", "-mountpoint", mnt)
+    begin
+      sh("osascript", File.expand_path("../Scripts/dmg-layout.applescript", __dir__), "Type Me It")
+      sh("sync")
+    ensure
+      sh("hdiutil", "detach", mnt)
+    end
+    sh("hdiutil", "convert", rw, "-format", "UDZO", "-imagekey", "zlib-level=9", "-ov", "-o", dmg)
+    sh("rm", "-f", rw)
+    sh("codesign", "--force", "--sign", IDENTITY, "--timestamp", dmg)
+
+    # Round 2 covers the DMG the user downloads. A .dmg has no Info.plist, so the
+    # bundle id is passed explicitly.
+    notarize(package: dmg, api_key: asc_key, bundle_id: BUNDLE_ID, print_log: true)
+    verify_distribution(dmg: dmg)
+    UI.success("==> #{dmg}")
+  end
+end
