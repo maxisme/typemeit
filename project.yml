@@ -1,0 +1,79 @@
+name: TypeMeIt
+options:
+  bundleIdPrefix: it.typeme
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    ARCHS: arm64
+    ONLY_ACTIVE_ARCH: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+packages:
+  TranscribeCpp:
+    path: Packages/TranscribeCpp
+targets:
+  TypeMeIt:
+    type: application
+    platform: macOS
+    sources:
+      - path: TypeMeIt
+        excludes:
+          - "Resources/AppIcon.icns"
+      - path: TypeMeIt/Resources/AppIcon.icns
+        buildPhase: resources
+    dependencies:
+      - package: TranscribeCpp
+        product: TranscribeCpp
+    info:
+      path: TypeMeIt/Support/Info.plist
+      properties:
+        CFBundleDisplayName: TypeMeIt
+        CFBundleName: TypeMeIt
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        CFBundleIconFile: AppIcon
+        LSUIElement: true
+        LSMinimumSystemVersion: "26.0"
+        NSMicrophoneUsageDescription: "Type Me It records your voice while you hold the Fn key so it can transcribe it."
+        NSHumanReadableCopyright: ""
+        NSPrincipalClass: NSApplication
+    entitlements:
+      path: TypeMeIt/Support/TypeMeIt.entitlements
+      properties:
+        com.apple.security.device.audio-input: true
+        com.apple.security.cs.allow-unsigned-executable-memory: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit
+        PRODUCT_NAME: TypeMeIt
+        GENERATE_INFOPLIST_FILE: NO
+        SWIFT_OBJC_BRIDGING_HEADER: ""
+        OTHER_LDFLAGS: "-lc++ -lz"
+  TypeMeItTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [TypeMeItTests]
+    dependencies:
+      - target: TypeMeIt
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  TypeMeIt:
+    build:
+      targets:
+        TypeMeIt: all
+        TypeMeItTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [TypeMeItTests]
