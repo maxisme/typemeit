@@ -17,13 +17,14 @@ SERVE=; CHROME=
 TMP="$(mktemp -d)"
 trap 'kill $SERVE $CHROME 2>/dev/null; wait $CHROME 2>/dev/null; rm -rf "$TMP"' EXIT
 
-# x and y are fractions of the image; the rest are the shader's inputs. Density
-# eases down as the puff grows, so the wisp reads solid and the cloud as the
-# same smoke spread thin.
+# x and y are fractions of the image; the rest are the shader's inputs. The
+# growth is carried by the drawn size, not by expansion: past 0.5 the shader
+# spreads the same smoke thin, and the big cloud should stay as dense and
+# lobed as the small ones.
 FRAMES='[{"x":0.12,"size":950,"exp":0.3,"flow":0.3,"time":140,"dens":1.15},
          {"x":0.34,"size":1100,"exp":0.5,"trail":0.55,"flow":0.45,"time":150,"dens":1.1},
-         {"x":0.58,"size":1400,"exp":0.72,"trail":0.8,"flow":0.6,"time":160,"dens":1.05},
-         {"x":0.82,"size":1600,"exp":0.95,"trail":1.0,"flow":0.75,"time":170,"dens":1.0}]'
+         {"x":0.58,"size":1550,"exp":0.5,"trail":0.56,"flow":0.5,"time":175,"dens":1.1},
+         {"x":0.82,"size":2050,"exp":0.5,"trail":0.58,"flow":0.55,"time":205,"dens":1.1}]'
 Q="$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$FRAMES")"
 
 python3 Scripts/og/serve.py "$TMP" & SERVE=$!
