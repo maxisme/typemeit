@@ -1,0 +1,15 @@
+{
+  "name": "typemeit-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tokens": "node ../design/build-tokens.mjs",
+    "css": "tailwindcss -i styles/app.css -o dist/site.css --minify",
+    "build": "npm run tokens && npm run css",
+    "watch": "tailwindcss -i styles/app.css -o dist/site.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}
