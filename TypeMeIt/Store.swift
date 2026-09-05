@@ -21,6 +21,8 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Equatable {
     var appName: String?
     var windowTitle: String?
     var dictionaryFixes: Int
+    /// File name in `RecordingArchive.directory`; nil when audio was not kept.
+    var recordingFile: String?
 
     var displayText: String { edited ?? postProcessed ?? transcript }
 }
@@ -103,11 +105,13 @@ final class Store {
         guard limit > 0, history.count > limit else { return }
         var excess = history.count - limit
         var kept: [HistoryEntry] = []
+        var dropped: [HistoryEntry] = []
         for e in history {
-            if excess > 0, !e.starred { excess -= 1; continue }
+            if excess > 0, !e.starred { excess -= 1; dropped.append(e); continue }
             kept.append(e)
         }
         history = kept
+        RecordingArchive.delete(dropped.compactMap(\.recordingFile))
     }
 
     func update(_ entry: HistoryEntry) {
@@ -121,12 +125,14 @@ final class Store {
     }
 
     func delete(ids: Set<UUID>) {
+        RecordingArchive.delete(history.filter { ids.contains($0.id) }.compactMap(\.recordingFile))
         history.removeAll { ids.contains($0.id) }
         save(history, to: historyURL)
     }
 
     func deleteAllHistory() {
         history.removeAll()
+        RecordingArchive.deleteAll()
         save(history, to: historyURL)
     }
 
