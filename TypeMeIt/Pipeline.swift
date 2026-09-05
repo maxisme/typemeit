@@ -150,9 +150,7 @@ final class Pipeline {
             DispatchQueue.main.asyncAfter(deadline: .now() + wait) { Feedback.play(.stop) }
         }
 
-        let discarded = duration < Fixed.minimumRecordingSeconds || AudioCapture.peak(pcm) < Fixed.silencePeak
-        RecordingArchive.save(pcm, recordedAt: recordingStartedAt ?? Date(), note: discarded ? "discarded" : nil)
-        if discarded {
+        if duration < Fixed.minimumRecordingSeconds || AudioCapture.peak(pcm) < Fixed.silencePeak {
             Log.app.info("Empty recording discarded (\(duration) s)")
             phase = .idle
             shortcuts.setPhase(.idle)
@@ -161,7 +159,8 @@ final class Pipeline {
         }
 
         let target = Frontmost.capture()
-        let recordedAt = recordingStartedAt ?? Date()
+        let entryId = UUID()
+        let recordingFile = settings.keepRecordings && settings.historyLimit >= 0 ? RecordingArchive.save(pcm, id: entryId) : nil
         phase = .transcribing
         shortcuts.setPhase(.transcribing)
         overlay.show(.transcribing)
@@ -182,7 +181,7 @@ final class Pipeline {
             guard gen == self.generation else { return }
             let transcribeMs = Pipeline.elapsedMs(since: transcribeStart)
             Log.transcriber.info("Transcribed \(durationMs) ms of audio in \(transcribeMs) ms")
-            await self.deliver(raw: raw, durationMs: durationMs, transcribeMs: transcribeMs, target: target, recordedAt: recordedAt, generation: gen)
+            await self.deliver(raw: raw, durationMs: durationMs, transcribeMs: transcribeMs, target: target, entryId: entryId, recordingFile: recordingFile, generation: gen)
         }
     }
 
@@ -197,7 +196,7 @@ final class Pipeline {
         return Int(d.components.seconds * 1000) + Int(d.components.attoseconds / 1_000_000_000_000_000)
     }
 
-    private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, recordedAt: Date, generation gen: Int) async {
+    private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, entryId: UUID, recordingFile: String?, generation gen: Int) async {
         if TextCleanup.isBlank(raw) { finishIdle(); return }
         let customWords = settings.customWords
         let cleaned = TextCleanup.run(raw, customWords: customWords, aliases: store.aliases(customWords: customWords), threshold: Fixed.wordCorrectionThreshold)
@@ -219,16 +218,15 @@ final class Pipeline {
             if let postProcessed { finalText = postProcessed }
         }
 
-        RecordingArchive.saveText(raw: raw, cleaned: cleaned.text, postProcessed: postProcessed, recordedAt: recordedAt)
         if settings.appendTrailingSpace { finalText += " " }
         let focusedIsTextInput = Focus.focusedElementIsTextInput()
         let pasted = await Output.paste(finalText, autoSubmit: settings.autoSubmit, autoSubmitKey: settings.autoSubmitKey)
         guard gen == generation else { return }
 
         let entry = HistoryEntry(
-            timestamp: Date(), transcript: cleaned.text, postProcessed: postProcessed, postProcessRequested: requested,
+            id: entryId, timestamp: Date(), transcript: cleaned.text, postProcessed: postProcessed, postProcessRequested: requested,
             durationMs: durationMs, transcribeMs: transcribeMs, postProcessMs: postProcessMs, appId: target?.appId, appName: target?.appName, windowTitle: target?.windowTitle,
-            dictionaryFixes: cleaned.dictionaryFixes)
+            dictionaryFixes: cleaned.dictionaryFixes, recordingFile: recordingFile)
         store.append(entry, limit: settings.historyLimit)
 
         phase = .idle

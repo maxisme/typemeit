@@ -3,6 +3,7 @@ import SwiftUI
 struct HistoryTab: View {
     @State private var store = Store.shared
     @State private var settings = Settings.shared
+    @State private var player = RecordingPlayer.shared
     @State private var search = ""
     @State private var expanded: Set<UUID> = []
     @State private var selected: Set<UUID> = []
@@ -67,18 +68,20 @@ struct HistoryTab: View {
                 .padding(20)
             }
             RowRule()
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("keep").font(DesignTokens.Fonts.ui.monospaced())
+            VStack(spacing: 0) {
+                SettingsRow(label: "keep") {
+                    Picker("", selection: Binding(get: { settings.historyLimit }, set: { settings.historyLimit = $0; store.prune(limit: $0) })) {
+                        ForEach([100, 250, 500, 1000, 2000, 5000], id: \.self) { Text("the last \($0) dictations").tag($0) }
+                        Text("everything · never delete").tag(0)
+                        Text("nothing · never keep").tag(-1)
+                    }.labelsHidden().fixedSize()
                 }
-                Spacer()
-                Picker("", selection: Binding(get: { settings.historyLimit }, set: { settings.historyLimit = $0; store.prune(limit: $0) })) {
-                    ForEach([100, 250, 500, 1000, 2000, 5000], id: \.self) { Text("the last \($0) dictations").tag($0) }
-                    Text("everything · never delete").tag(0)
-                    Text("nothing · never keep").tag(-1)
-                }.labelsHidden().fixedSize()
+                SettingsRow(label: "keep the audio", subtitle: "about 120 KB a minute, deleted with the dictation", last: true) {
+                    Toggle("", isOn: $settings.keepRecordings).toggleStyle(.switch).labelsHidden()
+                        .disabled(settings.historyLimit < 0)
+                }
             }
-            .padding(.horizontal, 20).padding(.vertical, 12)
+            .padding(.horizontal, 8).padding(.vertical, 2)
         }
     }
 
@@ -112,6 +115,10 @@ struct HistoryTab: View {
                 .contentShape(Rectangle())
                 .onTapGesture { if expanded.contains(e.id) { expanded.remove(e.id) } else { expanded.insert(e.id) } }
                 HStack(spacing: 4) {
+                    if e.recordingFile != nil {
+                        let on = player.playing == e.id
+                        iconButton(on ? "akar-stop" : "akar-play", on ? "stop" : "play the audio") { player.toggle(e) }
+                    }
                     iconButton("akar-copy", "copy") { Output.copyToClipboard(e.displayText) }
                     iconButton("akar-trash-can", "delete") { store.delete(id: e.id) }
                 }
