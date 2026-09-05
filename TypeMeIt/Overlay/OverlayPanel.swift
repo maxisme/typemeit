@@ -11,6 +11,8 @@ final class OverlayPanel {
     private let panel: NSPanel
 
     static let size = NSSize(width: 360, height: 260)
+    /// Gap between the panel and the screen edge when the cloud is at a side.
+    static let sideInset: CGFloat = 24
 
     init() {
         panel = NSPanel(contentRect: NSRect(origin: .zero, size: OverlayPanel.size),
@@ -38,8 +40,12 @@ final class OverlayPanel {
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main ?? NSScreen.screens[0]
         let visible = screen.visibleFrame
-        let origin = NSPoint(x: visible.midX - OverlayPanel.size.width / 2, y: visible.minY)
-        panel.setFrameOrigin(origin)
+        let x: CGFloat = switch Settings.shared.cloudPosition {
+        case .left: visible.minX + OverlayPanel.sideInset
+        case .centre: visible.midX - OverlayPanel.size.width / 2
+        case .right: visible.maxX - OverlayPanel.size.width - OverlayPanel.sideInset
+        }
+        panel.setFrameOrigin(NSPoint(x: x, y: visible.minY))
     }
 
     func show(_ state: OverlayModel.State) {

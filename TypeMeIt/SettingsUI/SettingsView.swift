@@ -169,7 +169,7 @@ struct GeneralTab: View {
                             Text("system default").tag("")
                             ForEach(devices) { d in Text(d.name).tag(d.id) }
                         }
-                        .labelsHidden().frame(width: 220)
+                        .labelsHidden().fixedSize()
                         .onAppear { devices = AudioCapture.inputDevices() }
                     }
                     SettingsRow(label: "keep microphone open", subtitle: "faster start") {
@@ -183,6 +183,16 @@ struct GeneralTab: View {
                     SettingsRow(label: "recording cloud") {
                         Toggle("", isOn: $settings.overlayEnabled).toggleStyle(.switch).labelsHidden()
                     }
+                    if settings.overlayEnabled {
+                        SettingsRow(label: "cloud colour", subtitle: "auto is white or grey with the appearance") {
+                            CloudColorPalette(selection: $settings.cloudColor)
+                        }
+                        SettingsRow(label: "cloud position") {
+                            Picker("", selection: $settings.cloudPosition) {
+                                ForEach(CloudPosition.allCases, id: \.self) { Text($0.label).tag($0) }
+                            }.pickerStyle(.segmented).labelsHidden().fixedSize()
+                        }
+                    }
                     SettingsRow(label: "sounds") {
                         Toggle("", isOn: $settings.audioFeedback).toggleStyle(.switch).labelsHidden()
                     }
@@ -193,6 +203,38 @@ struct GeneralTab: View {
             }
             .padding(20)
         }
+    }
+}
+
+/// A row of swatches; the chosen one wears an ink ring.
+struct CloudColorPalette: View {
+    @Binding var selection: CloudColor
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(CloudColor.allCases, id: \.self) { c in
+                let on = c == selection
+                Button { selection = c } label: {
+                    Circle()
+                        .fill(fill(c))
+                        .frame(width: 18, height: 18)
+                        .overlay(Circle().strokeBorder(DesignTokens.Colors.inkA20, lineWidth: DesignTokens.hairline))
+                        .padding(3)
+                        .overlay(Circle().strokeBorder(on ? DesignTokens.Colors.ink : .clear, lineWidth: 1.5))
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help(c.label)
+                .accessibilityLabel(c.label)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+    }
+
+    private func fill(_ c: CloudColor) -> Color {
+        if let color = c.color { return Color(nsColor: color) }
+        return scheme == .dark ? .white : Color(white: 0.25)
     }
 }
 
@@ -262,7 +304,7 @@ struct TextTab: View {
                         SettingsRow(label: "key", last: true) {
                             Picker("", selection: $settings.autoSubmitKey) {
                                 ForEach(AutoSubmitKey.allCases, id: \.self) { Text($0.label).tag($0) }
-                            }.labelsHidden().frame(width: 180)
+                            }.labelsHidden().fixedSize()
                         }
                     }
                 }
@@ -320,7 +362,7 @@ struct AppTab: View {
                     SettingsRow(label: "appearance", subtitle: "the windows and the recording cloud", last: true) {
                         Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; AppDelegate.shared?.applyAppearance() })) {
                             ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
-                        }.labelsHidden().frame(width: 180)
+                        }.labelsHidden().fixedSize()
                     }
                 }
                 SettingsGroup(title: "about") {

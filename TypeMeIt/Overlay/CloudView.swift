@@ -64,12 +64,12 @@ struct CloudView: View {
         return Float(0.3 + 0.3 * sin(t * 2 * .pi / 1.8))
     }
 
-    /// White or dark grey with the appearance; a slight blue while the
-    /// transcript is being cleaned up.
+    /// The chosen colour, or white or dark grey with the appearance; leaning
+    /// a little towards green while the transcript is being cleaned up.
     private var tint: Color {
-        if model.state == .cleaningUp {
-            return scheme == .dark ? Color(red: 0.89, green: 0.93, blue: 1.0) : Color(red: 0.23, green: 0.26, blue: 0.32)
-        }
-        return scheme == .dark ? .white : Color(white: 0.25)
+        let base = Settings.shared.cloudColor.color ?? (scheme == .dark ? NSColor(white: 1, alpha: 1) : NSColor(white: 0.25, alpha: 1))
+        guard model.state == .cleaningUp else { return Color(nsColor: base) }
+        let green = scheme == .dark ? NSColor(srgbRed: 0.55, green: 0.85, blue: 0.62, alpha: 1) : NSColor(srgbRed: 0.18, green: 0.45, blue: 0.28, alpha: 1)
+        return Color(nsColor: base.blended(withFraction: 0.35, of: green) ?? base)
     }
 }

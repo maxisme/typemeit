@@ -37,6 +37,40 @@ enum Appearance: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// Where along the bottom of the screen the recording cloud sits.
+enum CloudPosition: String, Codable, CaseIterable, Sendable {
+    case left, centre, right
+
+    var label: String { rawValue }
+}
+
+/// The recording cloud's colour: the appearance's white or dark grey, or one
+/// of a fixed palette.
+enum CloudColor: String, Codable, CaseIterable, Sendable {
+    case ink, coral, amber, lemon, mint, sky, lavender, rose
+
+    var label: String {
+        switch self {
+        case .ink: "auto"
+        default: rawValue
+        }
+    }
+
+    /// The smoke's colour, or nil for `ink`, which follows the appearance.
+    var color: NSColor? {
+        switch self {
+        case .ink: nil
+        case .coral: NSColor(srgbRed: 0.98, green: 0.49, blue: 0.40, alpha: 1)
+        case .amber: NSColor(srgbRed: 0.98, green: 0.69, blue: 0.29, alpha: 1)
+        case .lemon: NSColor(srgbRed: 0.96, green: 0.86, blue: 0.36, alpha: 1)
+        case .mint: NSColor(srgbRed: 0.45, green: 0.85, blue: 0.66, alpha: 1)
+        case .sky: NSColor(srgbRed: 0.42, green: 0.70, blue: 0.96, alpha: 1)
+        case .lavender: NSColor(srgbRed: 0.66, green: 0.60, blue: 0.95, alpha: 1)
+        case .rose: NSColor(srgbRed: 0.95, green: 0.58, blue: 0.78, alpha: 1)
+        }
+    }
+}
+
 /// Every user-changeable value, backed by UserDefaults. Fixed values that are
 /// not settings live in `Fixed`.
 @MainActor
@@ -62,6 +96,8 @@ final class Settings {
     var launchAtLogin: Bool { didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin") } }
     var showDockIcon: Bool { didSet { defaults.set(showDockIcon, forKey: "showDockIcon") } }
     var appearance: Appearance { didSet { defaults.set(appearance.rawValue, forKey: "appearance") } }
+    var cloudColor: CloudColor { didSet { defaults.set(cloudColor.rawValue, forKey: "cloudColor") } }
+    var cloudPosition: CloudPosition { didSet { defaults.set(cloudPosition.rawValue, forKey: "cloudPosition") } }
     var onboardingComplete: Bool { didSet { defaults.set(onboardingComplete, forKey: "onboardingComplete") } }
     /// Words removed by the learned-words toast's Undo. Never learned again.
     var undoneWords: [String] { didSet { defaults.set(undoneWords, forKey: "undoneWords") } }
@@ -85,6 +121,8 @@ final class Settings {
         launchAtLogin = bool("launchAtLogin", false)
         showDockIcon = bool("showDockIcon", true)
         appearance = Appearance(rawValue: d.string(forKey: "appearance") ?? "") ?? .system
+        cloudColor = CloudColor(rawValue: d.string(forKey: "cloudColor") ?? "") ?? .ink
+        cloudPosition = CloudPosition(rawValue: d.string(forKey: "cloudPosition") ?? "") ?? .centre
         onboardingComplete = bool("onboardingComplete", false)
         undoneWords = d.stringArray(forKey: "undoneWords") ?? []
     }
