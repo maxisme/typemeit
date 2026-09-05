@@ -75,6 +75,7 @@ struct HistoryTab: View {
                 Picker("", selection: Binding(get: { settings.historyLimit }, set: { settings.historyLimit = $0; store.prune(limit: $0) })) {
                     ForEach([100, 250, 500, 1000, 2000, 5000], id: \.self) { Text("the last \($0) dictations").tag($0) }
                     Text("everything · never delete").tag(0)
+                    Text("nothing · never keep").tag(-1)
                 }.labelsHidden().fixedSize()
             }
             .padding(.horizontal, 20).padding(.vertical, 12)

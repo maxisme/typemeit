@@ -90,7 +90,9 @@ final class Store {
 
     // MARK: History
 
+    /// A limit below 0 keeps no history at all; 0 keeps everything.
     func append(_ entry: HistoryEntry, limit: Int) {
+        guard limit >= 0 else { return }
         history.append(entry)
         prune(limit: limit)
         save(history, to: historyURL)
