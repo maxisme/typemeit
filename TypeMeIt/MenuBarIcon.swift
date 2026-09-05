@@ -26,10 +26,11 @@ enum MenuBarIconRenderer {
                 }.draw(in: rect, from: .zero, operation: .sourceOver, fraction: alpha)
             }
 
-            // The outline carries the state: orange while the microphone is
-            // open. The arcs fade while the recording is being transcribed.
-            layer("menu_puff", tint: recording ? recordingTint : .labelColor)
-            layer("menu_puff_arcs", tint: .labelColor, alpha: transcribing ? 0.35 : 1)
+            // The whole mark turns orange while the microphone is open. The
+            // arcs fade while the recording is being transcribed.
+            let tint: NSColor = recording ? recordingTint : .labelColor
+            layer("menu_puff", tint: tint)
+            layer("menu_puff_arcs", tint: tint, alpha: transcribing ? 0.35 : 1)
 
             // Secure Input is a slash through the whole mark, the way the OS
             // strikes wifi.slash. The gap under the stroke is cut first so the
