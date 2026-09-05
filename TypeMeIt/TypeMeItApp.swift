@@ -101,7 +101,6 @@ struct MenuContent: View {
             }
         }
         if !recentTranscripts.isEmpty {
-            Divider()
             Button {
                 appState.settingsTab = .history
                 openWindow(id: "settings")
