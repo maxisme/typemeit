@@ -9,6 +9,14 @@ macOS 26 or newer, Apple silicon.
 ```
 brew install xcodegen
 DEVELOPMENT_TEAM=Z28DW76Y3W xcodegen generate
+```
+
+Debug builds are signed with the Developer ID certificate, so a build run from
+DerivedData shares the Input Monitoring and Microphone grants of the installed
+app. Without that certificate in the keychain, drop the `Debug` block under
+`configs` in `project.yml` before generating.
+
+```sh
 xcodebuild -project TypeMeIt.xcodeproj -scheme TypeMeIt -configuration Debug build
 xcodebuild -project TypeMeIt.xcodeproj -scheme TypeMeIt test
 ```

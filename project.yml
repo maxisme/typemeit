@@ -21,6 +21,15 @@ settings:
     # release looks like the same build and no update is ever offered.
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
+  configs:
+    # macOS keys Input Monitoring and Microphone grants on the code signature,
+    # and a Developer ID leaf is a different signature from an Apple
+    # Development one. Signing Debug builds with Developer ID too means a
+    # build straight out of DerivedData inherits the grants the released app
+    # already has, instead of needing them again after every rebuild.
+    Debug:
+      CODE_SIGN_STYLE: Manual
+      CODE_SIGN_IDENTITY: "Developer ID Application"
 packages:
   TranscribeCpp:
     path: Packages/TranscribeCpp
