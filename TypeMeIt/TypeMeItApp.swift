@@ -42,26 +42,43 @@ final class AppState {
 struct MenuContent: View {
     @Environment(\.openWindow) private var openWindow
     @State private var appState = AppState.shared
-    @State private var updates = Updates.shared
     @State private var store = Store.shared
 
+    private var recentTranscripts: [HistoryEntry] { Array(store.history.suffix(5).reversed()) }
+
     var body: some View {
-        Text("Type Me It \(AppVersion.current)")
         if appState.secureInputOn {
             Text("Secure Input is on in another app. Fn is unavailable.")
+            Divider()
         }
-        Divider()
+        if Pipeline.shared.phase == .recording {
+            Button("Stop Recording") { Pipeline.shared.shortcuts.stopFromMenu() }
+        } else {
+            Button("Start Recording") { Pipeline.shared.shortcuts.startFromMenu() }
+                .disabled(Pipeline.shared.isBusy || !appState.ready)
+        }
         if Pipeline.shared.isBusy {
             Button("Cancel Recording") { Pipeline.shared.shortcuts.cancelFromOverlay() }
         }
-        Button("Copy Last Transcript") { Pipeline.shared.copyLastTranscript() }
-            .disabled(store.history.isEmpty)
         Divider()
-        Button("Settings…") { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) }.keyboardShortcut(",", modifiers: .command)
-        Button("Check for Updates…") { updates.checkForUpdates() }
-            .disabled(!updates.canCheck)
+        Text("Last five transcripts")
+        if recentTranscripts.isEmpty {
+            Text("No transcripts yet").disabled(true)
+        }
+        ForEach(recentTranscripts) { entry in
+            Button(MenuContent.title(for: entry.displayText)) { Output.copyToClipboard(entry.displayText) }
+        }
         Divider()
+        Button("Type Me It") { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) }.keyboardShortcut(",", modifiers: .command)
         Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
+    }
+
+    /// One line of the transcript, cut so the menu stays narrow.
+    static func title(for text: String, limit: Int = 48) -> String {
+        let line = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        guard trimmed.count > limit else { return trimmed }
+        return String(trimmed.prefix(limit)).trimmingCharacters(in: .whitespaces) + "…"
     }
 }
 

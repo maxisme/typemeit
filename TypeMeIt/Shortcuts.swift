@@ -84,6 +84,23 @@ final class Shortcuts {
         onEvent?(.recordingEnded)
     }
 
+    /// The menu's Start Recording. Opens the microphone already pinned, since
+    /// there is no key to release.
+    func startFromMenu() {
+        guard phase == .idle else { return }
+        phase = .pinned
+        onEvent?(.recordingStarted)
+        onEvent?(.pinned)
+    }
+
+    /// The menu's Stop Recording, whether the recording was pinned or Fn is
+    /// still held.
+    func stopFromMenu() {
+        guard phase == .recording || phase == .pinned else { return }
+        phase = .transcribing
+        onEvent?(.recordingEnded)
+    }
+
     func cancelFromOverlay() {
         guard phase != .idle else { return }
         phase = .idle
