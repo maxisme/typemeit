@@ -25,7 +25,7 @@ struct CloudView: View {
     var body: some View {
         let departing = model.departedAt != nil
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || !isProcessing)) { ctx in
-            PuffView(level: level(at: ctx.date.timeIntervalSinceReferenceDate), reaction: 2, tint: tint,
+            PuffView(level: level(at: ctx.date.timeIntervalSinceReferenceDate), tint: tint,
                      arrival: model.shownAt, departure: model.departedAt)
         }
         .frame(width: CloudView.size, height: CloudView.size)
