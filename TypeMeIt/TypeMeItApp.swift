@@ -165,6 +165,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// `exit()` runs CTranscribe's C++ static destructors, which free the
+    /// Metal device while ggml may still be setting up residency sets on a
+    /// background thread, and ggml aborts when it finds them half-built. So
+    /// quitting crashed. Everything the app persists is written as it
+    /// changes, so the process can leave without running those destructors.
+    func applicationWillTerminate(_ notification: Notification) {
+        _exit(0)
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if onboardingWindow?.isVisible == true {
             onboardingWindow?.makeKeyAndOrderFront(nil)
