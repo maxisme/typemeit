@@ -82,7 +82,7 @@ struct MenuContent: View {
         if Pipeline.shared.phase == .recording {
             Button("Stop Recording") { Pipeline.shared.shortcuts.stopFromMenu() }
         } else {
-            Button("Start Recording") { Pipeline.shared.shortcuts.startFromMenu() }
+            Button("Start Recording (fn)") { Pipeline.shared.shortcuts.startFromMenu() }
                 .disabled(Pipeline.shared.isBusy || !appState.ready)
         }
         if Pipeline.shared.isBusy {
