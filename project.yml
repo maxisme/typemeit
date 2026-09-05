@@ -26,6 +26,7 @@ targets:
       - path: TypeMeIt
         excludes:
           - "Resources/AppIcon.icns"
+          - "Support/Icon/**"
       - path: TypeMeIt/Resources/AppIcon.icns
         buildPhase: resources
     dependencies:
