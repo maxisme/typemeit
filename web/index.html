@@ -60,7 +60,7 @@
   /* Design-system note text: DM Mono, lowercase, ink-3 on paper, no surface. */
   #notmac {
     position: fixed; left: 50%; top: calc(50% + 120px); transform: translateX(-50%);
-    margin: 0; font: 12px/1.4 "DM Mono", ui-monospace, Menlo, monospace;
+    margin: 0; font: 10px/1.4 "DM Mono", ui-monospace, Menlo, monospace;
     color: #8a8a8a; text-align: center; white-space: nowrap;
   }
   #notmac:empty { display: none; }
@@ -127,7 +127,7 @@ async function versionedDMG() {
 document.getElementById("download").addEventListener("mousedown", (ev) => ev.preventDefault());
 document.getElementById("download").addEventListener("click", async () => {
   if (!isMac()) {
-    document.getElementById("notmac").textContent = "Type Me It is macos only.";
+    document.getElementById("notmac").textContent = "Type me it is for macOS only";
     return;
   }
   location.href = await versionedDMG().catch(() => DMG);
