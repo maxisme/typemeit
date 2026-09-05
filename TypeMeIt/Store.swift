@@ -114,7 +114,16 @@ final class Store {
     }
 
     func delete(id: UUID) {
-        history.removeAll { $0.id == id }
+        delete(ids: [id])
+    }
+
+    func delete(ids: Set<UUID>) {
+        history.removeAll { ids.contains($0.id) }
+        save(history, to: historyURL)
+    }
+
+    func deleteAllHistory() {
+        history.removeAll()
         save(history, to: historyURL)
     }
 
