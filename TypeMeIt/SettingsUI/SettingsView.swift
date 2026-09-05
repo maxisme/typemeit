@@ -1,12 +1,13 @@
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case insights, settings, history
+    case insights, settings, typing, history
 
     var icon: String {
         switch self {
         case .insights: "akar-statistic-up"
         case .settings: "akar-gear"
+        case .typing: "akar-text-align-left"
         case .history: "akar-clock"
         }
     }
@@ -42,6 +43,7 @@ struct SettingsView: View {
             Group {
                 switch tab ?? .insights {
                 case .settings: MainSettingsTab()
+                case .typing: TypingTab()
                 case .history: HistoryTab()
                 case .insights: InsightsTab()
                 }
@@ -160,7 +162,6 @@ struct MainSettingsTab: View {
     @State private var settings = Settings.shared
     @State private var updates = Updates.shared
     @State private var devices = AudioCapture.inputDevices()
-    @State private var newWord = ""
 
     var body: some View {
         ScrollView {
@@ -212,7 +213,47 @@ struct MainSettingsTab: View {
                         Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
                     }
                 }
-                SettingsGroup(title: "text") {
+                SettingsGroup(title: "app") {
+                    SettingsRow(label: "open at login") {
+                        Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "check for updates") {
+                        Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "dock icon") {
+                        Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "appearance", subtitle: "the windows and the recording cloud", last: true) {
+                        Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; AppDelegate.shared?.applyAppearance() })) {
+                            ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }.labelsHidden().fixedSize()
+                    }
+                }
+                SettingsGroup(title: "about") {
+                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
+                        Button("check now") { updates.checkForUpdates() }
+                            .buttonStyle(InkButtonStyle())
+                            .disabled(!updates.canCheck)
+                    }
+                    SettingsRow(label: "website", last: true) {
+                        Link("typeme.it", destination: Fixed.websiteURL)
+                            .font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink).underline()
+                    }
+                }
+            }
+            .padding(20)
+        }
+    }
+}
+
+struct TypingTab: View {
+    @State private var settings = Settings.shared
+    @State private var newWord = ""
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                SettingsGroup(title: "clean-up") {
                     SettingsRow(label: "clean up with apple intelligence", subtitle: "on device") {
                         Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
                     }
@@ -258,33 +299,6 @@ struct MainSettingsTab: View {
                                 ForEach(AutoSubmitKey.allCases, id: \.self) { Text($0.label).tag($0) }
                             }.labelsHidden().fixedSize()
                         }
-                    }
-                }
-                SettingsGroup(title: "app") {
-                    SettingsRow(label: "open at login") {
-                        Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "check for updates") {
-                        Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "dock icon") {
-                        Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "appearance", subtitle: "the windows and the recording cloud", last: true) {
-                        Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; AppDelegate.shared?.applyAppearance() })) {
-                            ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
-                        }.labelsHidden().fixedSize()
-                    }
-                }
-                SettingsGroup(title: "about") {
-                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
-                        Button("check now") { updates.checkForUpdates() }
-                            .buttonStyle(InkButtonStyle())
-                            .disabled(!updates.canCheck)
-                    }
-                    SettingsRow(label: "website", last: true) {
-                        Link("typeme.it", destination: Fixed.websiteURL)
-                            .font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink).underline()
                     }
                 }
             }
