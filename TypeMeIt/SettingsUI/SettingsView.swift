@@ -1,13 +1,13 @@
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case insights, settings, typing, history
+    case insights, settings, cleanup, history
 
     var icon: String {
         switch self {
         case .insights: "akar-statistic-up"
         case .settings: "akar-gear"
-        case .typing: "akar-text-align-left"
+        case .cleanup: "akar-sparkles"
         case .history: "akar-clock"
         }
     }
@@ -43,7 +43,7 @@ struct SettingsView: View {
             Group {
                 switch tab ?? .insights {
                 case .settings: MainSettingsTab()
-                case .typing: TypingTab()
+                case .cleanup: CleanupTab()
                 case .history: HistoryTab()
                 case .insights: InsightsTab()
                 }
@@ -188,23 +188,18 @@ struct MainSettingsTab: View {
                     }
                 }
                 SettingsGroup(title: "cloud") {
-                    SettingsRow(label: "show the cloud while recording", subtitle: "the puff at the bottom of the screen") {
-                        Toggle("", isOn: $settings.overlayEnabled).toggleStyle(.switch).labelsHidden()
+                    SettingsRow(label: "cloud colour", subtitle: "off, it is white or grey with the appearance") {
+                        Toggle("", isOn: $settings.cloudColorEnabled).toggleStyle(.switch).labelsHidden()
                     }
-                    if settings.overlayEnabled {
-                        SettingsRow(label: "cloud colour", subtitle: "off, it is white or grey with the appearance") {
-                            Toggle("", isOn: $settings.cloudColorEnabled).toggleStyle(.switch).labelsHidden()
-                        }
-                        if settings.cloudColorEnabled {
-                            CloudColorPalette(selection: $settings.cloudColor)
-                                .padding(.horizontal, 12).padding(.vertical, 6)
-                            RowRule()
-                        }
-                        SettingsRow(label: "cloud position") {
-                            Picker("", selection: $settings.cloudPosition) {
-                                ForEach(CloudPosition.allCases, id: \.self) { Text($0.label).tag($0) }
-                            }.pickerStyle(.segmented).labelsHidden().fixedSize()
-                        }
+                    if settings.cloudColorEnabled {
+                        CloudColorPalette(selection: $settings.cloudColor)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                        RowRule()
+                    }
+                    SettingsRow(label: "cloud position") {
+                        Picker("", selection: $settings.cloudPosition) {
+                            ForEach(CloudPosition.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }.pickerStyle(.segmented).labelsHidden().fixedSize()
                     }
                     SettingsRow(label: "sounds") {
                         Toggle("", isOn: $settings.audioFeedback).toggleStyle(.switch).labelsHidden()
@@ -246,7 +241,7 @@ struct MainSettingsTab: View {
     }
 }
 
-struct TypingTab: View {
+struct CleanupTab: View {
     @State private var settings = Settings.shared
     @State private var newWord = ""
 

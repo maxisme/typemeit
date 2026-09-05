@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Borderless, non-activating panel at the bottom centre of the screen with
-/// the mouse. The transparent 340 x 200 window sits on the bottom edge of
+/// the mouse, or against its left or right edge halfway up. The transparent 340 x 200 window sits on the bottom edge of
 /// the visible screen, so the cloud has room to swell and the pill can
 /// change width and cast a shadow without the window resizing.
 @MainActor
@@ -11,8 +11,8 @@ final class OverlayPanel {
     private let panel: NSPanel
 
     static let size = NSSize(width: 360, height: 260)
-    /// Gap between the panel and the screen edge when the cloud is at a side.
-    static let sideInset: CGFloat = 24
+    /// How far the cloud's centre sits in from the screen edge at a side.
+    static let sideInset: CGFloat = 56
 
     init() {
         panel = NSPanel(contentRect: NSRect(origin: .zero, size: OverlayPanel.size),
@@ -40,12 +40,16 @@ final class OverlayPanel {
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main ?? NSScreen.screens[0]
         let visible = screen.visibleFrame
-        let x: CGFloat = switch Settings.shared.cloudPosition {
-        case .left: visible.minX + OverlayPanel.sideInset
-        case .centre: visible.midX - OverlayPanel.size.width / 2
-        case .right: visible.maxX - OverlayPanel.size.width - OverlayPanel.sideInset
+        // The cloud's centre is half the panel across and restHeight up, so
+        // at a side the panel hangs partly off the screen to put the cloud
+        // against the edge, halfway up.
+        let half = OverlayPanel.size.width / 2
+        let origin: NSPoint = switch Settings.shared.cloudPosition {
+        case .left: NSPoint(x: visible.minX + OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
+        case .centre: NSPoint(x: visible.midX - half, y: visible.minY)
+        case .right: NSPoint(x: visible.maxX - OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
         }
-        panel.setFrameOrigin(NSPoint(x: x, y: visible.minY))
+        panel.setFrameOrigin(origin)
     }
 
     func show(_ state: OverlayModel.State) {

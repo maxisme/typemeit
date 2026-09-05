@@ -37,7 +37,8 @@ enum Appearance: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// Where along the bottom of the screen the recording cloud sits.
+/// Where on the screen the recording cloud sits: the bottom middle, or
+/// against the left or right edge halfway up.
 enum CloudPosition: String, Codable, CaseIterable, Sendable {
     case left, centre, right
 
@@ -76,7 +77,6 @@ final class Settings {
     var alwaysOnMicrophone: Bool { didSet { defaults.set(alwaysOnMicrophone, forKey: "alwaysOnMicrophone") } }
     var muteWhileRecording: Bool { didSet { defaults.set(muteWhileRecording, forKey: "muteWhileRecording") } }
     var audioFeedback: Bool { didSet { defaults.set(audioFeedback, forKey: "audioFeedback") } }
-    var overlayEnabled: Bool { didSet { defaults.set(overlayEnabled, forKey: "overlayEnabled") } }
     var copyPromptEnabled: Bool { didSet { defaults.set(copyPromptEnabled, forKey: "copyPromptEnabled") } }
     var postProcessingEnabled: Bool { didSet { defaults.set(postProcessingEnabled, forKey: "postProcessingEnabled") } }
     var customWords: [String] { didSet { defaults.set(customWords, forKey: "customWords") } }
@@ -103,7 +103,6 @@ final class Settings {
         alwaysOnMicrophone = bool("alwaysOnMicrophone", false)
         muteWhileRecording = bool("muteWhileRecording", true)
         audioFeedback = bool("audioFeedback", true)
-        overlayEnabled = bool("overlayEnabled", true)
         copyPromptEnabled = bool("copyPromptEnabled", true)
         postProcessingEnabled = bool("postProcessingEnabled", true)
         customWords = d.stringArray(forKey: "customWords") ?? []

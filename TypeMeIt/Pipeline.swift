@@ -111,7 +111,7 @@ final class Pipeline {
             OutputMute.restore()
             return
         }
-        if settings.overlayEnabled { overlay.show(.arming) }
+        overlay.show(.arming)
         if settings.postProcessingEnabled { Task { await PostProcessor.shared.prewarm() } }
         Task { await Transcriber.shared.preload() }
     }
@@ -153,7 +153,7 @@ final class Pipeline {
         let target = Frontmost.capture()
         phase = .transcribing
         shortcuts.setPhase(.transcribing)
-        if settings.overlayEnabled { overlay.show(.transcribing) }
+        overlay.show(.transcribing)
 
         Task { [weak self] in
             guard let self else { return }
@@ -198,7 +198,7 @@ final class Pipeline {
         if requested {
             phase = .cleaningUp
             shortcuts.setPhase(.cleaningUp)
-            if settings.overlayEnabled { overlay.show(.cleaningUp) }
+            overlay.show(.cleaningUp)
             let start = ContinuousClock.now
             postProcessed = await PostProcessor.shared.run(cleaned.text, customWords: customWords)
             let ms = Pipeline.elapsedMs(since: start)
@@ -244,7 +244,6 @@ final class Pipeline {
 
     private func showCopyPrompt(_ text: String) {
         copyPromptText = text
-        guard settings.overlayEnabled else { return }
         overlay.show(.copyPrompt)
         copyPromptTask?.cancel()
         copyPromptTask = Task { [weak self] in
@@ -279,7 +278,7 @@ final class Pipeline {
     private var toastBatch: UUID?
 
     func showLearnedToast(batchId: UUID, words: [String]) {
-        guard settings.overlayEnabled, !words.isEmpty else { return }
+        guard !words.isEmpty else { return }
         toastBatch = batchId
         let label = words.count == 1 ? "Added \(words[0])" : "Learned \(words.count) words"
         overlay.show(.learned(batchId: batchId, label: label))
