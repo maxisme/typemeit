@@ -13,6 +13,8 @@ import SwiftUI
 /// - neither: the puff breathes on its own.
 struct PuffView: View {
     var level: Float? = nil
+    /// How far each syllable pushes the puff out; 1 is the web's response.
+    var reaction: Double = 1
     var expansion: Double? = nil
     var tint: Color = .white
     /// Length of one autonomous inhale + exhale, in seconds.
@@ -20,6 +22,16 @@ struct PuffView: View {
     /// When set, the puff renders this instant of its texture and does not
     /// animate. For stills such as the app icon.
     var frozenTime: Double? = nil
+    /// When set, the puff arrives: at this instant it is a wisp, and over the
+    /// next `arrivalDuration` seconds it grows to the size the level asks
+    /// for, streaming its smoke outwards. Only used with `level`.
+    var arrival: Date? = nil
+    static let arrivalDuration = 0.5
+    /// When set, the puff departs: from this instant it shrinks back to a
+    /// wisp over `departureDuration` seconds, drawing its smoke in. Only used
+    /// with `level`.
+    var departure: Date? = nil
+    static let departureDuration = 0.22
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     @State private var dynamics = Dynamics()
@@ -43,6 +55,13 @@ struct PuffView: View {
         }
     }
 
+    /// Compiles the shader ahead of its first frame, which otherwise stalls
+    /// for a moment.
+    static func compileShader() async throws {
+        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .color(.white))
+            .compile(as: .colorEffect)
+    }
+
     /// What the shader needs for one frame.
     struct Frame {
         var expansion: Double
@@ -60,11 +79,31 @@ struct PuffView: View {
                 let e = Dynamics.restExpansion(forLevel: Double(level))
                 return Frame(expansion: e, trail: e, flow: 0)
             }
-            return dynamics.step(level: Double(level), at: now)
+            return dynamics.step(level: Double(level), reaction: reaction, swell: swell(at: now), at: now)
         }
         if reduceMotion { return Frame(expansion: 0.7, trail: 0.7, flow: 0) }
         let e = PuffView.breath(at: t, period: breathPeriod)
         return Frame(expansion: e, trail: trail.step(expansion: e, at: now), flow: PuffView.idleFlow(at: t, expansion: e))
+    }
+
+    /// Expansion added for the arrival and departure: negative while the
+    /// puff grows in from a wisp, and negative again as it shrinks back out.
+    private func swell(at now: TimeInterval) -> Double {
+        let rest = Dynamics.restExpansion(forLevel: 0)
+        var swell = 0.0
+        if let arrival {
+            swell -= (rest - 0.05) * (1 - PuffView.progress(since: arrival, over: PuffView.arrivalDuration, at: now))
+        }
+        if let departure {
+            swell -= (rest - 0.05) * PuffView.progress(since: departure, over: PuffView.departureDuration, at: now)
+        }
+        return swell
+    }
+
+    /// Smoothstepped 0...1 progress of a transition begun at `start`.
+    private static func progress(since start: Date, over duration: Double, at now: TimeInterval) -> Double {
+        let p = min(max((now - start.timeIntervalSinceReferenceDate) / duration, 0), 1)
+        return p * p * (3 - 2 * p)
     }
 
     /// Peak-hold on the expansion with a slow decay, so a retreat leaves a
@@ -110,6 +149,7 @@ struct PuffView: View {
         private var v = 0.0
         private var flow = 0.0
         private var lastTime: TimeInterval?
+        private var lastSwell = 0.0
         private let trail = Trail()
 
         /// Resting size for a given slow average level.
@@ -117,10 +157,10 @@ struct PuffView: View {
             0.34 + 0.12 * min(max(level, 0), 1)
         }
 
-        func step(level: Double, at now: TimeInterval) -> Frame {
-            defer { lastTime = now }
+        func step(level: Double, reaction: Double = 1, swell: Double = 0, at now: TimeInterval) -> Frame {
+            defer { lastTime = now; lastSwell = swell }
             guard let lastTime else {
-                let e = Dynamics.restExpansion(forLevel: level)
+                let e = min(1, max(0.05, Dynamics.restExpansion(forLevel: level) + swell))
                 return Frame(expansion: e, trail: trail.step(expansion: e, at: now), flow: flow)
             }
             let dt = min(max(now - lastTime, 0), 0.1)
@@ -138,8 +178,8 @@ struct PuffView: View {
             v += a * dt
             x += v * dt
 
-            let e = min(1, max(0.05, Dynamics.restExpansion(forLevel: slow) + 0.4 * x))
-            flow += dt * (0.08 + 1.2 * max(0, v))
+            let e = min(1, max(0.05, Dynamics.restExpansion(forLevel: slow) + 0.4 * reaction * x + swell))
+            flow += dt * (0.08 + 1.2 * max(0, v)) + 1.2 * (swell - lastSwell)
             return Frame(expansion: e, trail: trail.step(expansion: e, at: now), flow: flow)
         }
     }

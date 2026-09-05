@@ -88,7 +88,7 @@ struct GeneralTab: View {
                     }
                 }
                 SettingsGroup(title: "Feedback") {
-                    SettingsRow(label: "Show recording pill", subtitle: "A small indicator at the bottom of the screen.") {
+                    SettingsRow(label: "Show recording cloud", subtitle: "A small cloud at the bottom of the screen.") {
                         Toggle("", isOn: $settings.overlayEnabled).toggleStyle(.switch).labelsHidden()
                     }
                     SettingsRow(label: "Sounds") {
