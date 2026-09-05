@@ -136,6 +136,7 @@ final class Pipeline {
         phase = .transcribing
         shortcuts.setPhase(.transcribing)
         if settings.overlayEnabled { overlay.show(.transcribing) }
+        if settings.audioFeedback { Feedback.playHumAfterStop() }
 
         Task { [weak self] in
             guard let self else { return }

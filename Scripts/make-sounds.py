@@ -3,7 +3,8 @@
 
 start  an inhale: noise through two low formants over a pink bed, 230 ms
 pin    a dust pop: one click with a whisper of crackle behind it
-stop   an exhale whose formant glides up, then a second, lingering inhale
+stop   a second, lingering inhale
+hum    a valve hum letting go, played once transcription is under way
 """
 import math
 import struct
@@ -77,36 +78,15 @@ def dust_pop():
     return onepole(o, 3000)
 
 
-def exhale_rising(ms=520, seed=4):
-    # the inhale mirrored: a fast onset, then the one formant glides up more
-    # than an octave as the breath decays
-    r = rng(seed)
-    n = [r() for _ in range(frames(ms))]
-    L = len(n)
-    for i in range(L):
-        t = i / L
-        n[i] *= smoother(t / 0.12) * math.exp(-max(0.0, t - 0.12) * 3.2)
-    res = math.exp(-math.pi * 160 / RATE)
-    y1 = y2 = 0.0
-    e = []
-    for j in range(L):
-        f = 180 * 2.2 ** (j / L)
-        c = 2 * res * math.cos(TAU * f / RATE)
-        y = n[j] * (1 - res) + c * y1 - res * res * y2
-        y2, y1 = y1, y
-        e.append(y)
-    low = onepole(n, 180)
-    return onepole([e[i] + 0.6 * low[i] for i in range(L)], 1600)
-
-
-def levelled(xs):
-    g = PEAK / max(abs(x) for x in xs)
-    return [x * g for x in xs]
-
-
-def then(a, gap_ms, b, b_level=0.7):
-    # the second part sits under the first
-    return levelled(a) + [0.0] * frames(gap_ms) + [x * b_level for x in levelled(b)]
+def hum_off():
+    n = frames(700)
+    ph = 0.0
+    out = []
+    for k in range(n):
+        t = k / n
+        ph += TAU * 82.4 * (1 - 0.08 * t) / RATE
+        out.append(smoother(t / 0.03) * math.exp(-t * 4.2) * (math.sin(ph) + 0.3 * math.sin(2 * ph)))
+    return out
 
 
 def write(path, samples, peak=PEAK):
@@ -124,6 +104,6 @@ def write(path, samples, peak=PEAK):
 
 write("TypeMeIt/Resources/pop_start.wav", inhale(230, 180, 700, 0.8, 4))
 write("TypeMeIt/Resources/pop_pin.wav", dust_pop())
-# the stop is deliberately quieter than the start and pin
-write("TypeMeIt/Resources/pop_stop.wav",
-      then(exhale_rising(), 120, inhale(230, 180, 700, 0.8, 4, tail=2.4)), peak=0.28)
+# the stop and the hum sit under the start and pin
+write("TypeMeIt/Resources/pop_stop.wav", inhale(230, 180, 700, 0.8, 4, tail=2.4), peak=0.28)
+write("TypeMeIt/Resources/pop_hum.wav", hum_off(), peak=0.28)
