@@ -5,8 +5,8 @@
 # what most previews show.
 # The puff is the app's own shader (web/puff.glsl.js) rendered by headless
 # Chrome through Scripts/og/render.html, since a browser is the only thing here
-# that can run it. The PNG is 2x (2400 x 1260) so it stays sharp on Retina
-# previews; it is mostly flat paper, so lossless is small.
+# that can run it. The PNG is 4x (4800 x 2520) so the smoke's finest
+# grain survives Retina previews; it is mostly flat paper, so lossless is small.
 # Requires: Google Chrome, python3, magick.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -20,16 +20,16 @@ trap 'kill $SERVE $CHROME 2>/dev/null; wait $CHROME 2>/dev/null; rm -rf "$TMP"' 
 # growth is carried by the drawn size, not by expansion: past 0.5 the shader
 # spreads the same smoke thin, and the big cloud should stay as dense and
 # lobed as the small ones.
-FRAMES='[{"x":0.12,"size":950,"exp":0.3,"flow":0.3,"time":140,"dens":1.15},
-         {"x":0.34,"size":1100,"exp":0.5,"trail":0.55,"flow":0.45,"time":150,"dens":1.1},
-         {"x":0.58,"size":1550,"exp":0.5,"trail":0.56,"flow":0.5,"time":175,"dens":1.1},
-         {"x":0.82,"size":2050,"exp":0.5,"trail":0.58,"flow":0.55,"time":205,"dens":1.1}]'
+FRAMES='[{"x": 0.12, "size": 1900, "exp": 0.3, "flow": 0.3, "time": 140, "dens": 1.15},
+         {"x": 0.34, "size": 2200, "exp": 0.5, "trail": 0.55, "flow": 0.45, "time": 150, "dens": 1.1},
+         {"x": 0.58, "size": 3100, "exp": 0.5, "trail": 0.56, "flow": 0.5, "time": 175, "dens": 1.1},
+         {"x": 0.82, "size": 4100, "exp": 0.5, "trail": 0.58, "flow": 0.55, "time": 205, "dens": 1.1}]'
 Q="$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$FRAMES")"
 
 python3 Scripts/og/serve.py "$TMP" & SERVE=$!
 sleep 1
-"$CH" --headless=new --use-angle=metal --window-size=2400,1400 --user-data-dir="$TMP/chrome" \
-  "http://127.0.0.1:8792/Scripts/og/render.html?name=og&frames=$Q" >/dev/null 2>&1 & CHROME=$!
+"$CH" --headless=new --use-angle=metal --window-size=4800,2600 --user-data-dir="$TMP/chrome" \
+  "http://127.0.0.1:8792/Scripts/og/render.html?name=og&w=4800&h=2520&frames=$Q" >/dev/null 2>&1 & CHROME=$!
 for _ in $(seq 1 90); do [ -f "$TMP/og.png" ] && break; sleep 1; done
 [ -f "$TMP/og.png" ] || { echo "render did not finish" >&2; exit 1; }
 sleep 1
