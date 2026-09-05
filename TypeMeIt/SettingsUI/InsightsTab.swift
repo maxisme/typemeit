@@ -16,7 +16,7 @@ struct InsightsTab: View {
     /// Tonal ramp of ink, darkest for the largest share. Indexed by rank.
     private static let ramp: [Color] = [
         DesignTokens.Colors.ink, DesignTokens.Colors.inkA64, DesignTokens.Colors.inkA48, DesignTokens.Colors.inkA32,
-        DesignTokens.Colors.inkA20, DesignTokens.Colors.inkA12, DesignTokens.Colors.inkA08,
+        DesignTokens.Colors.inkA20, DesignTokens.Colors.inkA12, DesignTokens.Colors.inkA08, DesignTokens.Colors.inkA04,
     ]
     private static func tone(_ rank: Int) -> Color { ramp[min(rank, ramp.count - 1)] }
 

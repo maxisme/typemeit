@@ -67,8 +67,8 @@ final class CategoryTests: XCTestCase {
         XCTAssertEqual(classify(chrome, "Google Chrome", "general - Acme - Slack"), .workMessages)
         XCTAssertEqual(classify(chrome, "Google Chrome", "WhatsApp"), .personalMessages)
         XCTAssertEqual(classify(chrome, "Google Chrome", "Pull Request #12 · acme/app - GitHub"), .code)
-        XCTAssertEqual(classify(chrome, "Google Chrome", "BBC News"), .other)
-        XCTAssertEqual(classify(chrome, "Google Chrome", nil), .other)
+        XCTAssertEqual(classify(chrome, "Google Chrome", "BBC News"), .browsing)
+        XCTAssertEqual(classify(chrome, "Google Chrome", nil), .browsing)
     }
 
     func testGoogleChatBeatsGoogleDocsInTitleRules() {
@@ -93,18 +93,18 @@ final class CategoryTests: XCTestCase {
         for category in UsageCategory.allCases {
             XCTAssertTrue(seen.insert(category).inserted, "\(category) listed twice")
         }
-        XCTAssertEqual(seen.count, 7)
+        XCTAssertEqual(seen.count, 8)
     }
 
     func testDisplayNames() {
         XCTAssertEqual(UsageCategory.allCases.map(\.displayName), [
-            "AI prompts", "Work messages", "Personal messages", "Emails", "Documents", "Code", "Other",
+            "AI prompts", "Work messages", "Personal messages", "Emails", "Documents", "Code", "Browsing", "Other",
         ])
     }
 
     func testRawValuesAreCamelCase() {
         XCTAssertEqual(UsageCategory.allCases.map(\.rawValue), [
-            "aiPrompts", "workMessages", "personalMessages", "emails", "documents", "code", "other",
+            "aiPrompts", "workMessages", "personalMessages", "emails", "documents", "code", "browsing", "other",
         ])
     }
 }
