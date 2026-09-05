@@ -97,6 +97,7 @@ struct HistoryTab: View {
                         if let app = e.appName { Text(app).font(.system(size: 10)).foregroundStyle(.tertiary) }
                         if let ms = e.durationMs { Text(String(format: "%.0f s", Double(ms) / 1000)).font(.system(size: 10)).foregroundStyle(.tertiary) }
                     }
+                    telemetry(e)
                     if expanded.contains(e.id), e.transcript != e.displayText {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("HEARD").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
@@ -118,6 +119,37 @@ struct HistoryTab: View {
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
             if !last { Divider().padding(.leading, 12) }
+        }
+    }
+
+    /// Stage timings, monospaced and always visible.
+    @ViewBuilder
+    private func telemetry(_ e: HistoryEntry) -> some View {
+        HStack(spacing: 0) {
+            stat("asr", e.transcribeMs.map { "\($0)ms" } ?? "n/a")
+            if let ms = e.transcribeMs, let audio = e.durationMs, audio > 0 {
+                Text("  rtf=" + String(format: "%.2fx", Double(ms) / Double(audio)))
+            }
+            Text("  │  ")
+            stat("llm", e.postProcessRequested ? (e.postProcessMs.map { "\($0)ms" } ?? "n/a") : "off")
+            if e.postProcessRequested, e.postProcessMs != nil {
+                Text("  " + (e.postProcessed == nil ? "→fallback" : "→applied"))
+            }
+            Text("  │  ")
+            let total = (e.transcribeMs ?? 0) + (e.postProcessMs ?? 0)
+            stat("total", e.transcribeMs == nil ? "n/a" : "\(total)ms")
+        }
+        .font(.system(size: 10, design: .monospaced))
+        .foregroundStyle(Color(nsColor: .systemGreen).opacity(0.9))
+        .padding(.horizontal, 7).padding(.vertical, 3)
+        .background(RoundedRectangle(cornerRadius: 4).fill(Color.black.opacity(0.82)))
+        .textSelection(.enabled)
+    }
+
+    private func stat(_ key: String, _ value: String) -> some View {
+        HStack(spacing: 0) {
+            Text(key + "=").foregroundStyle(Color(nsColor: .systemGreen).opacity(0.55))
+            Text(value)
         }
     }
 

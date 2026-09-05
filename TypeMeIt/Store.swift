@@ -13,6 +13,10 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Equatable {
     var edited: String?
     var editedAt: Date?
     var durationMs: Int?
+    /// Wall-clock time the speech engine took, in milliseconds.
+    var transcribeMs: Int?
+    /// Wall-clock time Apple Intelligence took, in milliseconds; nil when it was not requested.
+    var postProcessMs: Int?
     var appId: String?
     var appName: String?
     var windowTitle: String?
