@@ -117,11 +117,11 @@ class Trail {
 class Dynamics {
   static attack = 0.012; static release = 0.22; static gain = 0.75; static rest = 0.44;
   env = 0; flow = 0; last = null; trail = new Trail(0.8);
-  static rest(level) { return Dynamics.rest + Dynamics.gain * Math.min(Math.max(level, 0), 1); }
+  static restExpansion(level) { return Dynamics.rest + Dynamics.gain * Math.min(Math.max(level, 0), 1); }
   step(level, now) {
     if (this.last === null) {
       this.last = now; this.env = level;
-      const e = Dynamics.rest(level);
+      const e = Dynamics.restExpansion(level);
       return { expansion: e, trail: this.trail.step(e, now), flow: this.flow };
     }
     const dt = Math.min(Math.max(now - this.last, 0), 0.1);
@@ -129,7 +129,7 @@ class Dynamics {
     const tau = level > this.env ? Dynamics.attack : Dynamics.release;
     const before = this.env;
     this.env += (level - this.env) * (1 - Math.exp(-dt / tau));
-    const e = Math.min(1, Math.max(0.05, Dynamics.rest(this.env)));
+    const e = Math.min(1, Math.max(0.05, Dynamics.restExpansion(this.env)));
     this.flow += dt * (0.08 + 6 * Math.max(0, this.env - before));
     return { expansion: e, trail: this.trail.step(e, now), flow: this.flow };
   }
