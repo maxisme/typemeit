@@ -82,7 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             showGate(reason)
             return
         }
-        if Settings.shared.onboardingComplete, ModelStore.isInstalled {
+        if Settings.shared.onboardingComplete, ModelStore.isInstalled, OnboardingView.permissionsGranted {
             startRunning()
         } else {
             showOnboarding()
