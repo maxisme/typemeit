@@ -29,6 +29,7 @@
 <p>while you hold the fn key the app records from the microphone. when you let go, the recording is transcribed on your mac by the parakeet speech model, running inside the app through transcribe.cpp. the audio is held in memory for the length of the transcription and then discarded. it is never written to disk and never sent anywhere.</p>
 <p>if apple intelligence is turned on in settings, the transcript is tidied up by apple's on-device foundation model, through the foundationmodels framework. that model runs on your mac. type me it does not use private cloud compute or any other apple server for this step. apple's own privacy policy governs apple intelligence itself.</p>
 <p>the finished text is pasted into whichever app has the cursor.</p>
+<p>if "match what is behind it" is on in settings, the app reads an 8 by 8 pixel picture of the screen under the recording cloud to choose whether the cloud is white or dark. the pixels are averaged in memory and discarded. nothing is stored or sent. macos asks for screen recording because that is the only permission that allows any of the screen to be read, and it reminds you from time to time that the app has it. the option is off unless you turn it on.</p>
   </div>
 </section>
 

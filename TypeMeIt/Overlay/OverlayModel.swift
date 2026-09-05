@@ -31,6 +31,9 @@ final class OverlayModel {
     var shownAt: Date?
     /// When the cloud started to puff out, or nil while it is still wanted.
     var departedAt: Date?
+    /// What is under the cloud, when the screen has been sampled. Nil falls
+    /// back to the appearance.
+    var backdrop: ScreenSampler.Backdrop?
 
     var presentation: Presentation {
         switch state {

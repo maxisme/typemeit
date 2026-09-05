@@ -64,8 +64,10 @@ final class OverlayPanel {
             model.level = 0
             model.shownAt = Date()
             model.departedAt = nil
+            model.backdrop = nil
         }
         model.state = state
+        resample()
         model.copied = false
         // The cloud has nothing to click until it is pinned, so let clicks
         // through to whatever is behind it until then.
@@ -79,6 +81,8 @@ final class OverlayPanel {
     }
 
     func hide() {
+        sampling?.cancel()
+        sampling = nil
         guard panel.isVisible else { model.state = .hidden; return }
         // The cloud shrinks as it goes; the fade lets it draw in before it is
         // gone. The pill just fades.
@@ -98,6 +102,38 @@ final class OverlayPanel {
     }
 
     func setLevel(_ level: Float) { model.level = level }
+
+    private var sampling: Task<Void, Never>?
+
+    /// Samples the screen under the cloud once as it arrives, and every
+    /// second while pinned since the user may change windows under it. Not
+    /// while it is leaving, and not without the setting and the grant.
+    private func resample() {
+        sampling?.cancel()
+        sampling = nil
+        let wanted = model.presentation == .cloud && (model.state == .arming || model.state == .recording || model.state == .pinned)
+        guard wanted, Settings.shared.cloudMatchesBackdrop, CGPreflightScreenCaptureAccess() else { return }
+        let repeating = model.state == .pinned
+        sampling = Task { [weak self] in
+            repeat {
+                guard let self, !Task.isCancelled else { return }
+                let rect = cloudRect
+                let number = panel.windowNumber
+                if let backdrop = await ScreenSampler.sample(rect: rect, excluding: number), !Task.isCancelled {
+                    model.backdrop = backdrop
+                }
+                guard repeating else { return }
+                try? await Task.sleep(for: .seconds(1))
+            } while !Task.isCancelled
+        }
+    }
+
+    /// The cloud's clickable circle, in screen coordinates.
+    private var cloudRect: NSRect {
+        let diameter = CloudView.size * 0.45
+        let centre = NSPoint(x: panel.frame.midX, y: panel.frame.minY + CloudView.restHeight)
+        return NSRect(x: centre.x - diameter / 2, y: centre.y - diameter / 2, width: diameter, height: diameter)
+    }
 }
 
 private struct OverlayRoot: View {

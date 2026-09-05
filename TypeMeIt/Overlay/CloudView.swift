@@ -28,6 +28,7 @@ struct CloudView: View {
             PuffView(level: level(at: ctx.date.timeIntervalSinceReferenceDate), tint: tint,
                      arrival: model.shownAt, departure: model.departedAt)
         }
+        .animation(.easeInOut(duration: 0.2), value: model.backdrop)
         .frame(width: CloudView.size, height: CloudView.size)
         .contentShape(Circle().scale(0.45))
         .onTapGesture { if model.state == .pinned { model.onStop?() } }
@@ -64,13 +65,19 @@ struct CloudView: View {
         return Float(0.3 + 0.3 * sin(t * 2 * .pi / 1.8))
     }
 
-    /// The chosen colour, or white or dark grey with the appearance; leaning
+    /// The chosen colour, or white or dark grey against what is behind the
+    /// cloud when that has been sampled, else with the appearance; leaning
     /// a little towards green while the transcript is being cleaned up.
     private var tint: Color {
         let settings = Settings.shared
-        let base = settings.cloudColorEnabled ? settings.cloudColor.color : (scheme == .dark ? NSColor(white: 1, alpha: 1) : NSColor(white: 0.25, alpha: 1))
+        let light = switch model.backdrop {
+        case .light: false
+        case .dark: true
+        case nil: scheme == .dark
+        }
+        let base = settings.cloudColorEnabled ? settings.cloudColor.color : (light ? NSColor(white: 1, alpha: 1) : NSColor(white: 0.25, alpha: 1))
         guard model.state == .cleaningUp else { return Color(nsColor: base) }
-        let green = scheme == .dark ? NSColor(srgbRed: 0.55, green: 0.85, blue: 0.62, alpha: 1) : NSColor(srgbRed: 0.18, green: 0.45, blue: 0.28, alpha: 1)
+        let green = light ? NSColor(srgbRed: 0.55, green: 0.85, blue: 0.62, alpha: 1) : NSColor(srgbRed: 0.18, green: 0.45, blue: 0.28, alpha: 1)
         return Color(nsColor: base.blended(withFraction: 0.35, of: green) ?? base)
     }
 }

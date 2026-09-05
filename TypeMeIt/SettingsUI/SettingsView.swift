@@ -167,6 +167,18 @@ struct MainSettingsTab: View {
     @State private var settings = Settings.shared
     @State private var updates = Updates.shared
     @State private var devices = AudioCapture.inputDevices()
+    @State private var screenGranted = CGPreflightScreenCaptureAccess()
+    /// The grant lands in System Settings, not in the app, so it is re-read
+    /// while the window is up.
+    private let poll = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+
+    /// Screen Recording is the only permission that lets the app read the
+    /// screen, and macOS says so to the user in its own words, so the row
+    /// says what is read and that macOS will remind them.
+    private var backdropSubtitle: String {
+        if settings.cloudMatchesBackdrop, !screenGranted { return "needs screen recording, which is off" }
+        return "reads a few pixels under the cloud · asks for screen recording, which macos reminds you about"
+    }
 
     var body: some View {
         ScrollView {
@@ -203,6 +215,18 @@ struct MainSettingsTab: View {
                         CloudColorPalette(selection: $settings.cloudColor)
                             .padding(.horizontal, 12).padding(.vertical, 6)
                         RowRule()
+                    }
+                    SettingsRow(label: "match what is behind it", subtitle: backdropSubtitle) {
+                        HStack(spacing: 8) {
+                            if settings.cloudMatchesBackdrop, !screenGranted {
+                                Button("system settings") { NSWorkspace.shared.open(SecureInput.screenRecordingSettingsURL) }.buttonStyle(InkButtonStyle())
+                            }
+                            Toggle("", isOn: Binding(get: { settings.cloudMatchesBackdrop }, set: { on in
+                                settings.cloudMatchesBackdrop = on
+                                if on, !CGPreflightScreenCaptureAccess() { CGRequestScreenCaptureAccess() }
+                                screenGranted = CGPreflightScreenCaptureAccess()
+                            })).toggleStyle(.switch).labelsHidden()
+                        }
                     }
                     SettingsRow(label: "cloud position") {
                         Picker("", selection: $settings.cloudPosition) {
@@ -261,6 +285,7 @@ struct MainSettingsTab: View {
             }
             .padding(20)
         }
+        .onReceive(poll) { _ in screenGranted = CGPreflightScreenCaptureAccess() }
     }
 }
 
