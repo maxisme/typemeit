@@ -76,7 +76,8 @@ struct MenuContent: View {
             Text("Secure Input is on in another app. Fn is unavailable.")
             Divider()
         }
-        Button("Type Me It") { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) }.keyboardShortcut(",", modifiers: .command)
+        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(MenuContent.bold("Type Me It")) }
+            .keyboardShortcut(",", modifiers: .command)
         Divider()
         if Pipeline.shared.phase == .recording {
             Button("Stop Recording") { Pipeline.shared.shortcuts.stopFromMenu() }
@@ -105,10 +106,19 @@ struct MenuContent: View {
                 appState.settingsTab = .history
                 openWindow(id: "settings")
                 NSApp.activate(ignoringOtherApps: true)
-            } label: { Label { Text("**View All…**") } icon: { Image("akar-history") } }
+            } label: { Text(MenuContent.bold("View All…")) }
         }
         Divider()
         Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
+    }
+
+    /// Bold through an attributed string: the menu turns a font modifier
+    /// into nothing, but carries an attributed title across.
+    static func bold(_ text: String) -> AttributedString {
+        var title = AttributedString(text)
+        title.font = .body.bold()
+        title.inlinePresentationIntent = .stronglyEmphasized
+        return title
     }
 
     /// One line of the transcript, cut so the menu stays narrow.
