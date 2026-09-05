@@ -84,6 +84,16 @@ struct MenuContent: View {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// SwiftUI installs its own object as `NSApp.delegate` and forwards to
+    /// this one, so `NSApp.delegate as? AppDelegate` is always nil. Views
+    /// reach the delegate through here instead.
+    private(set) static var shared: AppDelegate?
+
+    override init() {
+        super.init()
+        AppDelegate.shared = self
+    }
+
     private var gateWindow: NSWindow?
     private var onboardingWindow: NSWindow?
     private var secureInputTimer: Timer?
