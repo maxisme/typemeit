@@ -101,11 +101,12 @@ struct MenuContent: View {
             }
         }
         if !recentTranscripts.isEmpty {
+            Divider()
             Button {
                 appState.settingsTab = .history
                 openWindow(id: "settings")
                 NSApp.activate(ignoringOtherApps: true)
-            } label: { Text("View All") }
+            } label: { Label("View All…", image: "akar-clock") }
         }
         Divider()
         Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
