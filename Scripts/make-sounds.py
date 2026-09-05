@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Generate the feedback cues in TypeMeIt/Resources. Run after changing anything here.
 
-start  an inhale: noise through two low formants over a pink bed, 230 ms
+start  an exhale: soft wind whose formant glides up as it fades, 620 ms
 pin    a dust pop: one click with a whisper of crackle behind it
-stop   a second, lingering inhale
-hum    a valve hum letting go, played once transcription is under way
+stop   a valve hum letting go
 """
 import math
 import struct
@@ -78,6 +77,28 @@ def dust_pop():
     return onepole(o, 3000)
 
 
+def exhale_rising(ms=520, seed=4, tail=3.2):
+    # the inhale mirrored: a fast onset, then the one formant glides up more
+    # than an octave as the breath decays
+    r = rng(seed)
+    n = [r() for _ in range(frames(ms))]
+    L = len(n)
+    for i in range(L):
+        t = i / L
+        n[i] *= smoother(t / 0.12) * math.exp(-max(0.0, t - 0.12) * tail)
+    res = math.exp(-math.pi * 160 / RATE)
+    y1 = y2 = 0.0
+    e = []
+    for j in range(L):
+        f = 180 * 2.2 ** (j / L)
+        c = 2 * res * math.cos(TAU * f / RATE)
+        y = n[j] * (1 - res) + c * y1 - res * res * y2
+        y2, y1 = y1, y
+        e.append(y)
+    low = onepole(n, 180)
+    return onepole([e[i] + 0.6 * low[i] for i in range(L)], 1600)
+
+
 def hum_off():
     n = frames(700)
     ph = 0.0
@@ -102,8 +123,7 @@ def write(path, samples, peak=PEAK):
         w.writeframes(bytes(data))
 
 
-write("TypeMeIt/Resources/pop_start.wav", inhale(230, 180, 700, 0.8, 4))
+write("TypeMeIt/Resources/pop_start.wav", exhale_rising(ms=620, tail=2.8), peak=0.2)
 write("TypeMeIt/Resources/pop_pin.wav", dust_pop())
-# the stop and the hum sit under the start and pin
-write("TypeMeIt/Resources/pop_stop.wav", inhale(230, 180, 700, 0.8, 4, tail=2.4), peak=0.28)
-write("TypeMeIt/Resources/pop_hum.wav", hum_off(), peak=0.28)
+# the stop sits under the start and pin
+write("TypeMeIt/Resources/pop_stop.wav", hum_off(), peak=0.28)

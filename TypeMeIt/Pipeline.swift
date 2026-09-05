@@ -50,6 +50,7 @@ final class Pipeline {
     }
 
     func start() {
+        Feedback.preload()
         if !shortcuts.install() {
             Log.app.error("Shortcuts not installed; Input Monitoring is missing")
         }
@@ -69,7 +70,7 @@ final class Pipeline {
         case .recordingStarted: beginRecording()
         case .pinned:
             pinned = true
-            if settings.audioFeedback { Feedback.play(.pin) }
+            if settings.audioFeedback { playWhileMuted(.pin) }
             if overlay.model.isRecording { overlay.show(.pinned) }
         case .recordingEnded: endRecording()
         case .cancelled: cancel()
@@ -77,9 +78,23 @@ final class Pipeline {
         }
     }
 
+    /// The output device is muted while recording, so a cue played then has
+    /// to lift the mute, sound, and put it back.
+    private func playWhileMuted(_ kind: Feedback.Kind) {
+        let gen = generation
+        let wasMuted = OutputMute.restore()
+        let wait = wasMuted ? 0.08 : 0
+        DispatchQueue.main.asyncAfter(deadline: .now() + wait) { Feedback.play(kind) }
+        guard wasMuted else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + wait + Feedback.duration(kind)) { [weak self] in
+            if self?.phase == .recording, self?.generation == gen { OutputMute.mute() }
+        }
+    }
+
     private func beginRecording() {
         guard phase == .idle else { return }
         generation += 1
+        let gen = generation
         phase = .recording
         pinned = false
         recordingStartedAt = Date()
@@ -88,7 +103,13 @@ final class Pipeline {
         ReadBack.shared.finishNow()
         shortcuts.setPhase(.recording)
         if settings.audioFeedback { Feedback.play(.start) }
-        if settings.muteWhileRecording { OutputMute.mute() }
+        if settings.muteWhileRecording {
+            // The mute is on the output device, so it would swallow the cue.
+            let wait = settings.audioFeedback ? Feedback.duration(.start) : 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + wait) { [weak self] in
+                if self?.phase == .recording, self?.generation == gen { OutputMute.mute() }
+            }
+        }
         do {
             try capture.start(uid: settings.microphoneUID)
         } catch {
@@ -121,8 +142,13 @@ final class Pipeline {
         let pcm = capture.stop()
         let duration = Double(pcm.count) / 16000
         let durationMs = Int(duration * 1000)
-        OutputMute.restore()
-        if settings.audioFeedback { Feedback.play(.stop) }
+        let wasMuted = OutputMute.restore()
+        if settings.audioFeedback {
+            // The device takes a moment to come back from mute; a cue played
+            // in the same instant is lost.
+            let wait = wasMuted ? 0.08 : 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + wait) { Feedback.play(.stop) }
+        }
 
         if duration < Fixed.minimumRecordingSeconds || AudioCapture.peak(pcm) < Fixed.silencePeak {
             Log.app.info("Empty recording discarded (\(duration) s)")
@@ -136,7 +162,6 @@ final class Pipeline {
         phase = .transcribing
         shortcuts.setPhase(.transcribing)
         if settings.overlayEnabled { overlay.show(.transcribing) }
-        if settings.audioFeedback { Feedback.playHumAfterStop() }
 
         Task { [weak self] in
             guard let self else { return }
