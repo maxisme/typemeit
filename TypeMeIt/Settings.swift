@@ -44,22 +44,14 @@ enum CloudPosition: String, Codable, CaseIterable, Sendable {
     var label: String { rawValue }
 }
 
-/// The recording cloud's colour: the appearance's white or dark grey, or one
-/// of a fixed palette.
+/// The recording cloud's colour when it does not follow the appearance.
 enum CloudColor: String, Codable, CaseIterable, Sendable {
-    case ink, coral, amber, lemon, mint, sky, lavender, rose
+    case coral, amber, lemon, mint, sky, lavender, rose
 
-    var label: String {
-        switch self {
-        case .ink: "auto"
-        default: rawValue
-        }
-    }
+    var label: String { rawValue }
 
-    /// The smoke's colour, or nil for `ink`, which follows the appearance.
-    var color: NSColor? {
+    var color: NSColor {
         switch self {
-        case .ink: nil
         case .coral: NSColor(srgbRed: 0.98, green: 0.49, blue: 0.40, alpha: 1)
         case .amber: NSColor(srgbRed: 0.98, green: 0.69, blue: 0.29, alpha: 1)
         case .lemon: NSColor(srgbRed: 0.96, green: 0.86, blue: 0.36, alpha: 1)
@@ -96,6 +88,8 @@ final class Settings {
     var launchAtLogin: Bool { didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin") } }
     var showDockIcon: Bool { didSet { defaults.set(showDockIcon, forKey: "showDockIcon") } }
     var appearance: Appearance { didSet { defaults.set(appearance.rawValue, forKey: "appearance") } }
+    /// Off, the cloud is white or dark grey with the appearance.
+    var cloudColorEnabled: Bool { didSet { defaults.set(cloudColorEnabled, forKey: "cloudColorEnabled") } }
     var cloudColor: CloudColor { didSet { defaults.set(cloudColor.rawValue, forKey: "cloudColor") } }
     var cloudPosition: CloudPosition { didSet { defaults.set(cloudPosition.rawValue, forKey: "cloudPosition") } }
     var onboardingComplete: Bool { didSet { defaults.set(onboardingComplete, forKey: "onboardingComplete") } }
@@ -121,7 +115,8 @@ final class Settings {
         launchAtLogin = bool("launchAtLogin", false)
         showDockIcon = bool("showDockIcon", true)
         appearance = Appearance(rawValue: d.string(forKey: "appearance") ?? "") ?? .system
-        cloudColor = CloudColor(rawValue: d.string(forKey: "cloudColor") ?? "") ?? .ink
+        cloudColorEnabled = bool("cloudColorEnabled", false)
+        cloudColor = CloudColor(rawValue: d.string(forKey: "cloudColor") ?? "") ?? .coral
         cloudPosition = CloudPosition(rawValue: d.string(forKey: "cloudPosition") ?? "") ?? .centre
         onboardingComplete = bool("onboardingComplete", false)
         undoneWords = d.stringArray(forKey: "undoneWords") ?? []

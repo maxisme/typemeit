@@ -196,6 +196,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// here so the setting can flip it without a relaunch.
     func applyDockIcon() {
         NSApp.setActivationPolicy(Settings.shared.showDockIcon ? .regular : .accessory)
+        // The Dock caches an icon per bundle path, so a rebuilt dev app can
+        // keep showing the release icon it had before; setting the running
+        // app's own icon sidesteps the cache.
+        if Updates.isDevBuild, let url = Bundle.main.url(forResource: "AppIcon-Dev", withExtension: "icns"), let icon = NSImage(contentsOf: url) {
+            NSApp.applicationIconImage = icon
+        }
     }
 
     /// Every window, the overlay panel included, takes the app's appearance,

@@ -67,7 +67,8 @@ struct CloudView: View {
     /// The chosen colour, or white or dark grey with the appearance; leaning
     /// a little towards green while the transcript is being cleaned up.
     private var tint: Color {
-        let base = Settings.shared.cloudColor.color ?? (scheme == .dark ? NSColor(white: 1, alpha: 1) : NSColor(white: 0.25, alpha: 1))
+        let settings = Settings.shared
+        let base = settings.cloudColorEnabled ? settings.cloudColor.color : (scheme == .dark ? NSColor(white: 1, alpha: 1) : NSColor(white: 0.25, alpha: 1))
         guard model.state == .cleaningUp else { return Color(nsColor: base) }
         let green = scheme == .dark ? NSColor(srgbRed: 0.55, green: 0.85, blue: 0.62, alpha: 1) : NSColor(srgbRed: 0.18, green: 0.45, blue: 0.28, alpha: 1)
         return Color(nsColor: base.blended(withFraction: 0.35, of: green) ?? base)

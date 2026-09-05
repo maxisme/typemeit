@@ -193,8 +193,13 @@ struct GeneralTab: View {
                         Toggle("", isOn: $settings.overlayEnabled).toggleStyle(.switch).labelsHidden()
                     }
                     if settings.overlayEnabled {
-                        SettingsRow(label: "cloud colour", subtitle: "auto is white or grey with the appearance") {
+                        SettingsRow(label: "cloud colour", subtitle: "off, it is white or grey with the appearance") {
+                            Toggle("", isOn: $settings.cloudColorEnabled).toggleStyle(.switch).labelsHidden()
+                        }
+                        if settings.cloudColorEnabled {
                             CloudColorPalette(selection: $settings.cloudColor)
+                                .padding(.horizontal, 12).padding(.vertical, 6)
+                            RowRule()
                         }
                         SettingsRow(label: "cloud position") {
                             Picker("", selection: $settings.cloudPosition) {
@@ -215,24 +220,23 @@ struct GeneralTab: View {
     }
 }
 
-/// A row of small breathing puffs, one in each colour; the chosen one sits
-/// in an ink ring.
+/// A full-width row of breathing puffs, one in each colour; the chosen one
+/// sits in an ink ring.
 struct CloudColorPalette: View {
     @Binding var selection: CloudColor
-    @Environment(\.colorScheme) private var scheme
 
     /// The cell each puff sits in, and the larger square it is drawn in, so
     /// the cloud fills the cell rather than resting a quarter of the way
     /// across it.
-    private static let side: CGFloat = 40
-    private static let drawn: CGFloat = 84
+    private static let side: CGFloat = 64
+    private static let drawn: CGFloat = 136
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 0) {
             ForEach(Array(CloudColor.allCases.enumerated()), id: \.element) { i, c in
                 let on = c == selection
                 Button { selection = c } label: {
-                    PuffView(tint: tint(c), breathPeriod: 4.2 + Double(i) * 0.37, breathFloor: 0.5)
+                    PuffView(tint: Color(nsColor: c.color), breathPeriod: 4.2 + Double(i) * 0.37, breathFloor: 0.5)
                         .frame(width: CloudColorPalette.drawn, height: CloudColorPalette.drawn)
                         .frame(width: CloudColorPalette.side, height: CloudColorPalette.side)
                         .clipShape(Circle())
@@ -243,13 +247,9 @@ struct CloudColorPalette: View {
                 .help(c.label)
                 .accessibilityLabel(c.label)
                 .accessibilityAddTraits(on ? .isSelected : [])
+                .frame(maxWidth: .infinity)
             }
         }
-    }
-
-    private func tint(_ c: CloudColor) -> Color {
-        if let color = c.color { return Color(nsColor: color) }
-        return scheme == .dark ? .white : Color(white: 0.25)
     }
 }
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Regenerates the menu bar glyph from puff.svg into two asset catalog layers,
 # menu_puff (the outline) and menu_puff_arcs (the inner arcs), which
-# MenuBarIcon.swift tints and composes at run time, plus menu_puff_dashed,
-# the outline drawn dashed, which the dev build wears instead.
+# MenuBarIcon.swift tints and composes at run time, plus the same two drawn
+# dashed, menu_puff_dashed and menu_puff_arcs_dashed, for the dev build.
 # Requires: rsvg-convert (librsvg), magick (ImageMagick 7), python3.
 #
 # Both layers are cropped by the same box, measured from the whole drawing, so
@@ -16,6 +16,7 @@ ASSETS="../../Resources/Assets.xcassets"
 OUT_OUTLINE="$ASSETS/menu_puff.imageset/outline.png"
 OUT_ARCS="$ASSETS/menu_puff_arcs.imageset/arcs.png"
 OUT_DASHED="$ASSETS/menu_puff_dashed.imageset/dashed.png"
+OUT_ARCS_DASHED="$ASSETS/menu_puff_arcs_dashed.imageset/arcs_dashed.png"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -32,8 +33,9 @@ head = src[:src.index("<g ")]
 groups = dict(re.findall(r'<g id="([a-z]+)">(.*?)</g>', src, re.S))
 for name, body in groups.items():
     open(f"{tmp}/{name}.svg", "w").write(head + body + "</svg>\n")
-dashed = head.replace('stroke-linecap="round"', 'stroke-linecap="butt" stroke-dasharray="5 3.2"')
+dashed = head.replace('stroke-linecap="round"', 'stroke-linecap="butt" stroke-dasharray="3.6 2.4"')
 open(f"{tmp}/dashed.svg", "w").write(dashed + groups["outline"] + "</svg>\n")
+open(f"{tmp}/arcs_dashed.svg", "w").write(dashed + groups["arcs"] + "</svg>\n")
 PY
 
 GLYPH_PX=$(python3 -c "print(round($CANVAS * $GLYPH_PT / $SLOT_PT))")
@@ -44,11 +46,12 @@ rsvg-convert -w 1024 -h 1024 puff.svg -o "$TMP/full.png"
 rsvg-convert -w 1024 -h 1024 "$TMP/outline.svg" -o "$TMP/outline.png"
 rsvg-convert -w 1024 -h 1024 "$TMP/arcs.svg" -o "$TMP/arcs.png"
 rsvg-convert -w 1024 -h 1024 "$TMP/dashed.svg" -o "$TMP/dashed.png"
+rsvg-convert -w 1024 -h 1024 "$TMP/arcs_dashed.svg" -o "$TMP/arcs_dashed.png"
 
 BOX="$(magick "$TMP/full.png" -format "%@" info:)"
 
-mkdir -p "$(dirname "$OUT_OUTLINE")" "$(dirname "$OUT_ARCS")" "$(dirname "$OUT_DASHED")"
-for pair in "outline.png:$OUT_OUTLINE" "arcs.png:$OUT_ARCS" "dashed.png:$OUT_DASHED"; do
+mkdir -p "$(dirname "$OUT_OUTLINE")" "$(dirname "$OUT_ARCS")" "$(dirname "$OUT_DASHED")" "$(dirname "$OUT_ARCS_DASHED")"
+for pair in "outline.png:$OUT_OUTLINE" "arcs.png:$OUT_ARCS" "dashed.png:$OUT_DASHED" "arcs_dashed.png:$OUT_ARCS_DASHED"; do
   # PNG32 explicitly: a single black shape on empty space would otherwise be
   # written as opaque greyscale and draw as a filled square.
   magick "$TMP/${pair%%:*}" -crop "$BOX" +repage -resize "x$GLYPH_PX" \
@@ -56,7 +59,7 @@ for pair in "outline.png:$OUT_OUTLINE" "arcs.png:$OUT_ARCS" "dashed.png:$OUT_DAS
     "PNG32:${pair#*:}"
 done
 
-for dir in "$(dirname "$OUT_OUTLINE")" "$(dirname "$OUT_ARCS")" "$(dirname "$OUT_DASHED")"; do
+for dir in "$(dirname "$OUT_OUTLINE")" "$(dirname "$OUT_ARCS")" "$(dirname "$OUT_DASHED")" "$(dirname "$OUT_ARCS_DASHED")"; do
   file="$(ls "$dir"/*.png | xargs -n1 basename)"
   cat > "$dir/Contents.json" <<JSON
 {
@@ -73,3 +76,4 @@ done
 echo "Wrote $(cd "$(dirname "$OUT_OUTLINE")" && pwd)/$(basename "$OUT_OUTLINE")"
 echo "Wrote $(cd "$(dirname "$OUT_ARCS")" && pwd)/$(basename "$OUT_ARCS")"
 echo "Wrote $(cd "$(dirname "$OUT_DASHED")" && pwd)/$(basename "$OUT_DASHED")"
+echo "Wrote $(cd "$(dirname "$OUT_ARCS_DASHED")" && pwd)/$(basename "$OUT_ARCS_DASHED")"
