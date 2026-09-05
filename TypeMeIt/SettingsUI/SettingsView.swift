@@ -1,13 +1,12 @@
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case insights, general, text, history
+    case insights, settings, history
 
     var icon: String {
         switch self {
         case .insights: "akar-statistic-up"
-        case .general: "akar-microphone"
-        case .text: "akar-text-align-left"
+        case .settings: "akar-gear"
         case .history: "akar-clock"
         }
     }
@@ -42,8 +41,7 @@ struct SettingsView: View {
         } detail: {
             Group {
                 switch tab ?? .insights {
-                case .general: GeneralTab()
-                case .text: TextTab()
+                case .settings: MainSettingsTab()
                 case .history: HistoryTab()
                 case .insights: InsightsTab()
                 }
@@ -158,10 +156,11 @@ struct SettingsRow<Control: View>: View {
     }
 }
 
-struct GeneralTab: View {
+struct MainSettingsTab: View {
     @State private var settings = Settings.shared
     @State private var updates = Updates.shared
     @State private var devices = AudioCapture.inputDevices()
+    @State private var newWord = ""
 
     var body: some View {
         ScrollView {
@@ -171,7 +170,7 @@ struct GeneralTab: View {
                     SettingsRow(label: "pin", subtitle: "fn again to finish") { Keycap("space") }
                     SettingsRow(label: "cancel", last: true) { Keycap("esc") }
                 }
-                SettingsGroup(title: "audio") {
+                SettingsGroup(title: "microphone") {
                     SettingsRow(label: "microphone") {
                         Picker("", selection: Binding(get: { settings.microphoneUID ?? "" }, set: { settings.microphoneUID = $0.isEmpty ? nil : $0; Pipeline.shared.applyMicrophoneSettings() })) {
                             Text("system default").tag("")
@@ -187,8 +186,8 @@ struct GeneralTab: View {
                         Toggle("", isOn: $settings.muteWhileRecording).toggleStyle(.switch).labelsHidden()
                     }
                 }
-                SettingsGroup(title: "feedback") {
-                    SettingsRow(label: "recording cloud") {
+                SettingsGroup(title: "cloud") {
+                    SettingsRow(label: "show the cloud while recording", subtitle: "the puff at the bottom of the screen") {
                         Toggle("", isOn: $settings.overlayEnabled).toggleStyle(.switch).labelsHidden()
                     }
                     if settings.overlayEnabled {
@@ -211,6 +210,54 @@ struct GeneralTab: View {
                     }
                     SettingsRow(label: "offer to copy when nothing is focused", last: true) {
                         Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
+                    }
+                }
+                SettingsGroup(title: "text") {
+                    SettingsRow(label: "clean up with apple intelligence", subtitle: "on device") {
+                        Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "learn from my corrections", last: true) {
+                        Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
+                    }
+                }
+                SettingsGroup(title: "custom words") {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if !settings.customWords.isEmpty {
+                            FlowLayout(spacing: 6) {
+                                ForEach(settings.customWords, id: \.self) { word in
+                                    HStack(spacing: 5) {
+                                        Text(word).font(.system(size: 12))
+                                        Button { settings.removeCustomWord(word) } label: {
+                                            Image("akar-cross").resizable().frame(width: 8, height: 8)
+                                        }.buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
+                                    }
+                                    .padding(.leading, 9).padding(.trailing, 6)
+                                    .frame(height: 22)
+                                    .background(Capsule().fill(DesignTokens.Colors.inkA08))
+                                }
+                            }
+                            .padding(.horizontal, 12).padding(.vertical, 10)
+                            RowRule()
+                        }
+                        TextField("add a word", text: $newWord)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { settings.addCustomWord(newWord); newWord = "" }
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                    }
+                }
+                SettingsGroup(title: "paste") {
+                    SettingsRow(label: "space after paste") {
+                        Toggle("", isOn: $settings.appendTrailingSpace).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "key after paste", last: !settings.autoSubmit) {
+                        Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
+                    }
+                    if settings.autoSubmit {
+                        SettingsRow(label: "key", last: true) {
+                            Picker("", selection: $settings.autoSubmitKey) {
+                                ForEach(AutoSubmitKey.allCases, id: \.self) { Text($0.label).tag($0) }
+                            }.labelsHidden().fixedSize()
+                        }
                     }
                 }
                 SettingsGroup(title: "app") {
@@ -289,69 +336,6 @@ struct Keycap: View {
             .frame(height: 22)
             .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).fill(DesignTokens.Colors.paperRaised))
             .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(DesignTokens.Colors.inkA20, lineWidth: 0.5))
-    }
-}
-
-struct TextTab: View {
-    @State private var settings = Settings.shared
-    @State private var newWord = ""
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                SettingsGroup {
-                    SettingsRow(label: "clean up with apple intelligence", subtitle: "on device", last: true) {
-                        Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
-                    }
-                }
-                SettingsGroup {
-                    SettingsRow(label: "learn from my corrections", last: true) {
-                        Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
-                    }
-                }
-                SettingsGroup(title: "custom words") {
-                    VStack(alignment: .leading, spacing: 0) {
-                        if !settings.customWords.isEmpty {
-                            FlowLayout(spacing: 6) {
-                                ForEach(settings.customWords, id: \.self) { word in
-                                    HStack(spacing: 5) {
-                                        Text(word).font(.system(size: 12))
-                                        Button { settings.removeCustomWord(word) } label: {
-                                            Image("akar-cross").resizable().frame(width: 8, height: 8)
-                                        }.buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
-                                    }
-                                    .padding(.leading, 9).padding(.trailing, 6)
-                                    .frame(height: 22)
-                                    .background(Capsule().fill(DesignTokens.Colors.inkA08))
-                                }
-                            }
-                            .padding(.horizontal, 12).padding(.vertical, 10)
-                            RowRule()
-                        }
-                        TextField("add a word", text: $newWord)
-                            .textFieldStyle(.roundedBorder)
-                            .onSubmit { settings.addCustomWord(newWord); newWord = "" }
-                        .padding(.horizontal, 12).padding(.vertical, 8)
-                    }
-                }
-                SettingsGroup(title: "paste") {
-                    SettingsRow(label: "space after paste") {
-                        Toggle("", isOn: $settings.appendTrailingSpace).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "key after paste", last: !settings.autoSubmit) {
-                        Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
-                    }
-                    if settings.autoSubmit {
-                        SettingsRow(label: "key", last: true) {
-                            Picker("", selection: $settings.autoSubmitKey) {
-                                ForEach(AutoSubmitKey.allCases, id: \.self) { Text($0.label).tag($0) }
-                            }.labelsHidden().fixedSize()
-                        }
-                    }
-                }
-            }
-            .padding(20)
-        }
     }
 }
 

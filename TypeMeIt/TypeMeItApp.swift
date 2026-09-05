@@ -100,7 +100,7 @@ struct MenuContent: View {
                 appState.settingsTab = .history
                 openWindow(id: "settings")
                 NSApp.activate(ignoringOtherApps: true)
-            } label: { Text("View All").bold() }
+            } label: { Text("**View All**") }
         }
         Divider()
         Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
