@@ -76,7 +76,7 @@ struct MenuContent: View {
             Text("Secure Input is on in another app. Fn is unavailable.")
             Divider()
         }
-        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(MenuContent.bold("Type Me It")) }
+        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(MenuContent.bold("Open Type Me It")) }
             .keyboardShortcut(",", modifiers: .command)
         Divider()
         if Pipeline.shared.phase == .recording {
