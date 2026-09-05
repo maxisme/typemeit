@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Borderless, non-activating panel at the bottom centre of the screen with
-/// the mouse, or against its left or right edge halfway up. The transparent 340 x 200 window sits on the bottom edge of
+/// the mouse, or against its left or right edge halfway up. The transparent 460 x 260 window sits on the bottom edge of
 /// the visible screen, so the cloud has room to swell and the pill can
 /// change width and cast a shadow without the window resizing.
 @MainActor
@@ -10,7 +10,7 @@ final class OverlayPanel {
     let model = OverlayModel()
     private let panel: NSPanel
 
-    static let size = NSSize(width: 360, height: 260)
+    static let size = NSSize(width: 460, height: 260)
     /// How far the cloud's centre sits in from the screen edge at a side.
     static let sideInset: CGFloat = 56
 
