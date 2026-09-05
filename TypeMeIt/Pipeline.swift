@@ -150,7 +150,9 @@ final class Pipeline {
             DispatchQueue.main.asyncAfter(deadline: .now() + wait) { Feedback.play(.stop) }
         }
 
-        if duration < Fixed.minimumRecordingSeconds || AudioCapture.peak(pcm) < Fixed.silencePeak {
+        let discarded = duration < Fixed.minimumRecordingSeconds || AudioCapture.peak(pcm) < Fixed.silencePeak
+        RecordingArchive.save(pcm, recordedAt: recordingStartedAt ?? Date(), note: discarded ? "discarded" : nil)
+        if discarded {
             Log.app.info("Empty recording discarded (\(duration) s)")
             phase = .idle
             shortcuts.setPhase(.idle)
