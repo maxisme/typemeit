@@ -11,7 +11,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono&display=swap" rel="stylesheet">
 <style>
-  html, body { margin: 0; height: 100%; background: #0e0e0e; overflow: hidden; }
+  :root { --paper: #0e0e0e; --ink: #f0f0f0; }
+  html, body { margin: 0; height: 100%; background: var(--paper); overflow: hidden; }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
   #err {
     position: fixed; left: 16px; top: 16px; margin: 0; padding: 12px;
@@ -33,7 +34,7 @@
     margin: -90px 0 0 -90px; padding: 0; border: 0; border-radius: 50%;
     background: none; cursor: default; text-indent: -9999px; overflow: hidden;
   }
-  #download:focus-visible { outline: 2px solid #f0f0f0; outline-offset: 8px; }
+  #download:focus-visible { outline: 2px solid var(--ink); outline-offset: 8px; }
 
   /* Design-system note text: DM Mono, lowercase, ink-3 on paper, no surface. */
   #notmac {
@@ -43,21 +44,10 @@
   }
   #notmac:empty { display: none; }
 
-  /* Design-system link: inherits the note colour, hairline underline that
-     darkens on hover. Pinned to the bottom so it never sits in the puff. */
-  #hello {
-    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-    font: 12px/1.4 "DM Mono", ui-monospace, Menlo, monospace; color: #8a8a8a;
-    text-decoration: underline; text-decoration-thickness: 1px;
-    text-underline-offset: 0.18em; text-decoration-color: rgba(240, 240, 240, 0.32);
-    transition: text-decoration-color 120ms ease-out;
-  }
-  #hello:hover { text-decoration-color: currentColor; }
-  #hello:focus-visible { outline: 2px solid #f0f0f0; outline-offset: 4px; }
-
   /* The page has nothing to scroll to, so a scroll is a request for more.
      The links sit at the bottom, invisible until the first wheel, swipe or
-     scroll key, then fade in and stay. Same face and colour as #notmac. */
+     scroll key, then fade in and stay. Same face and colour as #notmac.
+     The email is plain text, not a mailto link. */
   #more {
     position: fixed; left: 0; right: 0; bottom: 20px;
     margin: 0; padding: 0; list-style: none;
@@ -68,8 +58,8 @@
   }
   #more.shown, #more:focus-within { opacity: 1; }
   #more a { color: inherit; text-decoration: none; }
-  #more a:hover { color: #f0f0f0; }
-  #more a:focus-visible { outline: 2px solid #f0f0f0; outline-offset: 4px; border-radius: 5px; }
+  #more a:hover { color: var(--ink); }
+  #more a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 5px; }
   @media (prefers-reduced-motion: reduce) { #more { transition: none; } }
 </style>
 </head>
@@ -78,11 +68,11 @@
 <button id="download" type="button">Download Type Me It for macOS</button>
 <p id="notmac" role="status" aria-live="polite"></p>
 <pre id="err"></pre>
-<a id="hello" href="mailto:hello@typeme.it">hello@typeme.it</a>
 <ul id="more">
   <li><a href="terms.html">terms</a></li>
   <li><a href="privacy.html">privacy</a></li>
   <li><a href="https://github.com/maxisme/typemeit">github</a></li>
+  <li>hello@typeme.it</li>
 </ul>
 
 <!-- Generated from TypeMeIt/Overlay/Puff.metal by web/generate.py. -->
@@ -197,29 +187,54 @@ class Dynamics {
 
 // Pointer: the puff stays in the middle of the page; the pointer's speed is
 // the level, so a flick of the mouse is a syllable, and a click is a shout.
-const pointer = { x: innerWidth / 2, y: innerHeight / 2, t: performance.now(), speed: 0, pressed: 0 };
+// The raw speed is heavily smoothed and then eased into the level, so the puff
+// swells behind the cursor rather than twitching with every event.
+const pointer = { x: innerWidth / 2, y: innerHeight / 2, t: performance.now(), speed: 0, level: 0, pressed: 0 };
+const POINTER = { speedBlend: 0.12, speedFull: 3200, rest: 0.6, attack: 0.35, release: 0.9 };
 addEventListener("pointermove", (ev) => {
   const now = performance.now();
   const dt = Math.max((now - pointer.t) / 1000, 1 / 240);
   const d = Math.hypot(ev.clientX - pointer.x, ev.clientY - pointer.y);
-  pointer.speed = pointer.speed * 0.6 + (d / dt) * 0.4;
+  pointer.speed += ((d / dt) - pointer.speed) * POINTER.speedBlend;
   pointer.x = ev.clientX; pointer.y = ev.clientY; pointer.t = now;
 });
 addEventListener("pointerdown", (ev) => {
   pointer.pressed = performance.now();
-  // A click on the puff itself flushes it red; elsewhere it only kicks the level.
+  // A click on the puff itself flushes it red; a click on empty page inverts
+  // the page. The links at the bottom do neither.
   const d = Math.hypot(ev.clientX - innerWidth / 2, ev.clientY - innerHeight / 2);
   if (d < VIEW / 2) blush = performance.now();
+  else if (ev.target === canvas || ev.target === document.body) inverted = performance.now();
 });
 
-// Red tint from the last click on the puff, easing back to white over BLUSH seconds.
+// A click on the puff flushes it red, easing back over BLUSH seconds. A click
+// on empty page inverts it: white paper, black cloud, easing back to the dark
+// page over INVERT seconds. The smoke tint is the product of the two, and the
+// CSS paper/ink colours follow the inversion curve.
 const BLUSH = 4.0;
 const BLUSH_TINT = [1.0, 0.25, 0.22];
+const INVERT = 4.0;
+const DARK = { paper: [14, 14, 14], ink: [240, 240, 240], tint: [1.0, 1.0, 1.0] };
+const LIGHT = { paper: [240, 240, 240], ink: [14, 14, 14], tint: [0.08, 0.08, 0.08] };
 let blush = -Infinity;
+let inverted = -Infinity;
+let lastAmount = -1;
+function mix(a, b, t) { return a.map((c, i) => c + (b[i] - c) * t); }
+function ease(since, nowMs, seconds) {
+  const k = Math.max(0, 1 - (nowMs - since) / (seconds * 1000));
+  return k * k * (3 - 2 * k);
+}
 function tint(nowMs) {
-  const k = Math.max(0, 1 - (nowMs - blush) / (BLUSH * 1000));
-  const amount = k * k * (3 - 2 * k);
-  return BLUSH_TINT.map((c) => 1 + (c - 1) * amount);
+  const amount = ease(inverted, nowMs, INVERT);
+  if (amount !== lastAmount) {
+    lastAmount = amount;
+    const rgb = (c) => `rgb(${c.map(Math.round).join(" ")})`;
+    document.documentElement.style.setProperty("--paper", rgb(mix(DARK.paper, LIGHT.paper, amount)));
+    document.documentElement.style.setProperty("--ink", rgb(mix(DARK.ink, LIGHT.ink, amount)));
+  }
+  const red = mix([1, 1, 1], BLUSH_TINT, ease(blush, nowMs, BLUSH));
+  const base = mix(DARK.tint, LIGHT.tint, amount);
+  return base.map((c, i) => c * red[i]);
 }
 
 const canvas = document.getElementById("c");
@@ -275,10 +290,14 @@ function frame(nowMs) {
   const dt = Math.min((nowMs - lastFrame) / 1000, 0.1);
   lastFrame = nowMs;
 
-  // Speed decays once the pointer rests.
-  if (nowMs - pointer.t > 40) pointer.speed *= Math.exp(-dt / 0.08);
-  let level = Math.min(1, pointer.speed / 1800);
-  if (nowMs - pointer.pressed < 90) level = 1;
+  // Speed decays once the pointer rests, and the level follows it with a
+  // slow attack and slower release.
+  if (nowMs - pointer.t > 40) pointer.speed *= Math.exp(-dt / POINTER.rest);
+  let target = Math.min(1, pointer.speed / POINTER.speedFull);
+  if (nowMs - pointer.pressed < 90) target = 1;
+  const tau = target > pointer.level ? POINTER.attack : POINTER.release;
+  pointer.level += (target - pointer.level) * (1 - Math.exp(-dt / tau));
+  const level = pointer.level;
 
   const s = reduceMotion
     ? { expansion: 0.5, trail: 0.5, flow: 0 }
