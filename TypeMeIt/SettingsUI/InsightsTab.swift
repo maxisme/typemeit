@@ -2,6 +2,7 @@ import SwiftUI
 
 struct InsightsTab: View {
     @State private var store = Store.shared
+    @State private var whereHeight: CGFloat = 0
 
     private var stats: InsightsStats {
         Insights.compute(store.history.map {
@@ -30,9 +31,14 @@ struct InsightsTab: View {
                     statCard("fixes", (s.dictionaryFixes + s.postProcessFixes).formatted(),
                              "\(s.dictionaryFixes.formatted()) words · \(s.postProcessFixes.formatted()) clean-ups")
                 }
+                .fixedSize(horizontal: false, vertical: true)
                 HStack(alignment: .top, spacing: 12) {
-                    SettingsGroup(title: "where") { categories(s) }.frame(maxWidth: .infinity)
-                    SettingsGroup(title: "apps · \(s.totalApps)") { topApps(s) }.frame(width: 240)
+                    SettingsGroup(title: "where") { categories(s) }
+                        .frame(maxWidth: .infinity)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { whereHeight = $0 }
+                    SettingsGroup(title: "apps · \(s.totalApps)") { topApps(s) }
+                        .frame(width: 240)
+                        .frame(height: whereHeight > 0 ? whereHeight : nil, alignment: .top)
                 }
                 SettingsGroup(title: s.currentStreak > 0 ? "\(s.currentStreak) day streak · longest \(s.longestStreak)" : "streak · longest \(s.longestStreak)") {
                     calendar(s)
@@ -60,7 +66,7 @@ struct InsightsTab: View {
             Text(caption).font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2)
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .overlay(Rectangle().strokeBorder(DesignTokens.Colors.ink, lineWidth: DesignTokens.hairline))
     }
 
@@ -83,7 +89,7 @@ struct InsightsTab: View {
             HStack { Text("typing 40"); Spacer(); Text("you \(Int(wpm.rounded()))") }.font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink3)
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .overlay(Rectangle().strokeBorder(DesignTokens.Colors.ink, lineWidth: DesignTokens.hairline))
     }
 
@@ -94,12 +100,18 @@ struct InsightsTab: View {
                 Text("nothing yet").font(.system(size: 12)).foregroundStyle(DesignTokens.Colors.ink2)
             } else {
                 GeometryReader { geo in
+                    let shown = s.categories.filter { $0.dictations > 0 }
+                    let usable = geo.size.width - 2 * CGFloat(max(0, shown.count - 1))
                     HStack(spacing: 2) {
                         ForEach(Array(s.categories.enumerated()), id: \.element.category) { i, c in
-                            Rectangle().fill(InsightsTab.tone(i))
-                                .frame(width: max(2, geo.size.width * CGFloat(c.dictations) / CGFloat(total)))
+                            if c.dictations > 0 {
+                                Rectangle().fill(InsightsTab.tone(i))
+                                    .frame(width: usable * CGFloat(c.dictations) / CGFloat(total))
+                            }
                         }
                     }
+                    .frame(width: geo.size.width, alignment: .leading)
+                    .clipped()
                 }
                 .frame(height: 10)
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 6) {
@@ -118,19 +130,22 @@ struct InsightsTab: View {
     }
 
     private func topApps(_ s: InsightsStats) -> some View {
-        VStack(spacing: 0) {
-            if s.topApps.isEmpty { Text("nothing yet").font(.system(size: 12)).foregroundStyle(DesignTokens.Colors.ink2).padding(.vertical, 8) }
-            ForEach(Array(s.topApps.enumerated()), id: \.element.name) { i, a in
-                HStack {
-                    Text(a.name.lowercased()).font(.system(size: 12)).lineLimit(1)
-                    Spacer()
-                    Text("\(a.words.formatted()) words").font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+        ScrollView(.vertical) {
+            VStack(spacing: 0) {
+                if s.topApps.isEmpty { Text("nothing yet").font(.system(size: 12)).foregroundStyle(DesignTokens.Colors.ink2).padding(.vertical, 8) }
+                ForEach(s.topApps, id: \.name) { a in
+                    HStack {
+                        Text(a.name.lowercased()).font(.system(size: 12)).lineLimit(1)
+                        Spacer()
+                        Text("\(a.words.formatted()) words").font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+                    }
+                    .padding(.vertical, 5)
                 }
-                .padding(.vertical, 5)
-                if i < s.topApps.count - 1 { RowRule() }
             }
+            .padding(.horizontal, 14).padding(.vertical, 8)
         }
-        .padding(.horizontal, 14).padding(.vertical, 8)
+        .scrollIndicators(.never)
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     private func calendar(_ s: InsightsStats) -> some View {
@@ -141,7 +156,7 @@ struct InsightsTab: View {
         let start = cal.date(byAdding: .day, value: -(weeks * 7 - 1), to: today)!
         let maxCount = max(1, s.activity.map(\.dictations).max() ?? 1)
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
-        return VStack(alignment: .leading, spacing: 8) {
+        return HStack(alignment: .bottom, spacing: 12) {
             HStack(spacing: 3) {
                 ForEach(0..<weeks, id: \.self) { w in
                     VStack(spacing: 3) {
@@ -155,8 +170,8 @@ struct InsightsTab: View {
                     }
                 }
             }
+            Spacer()
             HStack(spacing: 4) {
-                Spacer()
                 Text("less").font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink3)
                 ForEach([0.08, 0.3, 0.55, 0.8, 1.0], id: \.self) { o in Rectangle().fill(DesignTokens.Colors.ink.opacity(o)).frame(width: 9, height: 9) }
                 Text("more").font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink3)
