@@ -48,14 +48,19 @@
     position: fixed; left: 50%; top: 50%; width: 180px; height: 180px;
     margin: -90px 0 0 -90px; padding: 0; border: 0; border-radius: 50%;
     background: none; cursor: default; text-indent: -9999px; overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
   }
   @media (hover: hover) and (pointer: fine) { #download { cursor: pointer; } }
+  /* Keyboard focus draws a ring around the cloud; a click never should. The
+     script also keeps the pointer from focusing the button at all, for the
+     browsers that treat a click as focus-visible. */
   #download:focus-visible { outline: 2px solid var(--ink); outline-offset: 8px; }
+  #download:focus:not(:focus-visible) { outline: none; }
 
   /* Design-system note text: DM Mono, lowercase, ink-3 on paper, no surface. */
   #notmac {
     position: fixed; left: 50%; top: calc(50% + 120px); transform: translateX(-50%);
-    margin: 0; font: 12px/1.4 "DM Mono", ui-monospace, Menlo, monospace;
+    margin: 0; font: 10px/1.4 "DM Mono", ui-monospace, Menlo, monospace;
     color: #8a8a8a; text-align: center; white-space: nowrap;
   }
   #notmac:empty { display: none; }
@@ -114,9 +119,15 @@ async function versionedDMG() {
   if (!asset) throw new Error("no versioned dmg");
   return asset.browser_download_url;
 }
+// Pressing the button with a pointer must not focus it: the focus ring is a
+// big circle around the puff, and it has no business showing up on a click.
+// Cancelling the default of the mouse press stops the focus without stopping
+// the click, so the keyboard still tabs to it and still gets the ring. Only
+// mousedown: cancelling a touch press can swallow the tap.
+document.getElementById("download").addEventListener("mousedown", (ev) => ev.preventDefault());
 document.getElementById("download").addEventListener("click", async () => {
   if (!isMac()) {
-    document.getElementById("notmac").textContent = "Type Me It is macos only.";
+    document.getElementById("notmac").textContent = "type me it is for macos only";
     return;
   }
   location.href = await versionedDMG().catch(() => DMG);
