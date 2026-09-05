@@ -17,14 +17,17 @@ struct PuffView: View {
     var tint: Color = .white
     /// Length of one autonomous inhale + exhale, in seconds.
     var breathPeriod: Double = 4.2
+    /// When set, the puff renders this instant of its texture and does not
+    /// animate. For stills such as the app icon.
+    var frozenTime: Double? = nil
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     @State private var dynamics = Dynamics()
     @State private var trail = Trail()
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion)) { ctx in
-            let now = ctx.date.timeIntervalSinceReferenceDate
+        TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion || frozenTime != nil)) { ctx in
+            let now = frozenTime ?? ctx.date.timeIntervalSinceReferenceDate
             let t = reduceMotion ? 0 : now.truncatingRemainder(dividingBy: 3600)
             let s = state(at: now)
             Color.white
