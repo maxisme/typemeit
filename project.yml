@@ -15,6 +15,12 @@ settings:
     ARCHS: arm64
     ONLY_ACTIVE_ARCH: YES
     ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # The release scripts override both from the tag. They are build settings
+    # rather than literals in the Info.plist because Sparkle compares
+    # CFBundleVersion to decide whether an update is newer: baked as "1", every
+    # release looks like the same build and no update is ever offered.
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
 packages:
   TranscribeCpp:
     path: Packages/TranscribeCpp
@@ -42,8 +48,8 @@ targets:
       properties:
         CFBundleDisplayName: TypeMeIt
         CFBundleName: TypeMeIt
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIconFile: AppIcon
         LSMinimumSystemVersion: "26.0"
         NSMicrophoneUsageDescription: "Type Me It records your voice while you hold the Fn key so it can transcribe it."
