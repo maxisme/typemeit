@@ -20,6 +20,7 @@ struct PuffView: View {
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     @State private var dynamics = Dynamics()
+    @State private var trail = Trail()
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion)) { ctx in
@@ -32,6 +33,7 @@ struct PuffView: View {
                         .float2(proxy.size),
                         .float(Float(t)),
                         .float(Float(s.expansion)),
+                        .float(Float(s.trail)),
                         .float(Float(s.flow)),
                         .color(tint)))
                 }
@@ -41,19 +43,42 @@ struct PuffView: View {
     /// What the shader needs for one frame.
     struct Frame {
         var expansion: Double
+        /// The expansion the puff is retreating from; fragments are left
+        /// between the two radii. Equal to `expansion` when not retreating.
+        var trail: Double
         var flow: Double
     }
 
     private func state(at now: TimeInterval) -> Frame {
         let t = now.truncatingRemainder(dividingBy: 3600)
-        if let expansion { return Frame(expansion: expansion, flow: PuffView.idleFlow(at: t, expansion: expansion)) }
+        if let expansion { return Frame(expansion: expansion, trail: expansion, flow: PuffView.idleFlow(at: t, expansion: expansion)) }
         if let level {
-            if reduceMotion { return Frame(expansion: Dynamics.restExpansion(forLevel: Double(level)), flow: 0) }
+            if reduceMotion {
+                let e = Dynamics.restExpansion(forLevel: Double(level))
+                return Frame(expansion: e, trail: e, flow: 0)
+            }
             return dynamics.step(level: Double(level), at: now)
         }
-        if reduceMotion { return Frame(expansion: 0.7, flow: 0) }
+        if reduceMotion { return Frame(expansion: 0.7, trail: 0.7, flow: 0) }
         let e = PuffView.breath(at: t, period: breathPeriod)
-        return Frame(expansion: e, flow: PuffView.idleFlow(at: t, expansion: e))
+        return Frame(expansion: e, trail: trail.step(expansion: e, at: now), flow: PuffView.idleFlow(at: t, expansion: e))
+    }
+
+    /// Peak-hold on the expansion with a slow decay, so a retreat leaves a
+    /// trail behind for a second or two. A reference type so the timeline
+    /// closure can update it without triggering a view update.
+    final class Trail {
+        private var value = 0.0
+        private var lastTime: TimeInterval?
+
+        func step(expansion: Double, at now: TimeInterval) -> Double {
+            defer { lastTime = now }
+            guard let lastTime else { value = expansion; return value }
+            let dt = min(max(now - lastTime, 0), 0.1)
+            value += (expansion - value) * (1 - exp(-dt / 1.4))
+            value = max(value, expansion)
+            return value
+        }
     }
 
     /// Slow constant drift plus a term that follows expansion, for the fixed
@@ -82,6 +107,7 @@ struct PuffView: View {
         private var v = 0.0
         private var flow = 0.0
         private var lastTime: TimeInterval?
+        private let trail = Trail()
 
         /// Resting size for a given slow average level.
         nonisolated static func restExpansion(forLevel level: Double) -> Double {
@@ -90,7 +116,10 @@ struct PuffView: View {
 
         func step(level: Double, at now: TimeInterval) -> Frame {
             defer { lastTime = now }
-            guard let lastTime else { return Frame(expansion: Dynamics.restExpansion(forLevel: level), flow: flow) }
+            guard let lastTime else {
+                let e = Dynamics.restExpansion(forLevel: level)
+                return Frame(expansion: e, trail: trail.step(expansion: e, at: now), flow: flow)
+            }
             let dt = min(max(now - lastTime, 0), 0.1)
 
             fast += (level - fast) * (1 - exp(-dt / 0.025))
@@ -108,7 +137,7 @@ struct PuffView: View {
 
             let e = min(1, max(0.05, Dynamics.restExpansion(forLevel: slow) + 0.4 * x))
             flow += dt * (0.08 + 1.2 * max(0, v))
-            return Frame(expansion: e, flow: flow)
+            return Frame(expansion: e, trail: trail.step(expansion: e, at: now), flow: flow)
         }
     }
 

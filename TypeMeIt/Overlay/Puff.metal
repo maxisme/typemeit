@@ -159,16 +159,14 @@ static float flowGrain(float2 uv, float flow, float time, float R) {
     return 0.5 + 0.5 * g / sqrt(wsq);
 }
 
-// Smoke density, 0...~1.4: the shape carved by advected fractal noise, then
-// thinned with distance from the centre so the rim is translucent wisps.
-static float field(float2 uv, float time, float e, float flow) {
+// Smoke density of the body, 0...~1.4: the shape carved by the advected
+// noise `n`, then thinned with distance from the centre so the rim is
+// translucent wisps.
+static float field(float2 uv, float time, float e, float n) {
     float R = radius(e);
     float d2 = dot(uv, uv) / (R * R);
     // Dense lobed core plus a wide, thin haze that reaches the full radius.
     float mass = shape(uv, time, e) + 0.42 * exp(-1.1 * d2);
-    // The noise is scaled by a fixed mid radius, not the current one, so a
-    // change of size moves smoke through the field instead of zooming it.
-    float n = flowNoise(uv, flow, time, radius(0.5));
 
     // Noise bites hardest where the mass is thin, so the rim is carved into
     // wisps while the centre stays solid.
@@ -181,23 +179,54 @@ static float field(float2 uv, float time, float e, float flow) {
     return max(0.0, density - 0.12);
 }
 
+// Fragments left behind when the puff retracts: the body's own density as it
+// was at the size it is retreating from (`trail`), kept only outside the
+// current body, and only where a slow low-frequency mask and the densest
+// clumps of the advected noise coincide. So they are bits of the larger
+// cloud left inside its old footprint, and they fade as the trail catches up.
+static float orphans(float2 uv, float time, float e, float trail, float n) {
+    float gap = trail - e;
+    if (gap <= 0.005) { return 0.0; }
+    float Re = radius(e);
+    float d = length(uv);
+    float was = field(uv, time, trail, n);
+    float outside = smoothstep(Re * 1.05, Re * 1.5, d);
+    float mask = smoothstep(0.6, 0.88, 0.5 + 0.5 * snoise(float3(uv * (1.1 / radius(0.5)) + 7.0, time * 0.06)));
+    float clumps = n * n * n;
+    return 0.6 * was * outside * mask * clumps * saturate(gap * 4.0);
+}
+
+// Fixed amount of smoke: opacity falls with the area it is spread over, so
+// the small puff is dense and the expanded one is the same smoke spread thin.
+static float conserve(float e) {
+    return clamp(pow(radius(0.35) / radius(e), 2.0), 0.12, 3.0);
+}
+
 } // namespace smoke
 
 /// position, color: supplied by SwiftUI.
 /// size: the view's size in points.
 /// time: seconds, any origin.
 /// expansion: 0 = fully retracted wisp, 1 = fully expanded cloud.
+/// trail: the expansion the puff is retreating from, >= expansion. Fragments
+///        are left in the shell between the two; equal means none.
 /// flow: outward drift phase; one unit doubles the distance of every feature.
 ///       Increase it to stream smoke outwards, hold it to let it hang.
 /// tint: colour of the smoke; alpha scales overall opacity.
-[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float flow, half4 tint) {
+[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, half4 tint) {
     using namespace smoke;
 
     float scale = min(size.x, size.y);
     float2 uv = (position - 0.5 * size) / scale;
     float e = saturate(expansion);
+    float tr = max(e, saturate(trail));
 
-    float f = field(uv, time, e, flow);
+    // The noise is scaled by a fixed mid radius, not the current one, so a
+    // change of size moves smoke through the field instead of zooming it.
+    float n = flowNoise(uv, flow, time, radius(0.5));
+    float body = field(uv, time, e, n);
+    float left = orphans(uv, time, e, tr, n);
+    float f = body + left;
     if (f <= 0.0) { return half4(0.0); }
 
     // Light the coarse shape from the upper left: each lobe gets a bright
@@ -214,11 +243,10 @@ static float field(float2 uv, float time, float e, float flow) {
     // Fine grain, one high octave at low weight, drifting with the flow.
     float grain = flowGrain(uv, flow, time, radius(0.5));
 
-    // Beer-Lambert style opacity: dense centre, soft translucent edges. There
-    // is a fixed amount of smoke: opacity falls with the puff's area, so the
-    // small puff is dense and the expanded one is the same smoke spread thin.
-    float conserve = clamp(pow(radius(0.35) / radius(e), 2.0), 0.12, 3.0);
-    float alpha = 1.0 - exp(-1.9 * conserve * f);
+    // Beer-Lambert style opacity: dense centre, soft translucent edges. The
+    // body is as thin as its own size demands; the fragments as thin as the
+    // size they were shed from.
+    float alpha = 1.0 - exp(-1.9 * (conserve(e) * body + conserve(tr) * left));
     float shade = mix(0.64, 1.0, lit) * mix(0.88, 1.0, saturate(f)) * (0.96 + 0.06 * grain);
 
     half a = half(alpha) * tint.a;
