@@ -48,9 +48,13 @@ enum OutputMute {
         if !was { setMuted(device, true) }
     }
 
-    static func restore() {
-        guard let p = previous else { return }
+    /// Returns true when the device was muted by `mute()` and has just been
+    /// unmuted.
+    @discardableResult
+    static func restore() -> Bool {
+        guard let p = previous else { return false }
         previous = nil
         if !p.wasMuted { setMuted(p.device, false) }
+        return !p.wasMuted
     }
 }

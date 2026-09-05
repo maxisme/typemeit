@@ -10,7 +10,7 @@ final class OverlayPanel {
     let model = OverlayModel()
     private let panel: NSPanel
 
-    static let size = NSSize(width: 340, height: 200)
+    static let size = NSSize(width: 360, height: 260)
 
     init() {
         panel = NSPanel(contentRect: NSRect(origin: .zero, size: OverlayPanel.size),

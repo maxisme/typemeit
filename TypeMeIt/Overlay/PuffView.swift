@@ -6,9 +6,8 @@ import SwiftUI
 ///
 /// Three ways to drive it:
 /// - `level`: the microphone level in 0...1 as published by `AudioCapture`.
-///   Rising edges in the level kick the puff outwards; it then settles back
-///   over about half a second. The resting size follows the average level
-///   only slightly.
+///   The puff follows it directly: a fast attack so every syllable shows,
+///   a slower release so the cloud breathes out rather than snapping shut.
 /// - `expansion`: a fixed value in 0...1 (0 = wisp, 1 = full cloud).
 /// - neither: the puff breathes on its own.
 struct PuffView: View {
@@ -112,12 +111,15 @@ struct PuffView: View {
     final class Trail {
         private var value = 0.0
         private var lastTime: TimeInterval?
+        private let tau: Double
+
+        init(tau: Double = 1.4) { self.tau = tau }
 
         func step(expansion: Double, at now: TimeInterval) -> Double {
             defer { lastTime = now }
             guard let lastTime else { value = expansion; return value }
             let dt = min(max(now - lastTime, 0), 0.1)
-            value += (expansion - value) * (1 - exp(-dt / 1.4))
+            value += (expansion - value) * (1 - exp(-dt / tau))
             value = max(value, expansion)
             return value
         }
@@ -133,53 +135,46 @@ struct PuffView: View {
 
     /// Turns the microphone level into expansion and flow.
     ///
-    /// The level is tracked with a fast and a slow average; their difference
-    /// is the onset of a syllable. Onsets drive a heavily damped spring: the
-    /// puff is pushed out sharply and settles back over about a second. While
-    /// it moves outwards the flow phase advances quickly, so the smoke streams
-    /// out on the push and hangs while it settles. The resting size follows
-    /// the slow average only a little.
+    /// The level is followed with a fast attack and a slow release, and the
+    /// expansion sits at `rest` plus `gain` times that envelope. The flow
+    /// phase advances with every rise, so smoke streams out on each syllable
+    /// and hangs between them. Calibrated on the puff bench against "to be
+    /// honest": every syllable moves the cloud, none of them merge.
     ///
     /// A reference type so the timeline closure can update it without
     /// triggering a view update.
     final class Dynamics {
-        private var fast = 0.0
-        private var slow = 0.0
-        private var x = 0.0
-        private var v = 0.0
+        static let attack = 0.012
+        static let release = 0.22
+        static let gain = 0.75
+        static let rest = 0.44
+
+        private var env = 0.0
         private var flow = 0.0
         private var lastTime: TimeInterval?
         private var lastSwell = 0.0
-        private let trail = Trail()
+        private let trail = Trail(tau: 0.8)
 
-        /// Resting size for a given slow average level.
+        /// Resting size for a given level.
         nonisolated static func restExpansion(forLevel level: Double) -> Double {
-            0.34 + 0.12 * min(max(level, 0), 1)
+            rest + gain * min(max(level, 0), 1)
         }
 
+        /// `reaction` scales how far the level moves the puff; 1 is the
+        /// calibrated response. `swell` is added for arrival and departure.
         func step(level: Double, reaction: Double = 1, swell: Double = 0, at now: TimeInterval) -> Frame {
             defer { lastTime = now; lastSwell = swell }
             guard let lastTime else {
-                let e = min(1, max(0.05, Dynamics.restExpansion(forLevel: level) + swell))
+                env = level
+                let e = min(1, max(0.05, Dynamics.rest + Dynamics.gain * reaction * env + swell))
                 return Frame(expansion: e, trail: trail.step(expansion: e, at: now), flow: flow)
             }
             let dt = min(max(now - lastTime, 0), 0.1)
-
-            fast += (level - fast) * (1 - exp(-dt / 0.025))
-            slow += (level - slow) * (1 - exp(-dt / 0.30))
-            let onset = max(0, fast - slow - 0.03)
-
-            // Heavily damped spring: a sharp push out, then a settle over about
-            // a second with no bounce.
-            let omega = 7.0
-            let zeta = 0.9
-            let force = onset * 170.0
-            let a = force - 2 * zeta * omega * v - omega * omega * x
-            v += a * dt
-            x += v * dt
-
-            let e = min(1, max(0.05, Dynamics.restExpansion(forLevel: slow) + 0.4 * reaction * x + swell))
-            flow += dt * (0.08 + 1.2 * max(0, v)) + 1.2 * (swell - lastSwell)
+            let tau = level > env ? Dynamics.attack : Dynamics.release
+            let before = env
+            env += (level - env) * (1 - exp(-dt / tau))
+            let e = min(1, max(0.05, Dynamics.rest + Dynamics.gain * reaction * env + swell))
+            flow += dt * (0.08 + 6 * max(0, env - before)) + 1.2 * (swell - lastSwell)
             return Frame(expansion: e, trail: trail.step(expansion: e, at: now), flow: flow)
         }
     }

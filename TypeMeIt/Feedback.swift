@@ -1,31 +1,33 @@
 import AppKit
 
-/// Start, pin, stop and processing sounds. The NSSound instances are kept for the app's
+/// Pin and stop sounds. The NSSound instances are kept for the app's
 /// lifetime; a released NSSound stops playing.
 @MainActor
 enum Feedback {
-    enum Kind { case start, pin, stop, hum }
+    enum Kind { case pin, stop }
 
-    private static let start = NSSound(named: "pop_start")
     private static let pin = NSSound(named: "pop_pin")
     private static let stop = NSSound(named: "pop_stop")
-    private static let hum = NSSound(named: "pop_hum")
+
+    /// Touch every sound so the first play does not wait on disk.
+    static func preload() {
+        _ = pin; _ = stop
+    }
+
+    static func duration(_ kind: Kind) -> TimeInterval {
+        switch kind {
+        case .pin: pin?.duration ?? 0
+        case .stop: stop?.duration ?? 0
+        }
+    }
 
     static func play(_ kind: Kind) {
         let sound: NSSound? = switch kind {
-        case .start: start
         case .pin: pin
         case .stop: stop
-        case .hum: hum
         }
         sound?.stop()
         sound?.volume = 1
         sound?.play()
-    }
-
-    /// The hum follows the stop breath rather than sitting on top of it.
-    static func playHumAfterStop() {
-        let wait = stop?.duration ?? 0
-        DispatchQueue.main.asyncAfter(deadline: .now() + wait) { play(.hum) }
     }
 }

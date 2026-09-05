@@ -19,6 +19,9 @@ final class AudioCapture: @unchecked Sendable {
     var onLevel: (@Sendable (Float) -> Void)?
     var onFirstBuffer: (@Sendable () -> Void)?
     private var lastLevelAt: TimeInterval = 0
+    /// Loudest sample since the last level report, so a consonant that lands
+    /// between reports still reaches the puff.
+    private var peakSinceReport: Float = 0
     private var firstBufferReported = false
 
     init() {
@@ -111,6 +114,7 @@ final class AudioCapture: @unchecked Sendable {
         samples.removeAll(keepingCapacity: true)
         recording = true
         firstBufferReported = false
+        peakSinceReport = 0
         lock.unlock()
         try ensureEngine(uid: uid)
     }
@@ -154,8 +158,8 @@ final class AudioCapture: @unchecked Sendable {
         if let error { Log.audio.error("Conversion failed: \(error.localizedDescription)"); return }
         let n = Int(out.frameLength)
         guard n > 0, let data = out.floatChannelData?[0] else { return }
-        var sumSquares: Float = 0
-        for i in 0..<n { sumSquares += data[i] * data[i] }
+        var peak: Float = 0
+        for i in 0..<n { peak = max(peak, abs(data[i])) }
         lock.lock()
         samples.append(contentsOf: UnsafeBufferPointer(start: data, count: n))
         let report = !firstBufferReported
@@ -164,10 +168,11 @@ final class AudioCapture: @unchecked Sendable {
         if report { onFirstBuffer?() }
 
         let now = Date().timeIntervalSinceReferenceDate
+        peakSinceReport = max(peakSinceReport, peak)
         if now - lastLevelAt >= 1.0 / 30.0 {
             lastLevelAt = now
-            let rms = sqrt(sumSquares / Float(n))
-            let db = 20 * log10(max(rms, 1e-6))
+            let db = 20 * log10(max(peakSinceReport * 0.8, 1e-6))
+            peakSinceReport = 0
             let level = min(1, max(0, (db + 50) / 40))
             onLevel?(level)
         }

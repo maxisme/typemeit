@@ -98,42 +98,39 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
 /** Peak-hold on the expansion with a slow decay, so a retreat leaves a trail. */
 class Trail {
   value = 0; last = null;
+  constructor(tau = 1.4) { this.tau = tau; }
   step(expansion, now) {
     if (this.last === null) { this.last = now; this.value = expansion; return this.value; }
     const dt = Math.min(Math.max(now - this.last, 0), 0.1);
     this.last = now;
-    this.value += (expansion - this.value) * (1 - Math.exp(-dt / 1.4));
+    this.value += (expansion - this.value) * (1 - Math.exp(-dt / this.tau));
     this.value = Math.max(this.value, expansion);
     return this.value;
   }
 }
 
 /**
- * Turns a 0...1 level into expansion, trail and flow. Rising edges in the
- * level kick a heavily damped spring: the puff is pushed out sharply and
- * settles back over about a second, streaming smoke outwards as it goes.
+ * Turns a 0...1 level into expansion, trail and flow. The level is followed
+ * with a fast attack and a slow release, so every syllable moves the puff
+ * and it breathes out between them, streaming smoke on each rise.
  */
 class Dynamics {
-  fast = 0; slow = 0; x = 0; v = 0; flow = 0; last = null; trail = new Trail();
-  static rest(level) { return 0.34 + 0.12 * Math.min(Math.max(level, 0), 1); }
+  static attack = 0.012; static release = 0.22; static gain = 0.75; static rest = 0.44;
+  env = 0; flow = 0; last = null; trail = new Trail(0.8);
+  static rest(level) { return Dynamics.rest + Dynamics.gain * Math.min(Math.max(level, 0), 1); }
   step(level, now) {
     if (this.last === null) {
-      this.last = now;
+      this.last = now; this.env = level;
       const e = Dynamics.rest(level);
       return { expansion: e, trail: this.trail.step(e, now), flow: this.flow };
     }
     const dt = Math.min(Math.max(now - this.last, 0), 0.1);
     this.last = now;
-    this.fast += (level - this.fast) * (1 - Math.exp(-dt / 0.025));
-    this.slow += (level - this.slow) * (1 - Math.exp(-dt / 0.30));
-    const onset = Math.max(0, this.fast - this.slow - 0.03);
-    const omega = 7.0, zeta = 0.9;
-    const force = onset * 170.0;
-    const a = force - 2 * zeta * omega * this.v - omega * omega * this.x;
-    this.v += a * dt;
-    this.x += this.v * dt;
-    const e = Math.min(1, Math.max(0.05, Dynamics.rest(this.slow) + 0.4 * this.x));
-    this.flow += dt * (0.08 + 1.2 * Math.max(0, this.v));
+    const tau = level > this.env ? Dynamics.attack : Dynamics.release;
+    const before = this.env;
+    this.env += (level - this.env) * (1 - Math.exp(-dt / tau));
+    const e = Math.min(1, Math.max(0.05, Dynamics.rest(this.env)));
+    this.flow += dt * (0.08 + 6 * Math.max(0, this.env - before));
     return { expansion: e, trail: this.trail.step(e, now), flow: this.flow };
   }
 }
