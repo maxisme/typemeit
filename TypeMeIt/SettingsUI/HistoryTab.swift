@@ -46,7 +46,7 @@ struct HistoryTab: View {
                                 .buttonStyle(InkButtonStyle())
                         }
                         Button("delete all") { confirmDeleteAll = true }
-                            .buttonStyle(InkButtonStyle(quiet: true))
+                            .buttonStyle(InkButtonStyle())
                             .disabled(store.history.isEmpty)
                             .confirmationDialog("Delete all \(store.history.count) dictations?", isPresented: $confirmDeleteAll, titleVisibility: .visible) {
                                 Button("Delete All", role: .destructive) { store.deleteAllHistory(); selected = [] }
