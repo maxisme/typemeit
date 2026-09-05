@@ -50,4 +50,4 @@ build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x 
 - `TypeMeIt/Learning/`, `TypeMeIt/Insights/` ports of Handy's learning engine and insights, with their tests in `TypeMeItTests/`
 - `Packages/TranscribeCpp/` the XCFramework wrapper
 - `web/` the puff on a web page, driven by the pointer; `generate.py` transpiles the shader from `TypeMeIt/Overlay/Puff.metal`
-- `Scripts/`, `.github/workflows/` the release pipeline; `Scripts/generate-dmg-background.sh` draws the disk image's background from frames of the app's own puff shader in `Scripts/puff/`
+- `Scripts/`, `.github/workflows/` the release pipeline; `Scripts/generate-dmg-background.sh` draws the disk image's background from frames of the app's own puff shader in `Scripts/puff/`; `Scripts/generate-og.sh` draws the site's link previews, `web/og.png` and `web/og-square.png`, the same way through `Scripts/og/`
