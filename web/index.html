@@ -109,7 +109,22 @@ addEventListener("pointermove", (ev) => {
   pointer.speed = pointer.speed * 0.6 + (d / dt) * 0.4;
   pointer.x = ev.clientX; pointer.y = ev.clientY; pointer.t = now;
 });
-addEventListener("pointerdown", () => { pointer.pressed = performance.now(); });
+addEventListener("pointerdown", (ev) => {
+  pointer.pressed = performance.now();
+  // A click on the puff itself flushes it red; elsewhere it only kicks the level.
+  const d = Math.hypot(ev.clientX - innerWidth / 2, ev.clientY - innerHeight / 2);
+  if (d < VIEW / 2) blush = performance.now();
+});
+
+// Red tint from the last click on the puff, easing back to white over BLUSH seconds.
+const BLUSH = 4.0;
+const BLUSH_TINT = [1.0, 0.25, 0.22];
+let blush = -Infinity;
+function tint(nowMs) {
+  const k = Math.max(0, 1 - (nowMs - blush) / (BLUSH * 1000));
+  const amount = k * k * (3 - 2 * k);
+  return BLUSH_TINT.map((c) => 1 + (c - 1) * amount);
+}
 
 const canvas = document.getElementById("c");
 const err = document.getElementById("err");
@@ -182,7 +197,8 @@ function frame(nowMs) {
   gl.uniform1f(uniforms.uExpansion, s.expansion);
   gl.uniform1f(uniforms.uTrail, s.trail);
   gl.uniform1f(uniforms.uFlow, s.flow);
-  gl.uniform4f(uniforms.uTint, 1, 1, 1, 1);
+  const [tr, tg, tb] = tint(nowMs);
+  gl.uniform4f(uniforms.uTint, tr, tg, tb, 1);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   if (!reduceMotion) requestAnimationFrame(frame);
