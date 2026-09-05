@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Draws web/og.png, the link preview for typeme.it: the puff growing from a
-# dense wisp into a thin cloud, left to right across the site's paper, with
-# the wordmark in DM Mono. Square fallbacks (a long iMessage title, some feed
+# dense wisp into a thin cloud, left to right across the site's paper. Square fallbacks (a long iMessage title, some feed
 # thumbnails) crop this to its centre; that is accepted, the landscape is
 # what most previews show.
 # The puff is the app's own shader (web/puff.glsl.js) rendered by headless

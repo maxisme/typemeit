@@ -1,6 +1,4 @@
 <!doctype html><meta charset="utf-8"><title>og render</title>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono&display=block" rel="stylesheet">
 <style>html,body{margin:0;background:#000}canvas{display:block}</style>
 <canvas id="gl"></canvas><canvas id="out"></canvas>
 <pre id="status">rendering…</pre>
@@ -11,7 +9,7 @@ const num = (k, d) => P.has(k) ? parseFloat(P.get(k)) : d;
 const W = num('w', 2400), H = num('h', 1260);
 const SIZE = num('size', 1700), EXP = num('exp', 0.92), TRAIL = num('trail', 1.0),
       FLOW = num('flow', 0.6), TIME = num('time', 120), DENS = num('dens', 1.0),
-      CX = num('cx', W / 2), CY = num('cy', H / 2), TEXT = P.get('text') ?? 'type me it';
+      CX = num('cx', W / 2), CY = num('cy', H / 2);
 const glc = document.getElementById('gl'); glc.width = W; glc.height = H;
 const gl = glc.getContext('webgl2', {preserveDrawingBuffer: true, alpha: true, premultipliedAlpha: true});
 const FRAG = `#version 300 es
@@ -48,19 +46,13 @@ for (const f of FRAMES.length ? FRAMES : [{x:0.5,size:SIZE,exp:EXP,trail:TRAIL,f
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 
-// Composite: paper, the puff, then the wordmark in DM Mono once the font has arrived.
+// Composite: paper, then the puff.
 const out = document.getElementById('out'); out.width = W; out.height = H;
 const cx = out.getContext('2d');
-document.fonts.load(`${Math.round(H*0.028)}px "DM Mono"`).then(() => document.fonts.ready).then(() => {
+{
   cx.fillStyle = '#0e0e0e'; cx.fillRect(0, 0, W, H);
   cx.drawImage(glc, 0, 0);
-  if (TEXT) {
-    const px = Math.round(H * 0.028);
-    cx.font = `${px}px "DM Mono", ui-monospace, Menlo, monospace`;
-    cx.fillStyle = '#8a8a8a'; cx.textBaseline = 'alphabetic';
-    cx.fillText(TEXT, Math.round(W * 0.04), Math.round(H * 0.94));
-  }
   out.toBlob(b => b.arrayBuffer().then(a => fetch('/save?name=' + (P.get('name') || 'og') + '.png', {method: 'POST', body: a})
     .then(r => r.text()).then(t => { document.getElementById('status').textContent = 'SAVED ' + t; document.title = 'SAVED'; })), 'image/png');
-});
+}
 </script>
