@@ -21,14 +21,14 @@
   <p class="meta">last updated 5 september 2026</p>
 </header>
 
-<p class="lead">type me it turns your speech into text on your mac. your speech, the text it becomes, and the history it keeps never leave the computer. this page says exactly what the app touches, what it stores, and the two servers it talks to.</p>
+<p class="lead">type me it turns your speech into text on your mac. your speech, the text it becomes, and the history it keeps never leave the computer. this page lists what the app touches, what it stores, and the two servers it talks to.</p>
 
 <section>
   <h2>what the app does with your speech</h2>
   <div>
 <p>while you hold the fn key the app records from the microphone. when you let go, the recording is transcribed on your mac by the parakeet speech model, running inside the app through transcribe.cpp. the audio is held in memory for the length of the transcription and then discarded. it is never written to disk and never sent anywhere.</p>
 <p>if apple intelligence is turned on in settings, the transcript is tidied up by apple's on-device foundation model, through the foundationmodels framework. that model runs on your mac. type me it does not use private cloud compute or any other apple server for this step. apple's own privacy policy governs apple intelligence itself.</p>
-<p>the finished text is pasted into whichever app has the cursor. type me it does not keep a copy of the audio.</p>
+<p>the finished text is pasted into whichever app has the cursor.</p>
   </div>
 </section>
 
@@ -59,7 +59,7 @@
 <p>the app makes two kinds of network request. neither carries your speech, your text or your history. what the other end sees is your ip address and the request itself.</p>
 <ul>
   <li><em>the speech model</em>, downloaded once during onboarding from hugging face, or from a mirror at handy.computer if hugging face fails. those servers see an ordinary download request from your ip address.</li>
-  <li><em>update checks</em>, made by the sparkle framework against the app's github releases page. by default the app checks on a schedule sparkle manages. the request includes the app version and macos version so the right update can be offered, and that is the only information about your mac that ever goes out. you can turn automatic checks off in settings, and check by hand from the menu instead.</li>
+  <li><em>update checks</em>, made by the sparkle framework against the app's github releases page. by default the app checks on a schedule sparkle manages. the request includes the app version and macos version so the right update can be offered. nothing else about your mac is sent. you can turn automatic checks off in settings, and check by hand from the menu instead.</li>
 </ul>
 <p>there is no account, no sign-in, no analytics, no crash reporting and no advertising. the app makes no other network requests.</p>
   </div>
@@ -87,14 +87,14 @@
 <section>
   <h2>children</h2>
   <div>
-<p>the app and site are not directed at children under 13 and do not knowingly collect information from them. since nothing is collected, there is nothing to hold.</p>
+<p>the app and site are not directed at children under 13 and do not knowingly collect information from them.</p>
   </div>
 </section>
 
 <section>
   <h2>your rights</h2>
   <div>
-<p>because type me it holds no data about you, there is nothing for us to access, correct, export or delete on your behalf. every record the app makes is a file on your mac that you control, and deleting the app's application support folder removes all of it. if you believe the app is doing something this page does not describe, open an issue on github and it will be treated as a bug.</p>
+<p>type me it holds no data about you, so there is nothing for us to access, correct, export or delete on your behalf. every record the app makes is a file on your mac that you control, and deleting the app's application support folder removes all of it.</p>
   </div>
 </section>
 
