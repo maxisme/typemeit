@@ -36,6 +36,7 @@ final class Settings {
     var autoSubmitKey: AutoSubmitKey { didSet { defaults.set(autoSubmitKey.rawValue, forKey: "autoSubmitKey") } }
     var historyLimit: Int { didSet { defaults.set(historyLimit, forKey: "historyLimit") } }
     var launchAtLogin: Bool { didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin") } }
+    var showDockIcon: Bool { didSet { defaults.set(showDockIcon, forKey: "showDockIcon") } }
     var onboardingComplete: Bool { didSet { defaults.set(onboardingComplete, forKey: "onboardingComplete") } }
     /// Words removed by the learned-words toast's Undo. Never learned again.
     var undoneWords: [String] { didSet { defaults.set(undoneWords, forKey: "undoneWords") } }
@@ -57,6 +58,7 @@ final class Settings {
         autoSubmitKey = AutoSubmitKey(rawValue: d.string(forKey: "autoSubmitKey") ?? "") ?? .enter
         historyLimit = d.object(forKey: "historyLimit") == nil ? 500 : d.integer(forKey: "historyLimit")
         launchAtLogin = bool("launchAtLogin", false)
+        showDockIcon = bool("showDockIcon", true)
         onboardingComplete = bool("onboardingComplete", false)
         undoneWords = d.stringArray(forKey: "undoneWords") ?? []
     }
@@ -80,6 +82,7 @@ enum AppVersion {
 }
 
 enum Fixed {
+    static let websiteURL = URL(string: "https://typeme.it")!
     static let holdThresholdMs = 300
     static let wordCorrectionThreshold = 0.18
     static let pasteDelayBeforeMs = 60
