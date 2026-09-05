@@ -314,8 +314,13 @@ struct AppTab: View {
                     SettingsRow(label: "check for updates") {
                         Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "dock icon", last: true) {
+                    SettingsRow(label: "dock icon") {
                         Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; (NSApp.delegate as? AppDelegate)?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "appearance", subtitle: "the windows and the recording cloud", last: true) {
+                        Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; (NSApp.delegate as? AppDelegate)?.applyAppearance() })) {
+                            ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }.labelsHidden().frame(width: 180)
                     }
                 }
                 SettingsGroup(title: "about") {
