@@ -18,6 +18,9 @@ settings:
 packages:
   TranscribeCpp:
     path: Packages/TranscribeCpp
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.0"
 targets:
   TypeMeIt:
     type: application
@@ -32,6 +35,8 @@ targets:
     dependencies:
       - package: TranscribeCpp
         product: TranscribeCpp
+      - package: Sparkle
+        product: Sparkle
     info:
       path: TypeMeIt/Support/Info.plist
       properties:
@@ -44,6 +49,9 @@ targets:
         NSMicrophoneUsageDescription: "Type Me It records your voice while you hold the Fn key so it can transcribe it."
         NSHumanReadableCopyright: ""
         NSPrincipalClass: NSApplication
+        SUFeedURL: https://github.com/maxisme/typemeit/releases/latest/download/appcast.xml
+        SUEnableAutomaticChecks: true
+        SUPublicEDKey: WGBC31wJMt0uMIwvfVDsWaqVJL8ki+jRfdKACFhPEDw=
     entitlements:
       path: TypeMeIt/Support/TypeMeIt.entitlements
       properties:

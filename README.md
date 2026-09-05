@@ -13,7 +13,7 @@ xcodebuild -project TypeMeIt.xcodeproj -scheme TypeMeIt -configuration Debug bui
 xcodebuild -project TypeMeIt.xcodeproj -scheme TypeMeIt test
 ```
 
-The only dependency is the transcribe.cpp XCFramework, fetched by SwiftPM from the upstream release (`Packages/TranscribeCpp`). The speech model (697 MB) is downloaded during onboarding into `~/Library/Application Support/TypeMeIt/models/`.
+Dependencies are the transcribe.cpp XCFramework, fetched by SwiftPM from the upstream release (`Packages/TranscribeCpp`), and Sparkle, which handles updates. The speech model (697 MB) is downloaded during onboarding into `~/Library/Application Support/TypeMeIt/models/`.
 
 ## Permissions
 
@@ -21,7 +21,15 @@ Microphone, Accessibility (pasting and reading corrections) and Input Monitoring
 
 ## Release
 
-A `v*` tag runs `.github/workflows/release.yml`, which builds, notarises and staples a DMG through `fastlane mac dmg` and attaches it to a GitHub release. The app checks that release feed and opens the release page when a newer version exists.
+A `v*` tag runs `.github/workflows/release.yml`, which calls `Scripts/release-dmg.sh`: plain `xcodebuild` and `notarytool`, runnable by hand with `DEVELOPMENT_TEAM`, `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_PATH` set. It builds with Developer ID, notarises and staples both the app and the DMG, verifies the result with `syspolicy_check distribution`, and signs a Sparkle appcast for it. The workflow attaches the DMG and `appcast.xml` to a GitHub release.
+
+`SUFeedURL` points at `/releases/latest/download/appcast.xml`, and the cloud on typeme.it links to `/releases/latest/download/TypeMeIt.dmg`. Both only resolve because the repository is public and the DMG asset is named the same every release, so publishing the release is what ships the update, and Sparkle installs the same DMG a first-time visitor downloads.
+
+The appcast is signed with an EdDSA key. Its public half is `SUPublicEDKey` in `project.yml`; the private half lives in the login Keychain under the `typemeit` account locally, and in the `SPARKLE_ED_PRIVATE_KEY` repository secret for CI. Export it with Sparkle's own tool:
+
+```
+build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x sparkle-private-key.txt --account typemeit
+```
 
 ## Layout
 
@@ -29,4 +37,4 @@ A `v*` tag runs `.github/workflows/release.yml`, which builds, notarises and sta
 - `TypeMeIt/Learning/`, `TypeMeIt/Insights/` ports of Handy's learning engine and insights, with their tests in `TypeMeItTests/`
 - `Packages/TranscribeCpp/` the XCFramework wrapper
 - `web/` the puff on a web page, driven by the pointer; `generate.py` transpiles the shader from `TypeMeIt/Overlay/Puff.metal`
-- `fastlane/`, `Scripts/`, `.github/workflows/` the release pipeline
+- `Scripts/`, `.github/workflows/` the release pipeline

@@ -30,5 +30,11 @@
 	<string>Type Me It records your voice while you hold the Fn key so it can transcribe it.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/maxisme/typemeit/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>WGBC31wJMt0uMIwvfVDsWaqVJL8ki+jRfdKACFhPEDw=</string>
 </dict>
 </plist>
