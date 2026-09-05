@@ -47,7 +47,7 @@
   /* The page has nothing to scroll to, so a scroll is a request for more.
      The links sit at the bottom, invisible until the first wheel, swipe or
      scroll key, then fade in and stay. Same face and colour as #notmac.
-     The email is plain text, not a mailto link. */
+     The email is a mailto link, plain like the rest. */
   #more {
     position: fixed; left: 0; right: 0; bottom: 20px;
     margin: 0; padding: 0; list-style: none;
@@ -72,7 +72,7 @@
   <li><a href="terms.html">terms</a></li>
   <li><a href="privacy.html">privacy</a></li>
   <li><a href="https://github.com/maxisme/typemeit">github</a></li>
-  <li>hello@typeme.it</li>
+  <li><a href="mailto:hello@typeme.it">hello@typeme.it</a></li>
 </ul>
 
 <!-- Generated from TypeMeIt/Overlay/Puff.metal by web/generate.py. -->
@@ -200,41 +200,34 @@ addEventListener("pointermove", (ev) => {
 });
 addEventListener("pointerdown", (ev) => {
   pointer.pressed = performance.now();
-  // A click on the puff itself flushes it red; a click on empty page inverts
-  // the page. The links at the bottom do neither.
+  // A click on the puff itself flushes it red; a click on empty page toggles
+  // the inversion. The links at the bottom do neither.
   const d = Math.hypot(ev.clientX - innerWidth / 2, ev.clientY - innerHeight / 2);
   if (d < VIEW / 2) blush = performance.now();
-  else if (ev.target === canvas || ev.target === document.body) inverted = performance.now();
+  else if (ev.target === canvas || ev.target === document.body) inverted = !inverted;
 });
 
 // A click on the puff flushes it red, easing back over BLUSH seconds. A click
-// on empty page inverts it: white paper, black cloud, easing back to the dark
-// page over INVERT seconds. The smoke tint is the product of the two, and the
-// CSS paper/ink colours follow the inversion curve.
+// on empty page toggles the inversion outright: white paper, black cloud,
+// with no fade. The smoke tint is the product of the two.
 const BLUSH = 4.0;
 const BLUSH_TINT = [1.0, 0.25, 0.22];
-const INVERT = 4.0;
-const DARK = { paper: [14, 14, 14], ink: [240, 240, 240], tint: [1.0, 1.0, 1.0] };
-const LIGHT = { paper: [240, 240, 240], ink: [14, 14, 14], tint: [0.08, 0.08, 0.08] };
+const DARK = { paper: "#0e0e0e", ink: "#f0f0f0", tint: [1.0, 1.0, 1.0] };
+const LIGHT = { paper: "#f0f0f0", ink: "#0e0e0e", tint: [0.08, 0.08, 0.08] };
 let blush = -Infinity;
-let inverted = -Infinity;
-let lastAmount = -1;
-function mix(a, b, t) { return a.map((c, i) => c + (b[i] - c) * t); }
-function ease(since, nowMs, seconds) {
-  const k = Math.max(0, 1 - (nowMs - since) / (seconds * 1000));
-  return k * k * (3 - 2 * k);
-}
+let inverted = false;
+let shownInverted = null;
 function tint(nowMs) {
-  const amount = ease(inverted, nowMs, INVERT);
-  if (amount !== lastAmount) {
-    lastAmount = amount;
-    const rgb = (c) => `rgb(${c.map(Math.round).join(" ")})`;
-    document.documentElement.style.setProperty("--paper", rgb(mix(DARK.paper, LIGHT.paper, amount)));
-    document.documentElement.style.setProperty("--ink", rgb(mix(DARK.ink, LIGHT.ink, amount)));
+  if (inverted !== shownInverted) {
+    shownInverted = inverted;
+    const scheme = inverted ? LIGHT : DARK;
+    document.documentElement.style.setProperty("--paper", scheme.paper);
+    document.documentElement.style.setProperty("--ink", scheme.ink);
   }
-  const red = mix([1, 1, 1], BLUSH_TINT, ease(blush, nowMs, BLUSH));
-  const base = mix(DARK.tint, LIGHT.tint, amount);
-  return base.map((c, i) => c * red[i]);
+  const k = Math.max(0, 1 - (nowMs - blush) / (BLUSH * 1000));
+  const amount = k * k * (3 - 2 * k);
+  const base = (inverted ? LIGHT : DARK).tint;
+  return base.map((c, i) => c * (1 + (BLUSH_TINT[i] - 1) * amount));
 }
 
 const canvas = document.getElementById("c");
