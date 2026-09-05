@@ -69,12 +69,13 @@ struct HistoryTab: View {
             RowRule()
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("keep the last").font(DesignTokens.Fonts.ui.monospaced())
+                    Text("keep").font(DesignTokens.Fonts.ui.monospaced())
                 }
                 Spacer()
                 Picker("", selection: Binding(get: { settings.historyLimit }, set: { settings.historyLimit = $0; store.prune(limit: $0) })) {
-                    ForEach([100, 250, 500, 1000, 2000, 5000], id: \.self) { Text("\($0) dictations").tag($0) }
-                }.labelsHidden().frame(width: 170)
+                    ForEach([100, 250, 500, 1000, 2000, 5000], id: \.self) { Text("the last \($0) dictations").tag($0) }
+                    Text("everything · never delete").tag(0)
+                }.labelsHidden().fixedSize()
             }
             .padding(.horizontal, 20).padding(.vertical, 12)
         }

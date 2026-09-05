@@ -96,8 +96,9 @@ final class Store {
         save(history, to: historyURL)
     }
 
+    /// A limit of 0 keeps everything.
     func prune(limit: Int) {
-        guard history.count > limit else { return }
+        guard limit > 0, history.count > limit else { return }
         var excess = history.count - limit
         var kept: [HistoryEntry] = []
         for e in history {
