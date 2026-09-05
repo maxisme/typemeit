@@ -75,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = Settings.shared
         _ = Store.shared
         applyDockIcon()
+        applyAppearance()
         switch PostProcessor.availability {
         case .available:
             break
@@ -135,6 +136,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// here so the setting can flip it without a relaunch.
     func applyDockIcon() {
         NSApp.setActivationPolicy(Settings.shared.showDockIcon ? .regular : .accessory)
+    }
+
+    /// Every window, the overlay panel included, takes the app's appearance,
+    /// so this is the one place the setting is applied.
+    func applyAppearance() {
+        NSApp.appearance = Settings.shared.appearance.nsAppearance
     }
 
     // MARK: Windows
