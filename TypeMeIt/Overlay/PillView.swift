@@ -20,7 +20,7 @@ struct PillView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
 
-    private var meterColor: Color { scheme == .dark ? Color(red: 1, green: 0.412, blue: 0.38) : Color(red: 0.824, green: 0.271, blue: 0.231) }
+    private var meterColor: Color { DesignTokens.Colors.ink }
     private var labelColor: Color { scheme == .dark ? .white.opacity(0.62) : Color(white: 0.43) }
     private var chipFill: Color { scheme == .dark ? .white.opacity(0.12) : .black.opacity(0.07) }
     private var glyph: Color { scheme == .dark ? .white.opacity(0.75) : Color(white: 0.35) }
@@ -69,7 +69,7 @@ struct PillView: View {
         case .copyPrompt:
             Image("akar-clipboard").resizable().frame(width: 15, height: 15).foregroundStyle(labelColor)
         case .learned:
-            Image("akar-circle-check").resizable().frame(width: 15, height: 15).foregroundStyle(Color(red: 0.19, green: 0.82, blue: 0.35))
+            Image("akar-circle-check").resizable().frame(width: 15, height: 15).foregroundStyle(DesignTokens.Colors.ink)
         default:
             Color.clear.frame(width: 24, height: 24)
         }
@@ -81,25 +81,25 @@ struct PillView: View {
             HStack(spacing: 10) {
                 meter
                 Text(timeString(model.elapsedSeconds))
-                    .font(.system(size: 12)).monospacedDigit()
+                    .font(.system(size: 12).monospaced())
                     .foregroundStyle(scheme == .dark ? .white.opacity(0.45) : Color(white: 0.6))
             }
         case .transcribing:
             HStack(spacing: 8) {
                 wave
-                Text("Transcribing").font(.system(size: 12)).foregroundStyle(labelColor)
+                Text("transcribing").font(.system(size: 12)).foregroundStyle(labelColor)
             }
         case .cleaningUp:
             HStack(spacing: 8) {
                 dots
-                shimmerLabel("Cleaning up")
+                shimmerLabel("cleaning up")
             }
         case .copyPrompt:
-            Text("Nothing to paste into").font(.system(size: 12)).foregroundStyle(labelColor).lineLimit(1)
+            Text("nothing to paste into").font(.system(size: 12)).foregroundStyle(labelColor).lineLimit(1)
         case .learned(_, let label):
             Text(label).font(.system(size: 12)).foregroundStyle(labelColor).lineLimit(1)
         case .undone:
-            Text("Undone").font(.system(size: 12)).foregroundStyle(labelColor)
+            Text("undone").font(.system(size: 12)).foregroundStyle(labelColor)
         case .hidden:
             EmptyView()
         }
@@ -111,12 +111,12 @@ struct PillView: View {
             cancelButton
         case .copyPrompt:
             HStack(spacing: 8) {
-                pillButton(model.copied ? "Copied" : "Copy") { model.onCopy?() }.disabled(model.copied)
+                pillButton(model.copied ? "copied" : "copy") { model.onCopy?() }.disabled(model.copied)
                 cancelButton
             }
         case .learned:
             HStack(spacing: 8) {
-                pillButton("Undo") { model.onUndo?() }
+                pillButton("undo") { model.onUndo?() }
                 chip(size: 22, filled: false, dimmed: false, action: { model.onKeep?() }) {
                     Image("akar-check").resizable().frame(width: 11, height: 11)
                 }
