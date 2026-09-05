@@ -24,11 +24,11 @@
   /* A button over the puff rather than a hit test on the canvas, so it gets
      keyboard focus. A button rather than an anchor so hovering shows no DMG
      URL in the status bar. On a desktop with a real pointer, hovering shows
-     the hand and turns the puff green; touch devices get neither. Circular so the corners of
-     its box do not swallow clicks that miss the cloud. The puff is drawn
-     into a VIEW px square but only fills the middle ~100px of it at rest, so
-     this is sized for the cloud once the pointer has expanded it, not for
-     the whole square. */
+     the hand and turns the puff green; touch devices get neither. Circular so
+     the corners of its box do not swallow clicks that miss the cloud. The
+     puff is drawn into a VIEW px square but only fills the middle of it, so
+     this is sized for the cloud, not the square; HOVER_RADIUS in the script
+     is the same circle. */
   #download {
     position: fixed; left: 50%; top: 50%; width: 180px; height: 180px;
     margin: -90px 0 0 -90px; padding: 0; border: 0; border-radius: 50%;
@@ -204,7 +204,7 @@ addEventListener("pointerdown", (ev) => {
   // A click on the puff itself flushes it red; a click on empty page toggles
   // the inversion. The links at the bottom do neither.
   const d = Math.hypot(ev.clientX - innerWidth / 2, ev.clientY - innerHeight / 2);
-  if (d < VIEW / 2) blush = performance.now();
+  if (d < HOVER_RADIUS) blush = performance.now();
   else if (ev.target === canvas || ev.target === document.body) inverted = !inverted;
 });
 
@@ -221,17 +221,18 @@ let shownInverted = null;
 
 // Hovering the puff on a desktop pointer fades it green, in over HOVER_IN
 // seconds and out over HOVER_OUT, so it neither flickers at the edge nor
-// lingers. Touch devices never hover.
+// lingers. Hover is a distance test on the pointer against the same circle
+// as the #download button, so the green and the hand agree. Touch devices
+// never hover.
 const HOVER_TINT = [0.45, 0.9, 0.5];
-const HOVER_IN = 0.25, HOVER_OUT = 0.45;
+const HOVER_RADIUS = 90;
+const HOVER_IN = 0.6, HOVER_OUT = 0.45;
 const canHover = matchMedia("(hover: hover) and (pointer: fine)").matches;
-let hovering = false, hover = 0, hoverAt = null;
-{
-  const button = document.getElementById("download");
-  button.addEventListener("pointerenter", () => { hovering = canHover; });
-  button.addEventListener("pointerleave", () => { hovering = false; });
-}
+let hover = 0, hoverAt = null;
+
 function hoverAmount(nowMs) {
+  const d = Math.hypot(pointer.x - innerWidth / 2, pointer.y - innerHeight / 2);
+  const hovering = canHover && d < HOVER_RADIUS;
   const dt = hoverAt === null ? 0 : Math.min((nowMs - hoverAt) / 1000, 0.1);
   hoverAt = nowMs;
   const target = hovering ? 1 : 0;
