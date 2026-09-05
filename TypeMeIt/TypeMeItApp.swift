@@ -51,6 +51,8 @@ struct MenuContent: View {
             Text("Secure Input is on in another app. Fn is unavailable.")
             Divider()
         }
+        Button("Type Me It") { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) }.keyboardShortcut(",", modifiers: .command)
+        Divider()
         if Pipeline.shared.phase == .recording {
             Button("Stop Recording") { Pipeline.shared.shortcuts.stopFromMenu() }
         } else {
@@ -69,7 +71,6 @@ struct MenuContent: View {
             Button(MenuContent.title(for: entry.displayText)) { Output.copyToClipboard(entry.displayText) }
         }
         Divider()
-        Button("Type Me It") { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) }.keyboardShortcut(",", modifiers: .command)
         Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
     }
 
