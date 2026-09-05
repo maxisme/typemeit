@@ -16,6 +16,7 @@ enum SettingsTab: String, CaseIterable {
 
 struct SettingsView: View {
     @State private var tab: SettingsTab? = .insights
+    @State private var appState = AppState.shared
 
     var body: some View {
         NavigationSplitView {
@@ -56,6 +57,14 @@ struct SettingsView: View {
         }
         .tint(DesignTokens.Colors.ink)
         .frame(minWidth: 780, minHeight: 480)
+        .onAppear(perform: takeRequestedTab)
+        .onChange(of: appState.settingsTab) { _, _ in takeRequestedTab() }
+    }
+
+    private func takeRequestedTab() {
+        guard let requested = appState.settingsTab else { return }
+        tab = requested
+        appState.settingsTab = nil
     }
 }
 
@@ -206,22 +215,28 @@ struct GeneralTab: View {
     }
 }
 
-/// A row of swatches; the chosen one wears an ink ring.
+/// A row of small breathing puffs, one in each colour; the chosen one sits
+/// in an ink ring.
 struct CloudColorPalette: View {
     @Binding var selection: CloudColor
     @Environment(\.colorScheme) private var scheme
 
+    /// The cell each puff sits in, and the larger square it is drawn in, so
+    /// the cloud fills the cell rather than resting a quarter of the way
+    /// across it.
+    private static let side: CGFloat = 40
+    private static let drawn: CGFloat = 84
+
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(CloudColor.allCases, id: \.self) { c in
+        HStack(spacing: 4) {
+            ForEach(Array(CloudColor.allCases.enumerated()), id: \.element) { i, c in
                 let on = c == selection
                 Button { selection = c } label: {
-                    Circle()
-                        .fill(fill(c))
-                        .frame(width: 18, height: 18)
-                        .overlay(Circle().strokeBorder(DesignTokens.Colors.inkA20, lineWidth: DesignTokens.hairline))
-                        .padding(3)
-                        .overlay(Circle().strokeBorder(on ? DesignTokens.Colors.ink : .clear, lineWidth: 1.5))
+                    PuffView(tint: tint(c), breathPeriod: 4.2 + Double(i) * 0.37, breathFloor: 0.5)
+                        .frame(width: CloudColorPalette.drawn, height: CloudColorPalette.drawn)
+                        .frame(width: CloudColorPalette.side, height: CloudColorPalette.side)
+                        .clipShape(Circle())
+                        .overlay(Circle().strokeBorder(on ? DesignTokens.Colors.ink : .clear, lineWidth: 1.5).padding(2))
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -232,7 +247,7 @@ struct CloudColorPalette: View {
         }
     }
 
-    private func fill(_ c: CloudColor) -> Color {
+    private func tint(_ c: CloudColor) -> Color {
         if let color = c.color { return Color(nsColor: color) }
         return scheme == .dark ? .white : Color(white: 0.25)
     }

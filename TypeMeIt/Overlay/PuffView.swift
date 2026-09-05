@@ -18,6 +18,9 @@ struct PuffView: View {
     var tint: Color = .white
     /// Length of one autonomous inhale + exhale, in seconds.
     var breathPeriod: Double = 4.2
+    /// The smallest the autonomous breath lets the puff get, in 0...1; the
+    /// breath runs from here to a full cloud.
+    var breathFloor: Double = 0
     /// When set, the puff renders this instant of its texture and does not
     /// animate. For stills such as the app icon.
     var frozenTime: Double? = nil
@@ -81,7 +84,7 @@ struct PuffView: View {
             return dynamics.step(level: Double(level), reaction: reaction, swell: swell(at: now), at: now)
         }
         if reduceMotion { return Frame(expansion: 0.7, trail: 0.7, flow: 0) }
-        let e = PuffView.breath(at: t, period: breathPeriod)
+        let e = breathFloor + (1 - breathFloor) * PuffView.breath(at: t, period: breathPeriod)
         return Frame(expansion: e, trail: trail.step(expansion: e, at: now), flow: PuffView.idleFlow(at: t, expansion: e))
     }
 

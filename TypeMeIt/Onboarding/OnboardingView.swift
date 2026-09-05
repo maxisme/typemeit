@@ -6,7 +6,7 @@ struct OnboardingView: View {
     var finished: () -> Void
     var startRunning: () -> Void
 
-    enum Step: Int, CaseIterable { case welcome, model, microphone, accessibility, fnKey, tryIt }
+    enum Step: Int, CaseIterable { case model, microphone, accessibility, fnKey, tryIt }
 
     /// Opens on the first step that is not yet satisfied, so a permission
     /// lost since the last launch (a reinstall, a signature change, a TCC
@@ -45,8 +45,12 @@ struct OnboardingView: View {
             HStack(spacing: 8) {
                 StepDots(current: step.rawValue, count: Step.allCases.count)
                 Spacer()
-                if step != .welcome {
-                    Button("back") { move(to: Step(rawValue: step.rawValue - 1) ?? .welcome) }
+                if step != .model {
+                    Button("back") { move(to: Step(rawValue: step.rawValue - 1) ?? .model) }
+                        .buttonStyle(InkButtonStyle(quiet: true))
+                }
+                if step == .tryIt, !dictated {
+                    Button("skip") { finished() }
                         .buttonStyle(InkButtonStyle(quiet: true))
                 }
                 Button(step == .tryIt ? "finish" : "continue") { advance() }
@@ -61,12 +65,12 @@ struct OnboardingView: View {
         .tint(DesignTokens.Colors.ink)
         .animation(.easeOut(duration: DesignTokens.Duration.n2), value: step)
         .onReceive(poll) { _ in refresh() }
+        .onAppear { if step == .model, modelStore.state == .missing { modelStore.download() } }
         .onChange(of: canContinue) { _, ok in if ok { advanceWhenSettled() } }
     }
 
     private var title: String {
         switch step {
-        case .welcome: "type me it"
         case .model: "speech model"
         case .microphone: "microphone"
         case .accessibility: "accessibility"
@@ -77,8 +81,7 @@ struct OnboardingView: View {
 
     private var body_: String {
         switch step {
-        case .welcome: "hold the fn key, speak, let go. your words are transcribed on this mac, tidied up by apple intelligence, and typed where your cursor is. nothing leaves your computer."
-        case .model: "parakeet runs on this mac. about 700 mb, downloaded once."
+        case .model: "hold the fn key, speak, let go. your words are transcribed on this mac by parakeet, about 700 mb downloaded once, tidied up by apple intelligence, and typed where your cursor is. nothing leaves your computer."
         case .microphone: "type me it needs the microphone to hear you."
         case .accessibility: "lets type me it type into the app you are using and notice when you correct a word."
         case .fnKey: "input monitoring lets type me it see fn while other apps are in front. macos also uses fn for its own shortcuts, so set “press 🌐 key to” to “do nothing” in system settings › keyboard. fn only works on apple keyboards."
@@ -88,12 +91,6 @@ struct OnboardingView: View {
 
     @ViewBuilder private var content: some View {
         switch step {
-        case .welcome:
-            SettingsGroup(title: "shortcuts") {
-                SettingsRow(label: "hold to talk") { Keycap("fn") }
-                SettingsRow(label: "pin", subtitle: "fn again to finish") { Keycap("space") }
-                SettingsRow(label: "cancel", last: true) { Keycap("esc") }
-            }
         case .model:
             SettingsGroup {
                 switch modelStore.state {
@@ -196,7 +193,6 @@ struct OnboardingView: View {
 
     private var canContinue: Bool {
         switch step {
-        case .welcome: true
         case .model: modelStore.state == .installed
         case .microphone: micGranted
         case .accessibility: axGranted
@@ -218,11 +214,11 @@ struct OnboardingView: View {
     }
 
     /// A step whose requirement was just met moves on by itself, after a beat
-    /// long enough to read the check. The welcome and try-it steps wait for the
-    /// button, and an arrival on an already-satisfied step does not fire here.
+    /// long enough to read the check. The try-it step waits for the button,
+    /// and an arrival on an already-satisfied step does not fire here.
     private func advanceWhenSettled() {
         let current = step
-        guard current != .welcome, current != .tryIt else { return }
+        guard current != .tryIt else { return }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(DesignTokens.Duration.n4))
             if step == current, canContinue { advance() }
@@ -235,12 +231,11 @@ struct OnboardingView: View {
     }
 
     private static func firstUnsatisfiedStep() -> Step {
-        guard Settings.shared.onboardingComplete else { return .welcome }
-        if !ModelStore.isInstalled { return .model }
+        guard Settings.shared.onboardingComplete, ModelStore.isInstalled else { return .model }
         if AVCaptureDevice.authorizationStatus(for: .audio) != .authorized { return .microphone }
         if !AXIsProcessTrusted() { return .accessibility }
         if !CGPreflightListenEventAccess() { return .fnKey }
-        return .welcome
+        return .model
     }
 
     private func refresh() {

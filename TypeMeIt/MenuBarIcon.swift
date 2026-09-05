@@ -8,6 +8,9 @@ import AppKit
 enum MenuBarIconRenderer {
     /// The recording tint, the microphone's orange.
     private static let recordingTint = NSColor(srgbRed: 0.961, green: 0.643, blue: 0.290, alpha: 1)
+    /// The dev build's outline is dashed, so it is told apart from the
+    /// installed release when both are in the menu bar.
+    private static let outlineLayer = Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true ? "menu_puff_dashed" : "menu_puff"
 
     static func puff(recording: Bool, transcribing: Bool, secureInput: Bool) -> NSImage {
         let size = NSSize(width: 20, height: 20)
@@ -29,7 +32,7 @@ enum MenuBarIconRenderer {
             // The whole mark turns orange while the microphone is open. The
             // arcs fade while the recording is being transcribed.
             let tint: NSColor = recording ? recordingTint : .labelColor
-            layer("menu_puff", tint: tint)
+            layer(outlineLayer, tint: tint)
             layer("menu_puff_arcs", tint: tint, alpha: transcribing ? 0.35 : 1)
 
             // Secure Input is a slash through the whole mark, the way the OS

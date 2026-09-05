@@ -12,7 +12,7 @@ struct TypeMeItApp: App {
         MenuBarExtra {
             MenuContent()
         } label: {
-            Image(nsImage: appState.menuBarImage)
+            MenuBarLabel()
         }
         .menuBarExtraStyle(.menu)
 
@@ -33,9 +33,30 @@ final class AppState {
     var recording = false
     var transcribing = false
     var ready = false
+    /// The tab the settings window should show when next opened from the
+    /// menu, if any. Cleared once the window has moved there.
+    var settingsTab: SettingsTab?
 
     var menuBarImage: NSImage {
         MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, secureInput: secureInputOn)
+    }
+}
+
+/// The menu bar image. It is always on screen, so it also holds the window
+/// opener for callers outside SwiftUI: the app delegate asks for the settings
+/// window through it when the app is reopened from the Dock or Finder.
+struct MenuBarLabel: View {
+    @Environment(\.openWindow) private var openWindow
+    @State private var appState = AppState.shared
+
+    static let openSettings = Notification.Name("it.typeme.openSettings")
+
+    var body: some View {
+        Image(nsImage: appState.menuBarImage)
+            .onReceive(NotificationCenter.default.publisher(for: MenuBarLabel.openSettings)) { _ in
+                openWindow(id: "settings")
+                NSApp.activate(ignoringOtherApps: true)
+            }
     }
 }
 
@@ -69,6 +90,13 @@ struct MenuContent: View {
         }
         ForEach(recentTranscripts) { entry in
             Button(MenuContent.title(for: entry.displayText)) { Output.copyToClipboard(entry.displayText) }
+        }
+        if !recentTranscripts.isEmpty {
+            Button {
+                appState.settingsTab = .history
+                openWindow(id: "settings")
+                NSApp.activate(ignoringOtherApps: true)
+            } label: { Text("View All").bold() }
         }
         Divider()
         Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
@@ -119,7 +147,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if onboardingWindow?.isVisible == true { onboardingWindow?.makeKeyAndOrderFront(nil) }
+        if onboardingWindow?.isVisible == true {
+            onboardingWindow?.makeKeyAndOrderFront(nil)
+        } else if gateWindow?.isVisible != true {
+            NotificationCenter.default.post(name: MenuBarLabel.openSettings, object: nil)
+        }
         return false
     }
 
