@@ -97,10 +97,25 @@
 // tell that a "Mac" is actually an iPad.
 const isMac = () => /mac/i.test(navigator.userAgentData?.platform ?? navigator.platform)
   && navigator.maxTouchPoints < 2;
+// Every release carries the DMG twice: as TypeMeIt.dmg, the fixed name this
+// fallback URL resolves to, and as "Type Me It <version>.dmg", so the saved
+// file says which version it is. The API tells us the versioned name; if it
+// does not answer in time, the fixed name still downloads the same bytes.
 const DMG = "https://github.com/maxisme/typemeit/releases/latest/download/TypeMeIt.dmg";
-document.getElementById("download").addEventListener("click", () => {
-  if (isMac()) { location.href = DMG; return; }
-  document.getElementById("notmac").textContent = "Type Me It is macos only.";
+const LATEST = "https://api.github.com/repos/maxisme/typemeit/releases/latest";
+async function versionedDMG() {
+  const res = await fetch(LATEST, { signal: AbortSignal.timeout(2000) });
+  if (!res.ok) throw new Error(res.status);
+  const asset = (await res.json()).assets.find(a => /^Type Me It .*\.dmg$/.test(a.name));
+  if (!asset) throw new Error("no versioned dmg");
+  return asset.browser_download_url;
+}
+document.getElementById("download").addEventListener("click", async () => {
+  if (!isMac()) {
+    document.getElementById("notmac").textContent = "Type Me It is macos only.";
+    return;
+  }
+  location.href = await versionedDMG().catch(() => DMG);
 });
 
 // Reveal the links on the first attempt to scroll down: a wheel, a downward
