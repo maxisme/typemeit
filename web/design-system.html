@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Type Me It — Design System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dist/site.css">
+  <script>
+    // Apply a stored theme before first paint so there is no flash.
+    // ?theme=light|dark pins it for a review screenshot.
+    try {
+      const q = new URLSearchParams(location.search).get('theme');
+      const t = q || localStorage.getItem('tmi-theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+<!--
+  DIRECTION
+  World: a monochrome precision instrument, documented like a well-set essay.
+  Type: DM Mono for display and measurement, lowercase throughout;
+  the platform UI face for controls, because this documents a Mac app whose
+  voice is SF; SF Mono for measurement only.
+  Colour: none. One ink, one paper, true inversion for dark.
+  Emphasis: two moves only — invert (solid ink slab) and italic.
+  Structure: hairlines and whitespace; flat surfaces; one shadow (the pill).
+  Identity carrier: the product's own objects — keycap, toggle, panel, pill —
+  not typographic mannerism.
+  Round 1 scope: tokens, type, buttons, controls, one settings group.
+-->
+
+<svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-arrow-forward-thick" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m22 11l-7-9v5C3.047 7 1.668 16.678 2 22c.502-2.685.735-7 13-7v5z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m4 12l6 6L20 6"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m4 9l8 8l8-8"/></symbol>
+  <symbol id="i-circle-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m8 12.5l3 3l5-6"/><circle cx="12" cy="12" r="10"/></g></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path stroke-linejoin="round" d="M15.5 4H18a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2.5"/><path stroke-linejoin="round" d="M8.621 3.515A2 2 0 0 1 10.561 2h2.877a2 2 0 0 1 1.94 1.515L16 6H8z"/><path d="M9 12h6m-6 4h6"/></g></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 16l-2.414-2.414A2 2 0 0 1 12 12.172V6"/></g></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M8 4v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.242a2 2 0 0 0-.602-1.43L16.083 2.57A2 2 0 0 0 14.685 2H10a2 2 0 0 0-2 2"/><path d="M16 18v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/></g></symbol>
+  <symbol id="i-cross" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M20 20L4 4m16 0L4 20"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3.269C14 2.568 13.432 2 12.731 2H11.27C10.568 2 10 2.568 10 3.269c0 .578-.396 1.074-.935 1.286q-.128.052-.253.106c-.531.23-1.162.16-1.572-.249a1.27 1.27 0 0 0-1.794 0L4.412 5.446a1.27 1.27 0 0 0 0 1.794c.41.41.48 1.04.248 1.572a8 8 0 0 0-.105.253c-.212.539-.708.935-1.286.935C2.568 10 2 10.568 2 11.269v1.462C2 13.432 2.568 14 3.269 14c.578 0 1.074.396 1.286.935q.052.128.105.253c.231.531.161 1.162-.248 1.572a1.27 1.27 0 0 0 0 1.794l1.034 1.034a1.27 1.27 0 0 0 1.794 0c.41-.41 1.04-.48 1.572-.249q.125.055.253.106c.539.212.935.708.935 1.286c0 .701.568 1.269 1.269 1.269h1.462c.701 0 1.269-.568 1.269-1.269c0-.578.396-1.074.935-1.287q.128-.05.253-.104c.531-.232 1.162-.161 1.571.248a1.27 1.27 0 0 0 1.795 0l1.034-1.034a1.27 1.27 0 0 0 0-1.794c-.41-.41-.48-1.04-.249-1.572q.055-.125.106-.253c.212-.539.708-.935 1.286-.935c.701 0 1.269-.568 1.269-1.269V11.27c0-.701-.568-1.269-1.269-1.269c-.578 0-1.074-.396-1.287-.935a8 8 0 0 0-.105-.253c-.23-.531-.16-1.162.249-1.572a1.27 1.27 0 0 0 0-1.794l-1.034-1.034a1.27 1.27 0 0 0-1.794 0c-.41.41-1.04.48-1.572.249a8 8 0 0 0-.253-.106C14.396 4.343 14 3.847 14 3.27Z"/><path d="M16 12a4 4 0 1 1-8 0a4 4 0 0 1 8 0Z"/></g></symbol>
+  <symbol id="i-microphone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="8" height="13" x="8" y="2" rx="4"/><path d="M18 16.292A7.98 7.98 0 0 1 12 19a7.98 7.98 0 0 1-6-2.708M12 19v3m-2 0h4"/></g></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.333 16.048L16.57 3.81a2.56 2.56 0 0 1 3.62 3.619L7.951 19.667a2 2 0 0 1-1.022.547L3 21l.786-3.93a2 2 0 0 1 .547-1.022"/><path d="m14.5 6.5l3 3"/></g></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 10.726l-3 .505L11.23 2l-.504 3M12 16.881l-.77 2.042l7.693-7.692l-2.042.769m-1.804 3.077L21 21M3.538 9.692l6.154-6.154l.236.341a52.2 52.2 0 0 0 7.376 8.518l.235.218l-4.924 4.923l-.218-.234A52.2 52.2 0 0 0 3.88 9.928z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="m21 21l-4.486-4.494M19 10.5a8.5 8.5 0 1 1-17 0a8.5 8.5 0 0 1 17 0Z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.074 2.633c.32-.844 1.531-.844 1.852 0l2.07 5.734a.99.99 0 0 0 .926.633h5.087c.94 0 1.35 1.17.611 1.743L18 14a.97.97 0 0 0-.322 1.092L19 20.695c.322.9-.72 1.673-1.508 1.119l-4.917-3.12a1 1 0 0 0-1.15 0l-4.917 3.12c-.787.554-1.83-.22-1.508-1.119l1.322-5.603A.97.97 0 0 0 6 14l-3.62-3.257C1.64 10.17 2.052 9 2.99 9h5.087a.99.99 0 0 0 .926-.633z"/></symbol>
+  <symbol id="i-statistic-up" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-miterlimit="5.759" d="M3 3v16a2 2 0 0 0 2 2h16"/><path stroke-miterlimit="5.759" d="m7 14l4-4l4 4l6-6"/><path d="M18 8h3v3"/></g></symbol>
+  <symbol id="i-text-align-left" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M3 6h18M3 12h10M3 18h15"/></symbol>
+  <symbol id="i-trash-can" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16l-1.58 14.22A2 2 0 0 1 16.432 22H7.568a2 2 0 0 1-1.988-1.78zm3.345-2.853A2 2 0 0 1 9.154 2h5.692a2 2 0 0 1 1.81 1.147L18 6H6zM2 6h20m-12 5v5m4-5v5"/></symbol>
+</svg>
+
+<main class="mx-auto max-w-[1080px] px-24 py-56 md:px-40">
+
+  <header class="flex items-start justify-between gap-24 pb-40">
+    <h1 class="font-display text-display-3">design system <span class="text-ink-3">· round 1</span></h1>
+    <button type="button" class="btn btn-quiet btn-sm" id="theme" aria-live="polite">theme: auto</button>
+  </header>
+  <div class="rule"></div>
+
+  <!-- ============================================================ INK -->
+  <section class="grid gap-24 py-56 md:grid-cols-[180px_1fr]">
+    <h2 class="text-label text-ink-2">ink</h2>
+    <div class="grid gap-32">
+      <ul class="grid grid-cols-2 gap-x-24 gap-y-20 sm:grid-cols-4" id="swatches">
+        <li data-token="paper"><div class="h-56 rounded-md border border-rule bg-paper"></div></li>
+        <li data-token="paper-sunk"><div class="h-56 rounded-md border border-rule bg-paper-sunk"></div></li>
+        <li data-token="paper-raised"><div class="h-56 rounded-md border border-rule bg-paper-raised"></div></li>
+        <li data-token="rule"><div class="h-56 rounded-md bg-rule"></div></li>
+        <li data-token="rule-control" data-contrast><div class="h-56 rounded-md bg-rule-control"></div></li>
+        <li data-token="ink-3" data-contrast><div class="h-56 rounded-md bg-ink-3"></div></li>
+        <li data-token="ink-2" data-contrast><div class="h-56 rounded-md bg-ink-2"></div></li>
+        <li data-token="ink" data-contrast><div class="h-56 rounded-md bg-ink"></div></li>
+      </ul>
+      <div>
+        <div class="flex h-24 overflow-hidden rounded-md border border-rule">
+          <div class="flex-1 bg-ink-a04"></div><div class="flex-1 bg-ink-a08"></div><div class="flex-1 bg-ink-a12"></div><div class="flex-1 bg-ink-a20"></div>
+          <div class="flex-1 bg-ink-a32"></div><div class="flex-1 bg-ink-a48"></div><div class="flex-1 bg-ink-a64"></div><div class="flex-1 bg-ink-a88"></div>
+        </div>
+        <div class="mt-6 flex justify-between font-mono text-micro text-ink-3"><span>ink-a04</span><span>a08</span><span>a12</span><span>a20</span><span>a32</span><span>a48</span><span>a64</span><span>ink-a88</span></div>
+      </div>
+    </div>
+  </section>
+  <div class="rule"></div>
+
+  <!-- =========================================================== TYPE -->
+  <section class="grid gap-24 py-56 md:grid-cols-[180px_1fr]">
+    <h2 class="text-label text-ink-2">type</h2>
+    <div class="grid gap-32">
+      <div class="grid gap-8">
+        <span class="font-mono text-micro text-ink-3">display-1 · dm mono 400</span>
+        <p class="font-display text-display-1 text-balance">type me it</p>
+      </div>
+      <div class="grid gap-8">
+        <span class="font-mono text-micro text-ink-3">display-2</span>
+        <p class="font-display text-display-2 text-balance">hold fn, speak, let go.</p>
+      </div>
+      <div class="grid gap-8">
+        <span class="font-mono text-micro text-ink-3">display-3 · mono italic is the emphasis move</span>
+        <p class="font-display text-display-3 text-balance">nothing leaves <em>the computer.</em></p>
+      </div>
+      <div class="rule"></div>
+      <div class="grid gap-20">
+        <div class="grid gap-4"><span class="font-mono text-micro text-ink-3">title · 22/600</span><p class="text-title">insights</p></div>
+        <div class="grid gap-4"><span class="font-mono text-micro text-ink-3">heading · 17/600</span><p class="text-heading">custom words</p></div>
+        <div class="grid gap-4"><span class="font-mono text-micro text-ink-3">body · 15</span><p class="max-w-[68ch] text-body">the speech is transcribed on this mac by parakeet through transcribe.cpp, tidied up by apple intelligence, and pasted wherever the cursor is.</p></div>
+        <div class="grid gap-4"><span class="font-mono text-micro text-ink-3">ui · 13 — the row label</span><p class="text-ui">keep microphone open</p></div>
+        <div class="grid gap-4"><span class="font-mono text-micro text-ink-3">label · 11/600, tracked, — the group title</span><p class="text-label text-ink-2">shortcuts</p></div>
+        <div class="grid gap-4"><span class="font-mono text-micro text-ink-3">micro · 10</span><p class="text-micro text-ink-2">edited</p></div>
+        <div class="grid gap-4"><span class="font-mono text-micro text-ink-3">mono · measurement only</span><p class="font-mono text-ui tabular-nums">0:47 · 152 wpm · 1,204 words</p></div>
+      </div>
+    </div>
+  </section>
+  <div class="rule"></div>
+
+  <!-- ======================================================== BUTTONS -->
+  <section class="grid gap-24 py-56 md:grid-cols-[180px_1fr]">
+    <h2 class="text-label text-ink-2">buttons</h2>
+    <div class="grid gap-32">
+      <div class="grid gap-8">
+        <span class="font-mono text-micro text-ink-3">primary · secondary · quiet · critical</span>
+        <div class="flex flex-wrap items-center gap-12">
+          <button class="btn btn-primary">save</button>
+          <button class="btn btn-secondary">cancel</button>
+          <button class="btn btn-quiet">undo</button>
+          <button class="btn btn-critical"><svg class="icon"><use href="#i-trash-can"/></svg>delete</button>
+        </div>
+      </div>
+      <div class="grid gap-8">
+        <span class="font-mono text-micro text-ink-3">sm · md · lg</span>
+        <div class="flex flex-wrap items-center gap-12">
+          <button class="btn btn-primary btn-sm">copy</button>
+          <button class="btn btn-primary">copy</button>
+          <button class="btn btn-primary btn-lg">copy</button>
+          <button class="btn btn-secondary btn-sm">keep</button>
+          <button class="btn btn-secondary">keep</button>
+          <button class="btn btn-secondary btn-lg">keep</button>
+        </div>
+      </div>
+      <div class="grid gap-8">
+        <span class="font-mono text-micro text-ink-3">with icon · icon only · loading · disabled</span>
+        <div class="flex flex-wrap items-center gap-12">
+          <button class="btn btn-secondary"><svg class="icon"><use href="#i-copy"/></svg>copy</button>
+          <button class="btn btn-secondary btn-icon" aria-label="Edit"><svg class="icon"><use href="#i-pencil"/></svg></button>
+          <button class="btn btn-quiet btn-icon" aria-label="Star"><svg class="icon"><use href="#i-star"/></svg></button>
+          <button class="btn btn-primary" aria-busy="true">save</button>
+          <button class="btn btn-secondary" aria-busy="true">cancel</button>
+          <button class="btn btn-primary" disabled>save</button>
+          <button class="btn btn-secondary" disabled>cancel</button>
+          <button class="btn btn-quiet" disabled>undo</button>
+        </div>
+      </div>
+      <div class="grid gap-8">
+        <span class="font-mono text-micro text-ink-3">link</span>
+        <p class="text-body">grants are keyed to the code signature, so run a <a class="link" href="#">developer id signed build</a> from /applications.</p>
+      </div>
+    </div>
+  </section>
+  <div class="rule"></div>
+
+  <!-- ======================================================= CONTROLS -->
+  <section class="grid gap-24 py-56 md:grid-cols-[180px_1fr]">
+    <h2 class="text-label text-ink-2">controls</h2>
+    <div class="grid gap-32">
+      <div class="grid gap-8">
+        <span class="font-mono text-micro text-ink-3">toggle · off, on, disabled</span>
+        <div class="flex items-center gap-16">
+          <button class="toggle" role="switch" aria-checked="false" aria-label="Sounds"></button>
+          <button class="toggle" role="switch" aria-checked="true" aria-label="Show recording pill"></button>
+          <button class="toggle" role="switch" aria-checked="false" aria-label="Disabled" disabled></button>
+        </div>
+      </div>
+      <div class="grid gap-8">
+        <span class="font-mono text-micro text-ink-3">keycap</span>
+        <div class="flex items-center gap-8">
+          <kbd class="kbd">fn</kbd><kbd class="kbd">space</kbd><kbd class="kbd">esc</kbd><kbd class="kbd">⌘</kbd><kbd class="kbd">↩</kbd>
+        </div>
+      </div>
+      <div class="grid gap-8">
+        <span class="font-mono text-micro text-ink-3">select · text field</span>
+        <div class="flex flex-wrap items-center gap-12">
+          <label class="select">
+            <select aria-label="Microphone">
+              <option>system default</option>
+              <option>macbook pro microphone</option>
+              <option>airpods pro</option>
+            </select>
+            <svg class="icon"><use href="#i-chevron-down"/></svg>
+          </label>
+          <input class="field max-w-[240px]" type="text" placeholder="add a name or term" aria-label="add a name or term">
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="rule"></div>
+
+  <!-- ========================================================== PANEL -->
+  <section class="grid gap-24 py-56 md:grid-cols-[180px_1fr]">
+    <h2 class="text-label text-ink-2">panel</h2>
+    <div class="grid gap-8">
+      <span class="font-mono text-micro text-ink-3">settings group · square inset list, 600 wide</span>
+      <div class="py-20">
+        <div class="max-w-[600px]">
+          <span class="group-title">shortcuts</span>
+          <div class="group">
+            <div class="row">
+              <div class="flex-1"><div class="row-label">hold to talk</div><div class="row-sub">recording runs while the key is held. a single tap does nothing.</div></div>
+              <kbd class="kbd">fn</kbd>
+            </div>
+            <div class="row">
+              <div class="flex-1"><div class="row-label">keep microphone open</div><div class="row-sub">starts recording faster. uses a little more power.</div></div>
+              <button class="toggle" role="switch" aria-checked="true" aria-label="Keep microphone open"></button>
+            </div>
+            <div class="row">
+              <div class="flex-1"><div class="row-label">microphone</div></div>
+              <label class="select">
+                <select aria-label="Microphone"><option>system default</option><option>macbook pro microphone</option></select>
+                <svg class="icon"><use href="#i-chevron-down"/></svg>
+              </label>
+            </div>
+            <div class="row">
+              <div class="flex-1"><div class="row-label">cancel</div></div>
+              <kbd class="kbd">esc</kbd>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="rule"></div>
+
+  <!-- ========================================================== ICONS -->
+  <section class="grid gap-24 py-56 md:grid-cols-[180px_1fr]">
+    <h2 class="text-label text-ink-2">icons</h2>
+    <div class="grid gap-8">
+      <span class="font-mono text-micro text-ink-3">akar · stroke 2 · round · currentcolor · shown at 16</span>
+      <div class="flex flex-wrap gap-16 text-[16px] text-ink-2">
+        <svg class="icon"><use href="#i-microphone"/></svg><svg class="icon"><use href="#i-text-align-left"/></svg><svg class="icon"><use href="#i-clock"/></svg>
+        <svg class="icon"><use href="#i-statistic-up"/></svg><svg class="icon"><use href="#i-gear"/></svg><svg class="icon"><use href="#i-search"/></svg>
+        <svg class="icon"><use href="#i-copy"/></svg><svg class="icon"><use href="#i-pencil"/></svg><svg class="icon"><use href="#i-star"/></svg>
+        <svg class="icon"><use href="#i-trash-can"/></svg><svg class="icon"><use href="#i-pin"/></svg><svg class="icon"><use href="#i-check"/></svg>
+        <svg class="icon"><use href="#i-circle-check"/></svg><svg class="icon"><use href="#i-cross"/></svg><svg class="icon"><use href="#i-clipboard"/></svg>
+        <svg class="icon"><use href="#i-arrow-forward-thick"/></svg><svg class="icon"><use href="#i-chevron-down"/></svg>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // Theme cycling: auto → light → dark. Stored per browser.
+  const root = document.documentElement, btn = document.getElementById('theme');
+  const order = ['auto', 'light', 'dark'];
+  const label = () => { const t = root.dataset.theme || 'auto'; btn.textContent = 'theme: ' + t; };
+  btn.addEventListener('click', () => {
+    const cur = root.dataset.theme || 'auto', next = order[(order.indexOf(cur) + 1) % 3];
+    if (next === 'auto') { delete root.dataset.theme; } else { root.dataset.theme = next; }
+    try { next === 'auto' ? localStorage.removeItem('tmi-theme') : localStorage.setItem('tmi-theme', next); } catch (e) {}
+    label(); swatches();
+  });
+  label();
+
+  // Swatch captions read the live token value and compute contrast on paper,
+  // so the numbers shown are the numbers rendered, in either theme.
+  const lum = (hex) => {
+    let h = hex.replace('#', '').trim();
+    if (h.length === 3) h = h.split('').map((d) => d + d).join(''); // Chrome normalises #ffffff to #fff
+    const c = h.match(/../g).map((p) => parseInt(p, 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a, b) => { const [l1, l2] = [lum(a), lum(b)].sort((x, y) => y - x); return ((l1 + 0.05) / (l2 + 0.05)).toFixed(2); };
+  function swatches() {
+    const cs = getComputedStyle(root), paper = cs.getPropertyValue('--tmi-paper').trim();
+    document.querySelectorAll('#swatches li').forEach((li) => {
+      const name = li.dataset.token, hex = cs.getPropertyValue('--tmi-' + name).trim();
+      let cap = li.querySelector('.cap'); if (!cap) { cap = document.createElement('div'); cap.className = 'cap mt-6 font-mono text-micro text-ink-3'; li.appendChild(cap); }
+      cap.innerHTML = `<span class="text-ink-2">${name}</span> ${hex}` + (li.hasAttribute('data-contrast') ? ` · ${ratio(hex, paper)}:1` : '');
+    });
+  }
+  swatches();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', swatches);
+</script>
+</body>
+</html>

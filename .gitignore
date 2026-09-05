@@ -6,3 +6,6 @@ build/
 .swiftpm/
 *.dmg
 .DS_Store
+
+# web
+web/node_modules/

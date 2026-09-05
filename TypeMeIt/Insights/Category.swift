@@ -11,7 +11,8 @@
 // | `emails`           | Mail clients (Mail, Outlook, Superhuman, Spark, Mimestream, Thunderbird…) and webmail tabs (Gmail, Outlook, Proton, Fastmail…). |
 // | `documents`        | Word processors and notes (Pages, Word, Notes, Notion, Obsidian, Craft, Bear, Google Docs/Sheets/Slides, Confluence…). |
 // | `code`             | Editors and IDEs (VS Code, Xcode, JetBrains, Zed, Sublime), terminals without an agent in the title, GitHub/GitLab tabs. |
-// | `other`            | Everything else, including browser tabs no rule recognises.          |
+// | `browsing`         | A browser tab no title rule recognises.                              |
+// | `other`            | Everything else.                                                     |
 //
 // Matching is case-insensitive. App rules match the app id (bundle id on
 // macOS, executable name on Windows) by substring, or the app's display name
@@ -28,6 +29,7 @@ enum UsageCategory: String, Sendable, Codable, CaseIterable {
     case emails
     case documents
     case code
+    case browsing
     case other
 
     var displayName: String {
@@ -38,6 +40,7 @@ enum UsageCategory: String, Sendable, Codable, CaseIterable {
         case .emails: "Emails"
         case .documents: "Documents"
         case .code: "Code"
+        case .browsing: "Browsing"
         case .other: "Other"
         }
     }
@@ -48,7 +51,7 @@ enum Category {
     enum AppKind: Sendable, Equatable {
         /// The app alone decides the category.
         case fixed(UsageCategory)
-        /// The category depends on the open tab; unknown titles are `other`.
+        /// The category depends on the open tab; unknown titles are `browsing`.
         case browser
         /// The category depends on what runs inside; unknown titles are `code`.
         case terminal
@@ -318,7 +321,7 @@ enum Category {
 
         switch kind {
         case .fixed(let category): return category
-        case .browser: return firstTitleMatch(title, browserTitleRules) ?? .other
+        case .browser: return firstTitleMatch(title, browserTitleRules) ?? .browsing
         case .terminal: return firstTitleMatch(title, terminalTitleRules) ?? .code
         // Unknown apps still get a chance through their window title, which
         // covers web apps wrapped in unlisted browsers.

@@ -1,20 +1,80 @@
 import SwiftUI
 
-struct SettingsView: View {
-    var body: some View {
-        TabView {
-            InsightsTab().tabItem { Label("Insights", image: "akar-statistic-up") }
-            GeneralTab().tabItem { Label("General", image: "akar-microphone") }
-            TextTab().tabItem { Label("Text", image: "akar-text-align-left") }
-            HistoryTab().tabItem { Label("History", image: "akar-clock") }
-            AppTab().tabItem { Label("App", image: "akar-gear") }
+enum SettingsTab: String, CaseIterable {
+    case insights, general, text, history, app
+
+    var icon: String {
+        switch self {
+        case .insights: "akar-statistic-up"
+        case .general: "akar-microphone"
+        case .text: "akar-text-align-left"
+        case .history: "akar-clock"
+        case .app: "akar-gear"
         }
-        .frame(width: 640)
-        .frame(minHeight: 420)
     }
 }
 
-/// A grouped card with rows, in the System Settings style.
+struct SettingsView: View {
+    @State private var tab: SettingsTab? = .insights
+
+    var body: some View {
+        NavigationSplitView {
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(SettingsTab.allCases, id: \.self) { t in
+                    let on = t == tab
+                    Button { tab = t } label: {
+                        HStack(spacing: 8) {
+                            Image(t.icon).resizable().frame(width: 14, height: 14)
+                            Text(t.rawValue).font(DesignTokens.Fonts.ui.monospaced().weight(.semibold))
+                        }
+                            .foregroundStyle(on ? DesignTokens.Colors.ink : DesignTokens.Colors.ink2)
+                            .padding(.horizontal, 10)
+                            .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
+                            .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).fill(on ? DesignTokens.Colors.inkA08 : Color.clear))
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer()
+            }
+            .padding(10)
+            .navigationSplitViewColumnWidth(min: 150, ideal: 170, max: 220)
+        } detail: {
+            Group {
+                switch tab ?? .insights {
+                case .general: GeneralTab()
+                case .text: TextTab()
+                case .history: HistoryTab()
+                case .insights: InsightsTab()
+                case .app: AppTab()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(DesignTokens.Colors.paper)
+            .navigationTitle("settings")
+            .toolbar(removing: .title)
+        }
+        .tint(DesignTokens.Colors.ink)
+        .frame(minWidth: 780, minHeight: 480)
+    }
+}
+
+/// The design system's button: mono label, ink outline, inverts when primary.
+struct InkButtonStyle: ButtonStyle {
+    var primary = false
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12, design: .monospaced))
+            .foregroundStyle(primary ? DesignTokens.Colors.onSlab : DesignTokens.Colors.ink)
+            .padding(.horizontal, 10)
+            .frame(height: 26)
+            .background(primary ? DesignTokens.Colors.slab : Color.clear)
+            .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(DesignTokens.Colors.ink, lineWidth: DesignTokens.hairline))
+            .opacity(configuration.isPressed ? 0.6 : 1)
+    }
+}
+
+/// A square inset list with an ink border and a mono title above it.
 struct SettingsGroup<Content: View>: View {
     var title: String?
     @ViewBuilder var content: Content
@@ -22,16 +82,19 @@ struct SettingsGroup<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let title {
-                Text(title.uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 12)
+                Text(title.lowercased())
+                    .font(DesignTokens.Fonts.label.weight(.regular).monospaced())
+                    .foregroundStyle(DesignTokens.Colors.ink2)
             }
             VStack(spacing: 0) { content }
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color(nsColor: .controlBackgroundColor)))
-                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.black.opacity(0.12), lineWidth: 0.5))
+                .overlay(Rectangle().strokeBorder(DesignTokens.Colors.ink, lineWidth: DesignTokens.hairline))
         }
     }
+}
+
+/// Full-width hairline between rows.
+struct RowRule: View {
+    var body: some View { Rectangle().fill(DesignTokens.Colors.inkA20).frame(height: DesignTokens.hairline) }
 }
 
 struct SettingsRow<Control: View>: View {
@@ -44,17 +107,17 @@ struct SettingsRow<Control: View>: View {
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(label).font(.system(size: 13))
+                    Text(label).font(DesignTokens.Fonts.ui.monospaced())
                     if let subtitle {
-                        Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary).frame(maxWidth: 400, alignment: .leading)
+                        Text(subtitle).font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2).frame(maxWidth: 400, alignment: .leading)
                     }
                 }
                 Spacer()
                 control
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-            if !last { Divider().padding(.leading, 12) }
+            .padding(.vertical, 10)
+            if !last { RowRule() }
         }
     }
 }
@@ -66,35 +129,35 @@ struct GeneralTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                SettingsGroup(title: "Shortcuts") {
-                    SettingsRow(label: "Hold to talk", subtitle: "Recording runs while the key is held. A single tap does nothing.") { Keycap("fn") }
-                    SettingsRow(label: "Pin while holding", subtitle: "Keeps recording after you let go of fn. Also on the pill. Press fn again to finish.") { Keycap("space") }
-                    SettingsRow(label: "Cancel", last: true) { Keycap("esc") }
+                SettingsGroup(title: "shortcuts") {
+                    SettingsRow(label: "hold to talk") { Keycap("fn") }
+                    SettingsRow(label: "pin", subtitle: "fn again to finish") { Keycap("space") }
+                    SettingsRow(label: "cancel", last: true) { Keycap("esc") }
                 }
-                SettingsGroup(title: "Audio") {
-                    SettingsRow(label: "Microphone") {
+                SettingsGroup(title: "audio") {
+                    SettingsRow(label: "microphone") {
                         Picker("", selection: Binding(get: { settings.microphoneUID ?? "" }, set: { settings.microphoneUID = $0.isEmpty ? nil : $0; Pipeline.shared.applyMicrophoneSettings() })) {
-                            Text("System default").tag("")
+                            Text("system default").tag("")
                             ForEach(devices) { d in Text(d.name).tag(d.id) }
                         }
                         .labelsHidden().frame(width: 220)
                         .onAppear { devices = AudioCapture.inputDevices() }
                     }
-                    SettingsRow(label: "Keep microphone open", subtitle: "Starts recording faster. Uses a little more power.") {
+                    SettingsRow(label: "keep microphone open", subtitle: "faster start") {
                         Toggle("", isOn: Binding(get: { settings.alwaysOnMicrophone }, set: { settings.alwaysOnMicrophone = $0; Pipeline.shared.applyMicrophoneSettings() })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "Mute other audio while recording", last: true) {
+                    SettingsRow(label: "mute other audio", last: true) {
                         Toggle("", isOn: $settings.muteWhileRecording).toggleStyle(.switch).labelsHidden()
                     }
                 }
-                SettingsGroup(title: "Feedback") {
-                    SettingsRow(label: "Show recording pill", subtitle: "A small indicator at the bottom of the screen.") {
+                SettingsGroup(title: "feedback") {
+                    SettingsRow(label: "recording pill") {
                         Toggle("", isOn: $settings.overlayEnabled).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "Sounds") {
+                    SettingsRow(label: "sounds") {
                         Toggle("", isOn: $settings.audioFeedback).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "Offer to copy when nothing is focused", subtitle: "Shown on the pill when there is no text field to paste into.", last: true) {
+                    SettingsRow(label: "offer to copy when nothing is focused", last: true) {
                         Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
                     }
                 }
@@ -112,8 +175,8 @@ struct Keycap: View {
             .font(.system(size: 12))
             .padding(.horizontal, 8)
             .frame(height: 22)
-            .background(RoundedRectangle(cornerRadius: 5).fill(Color(nsColor: .controlBackgroundColor)))
-            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.black.opacity(0.18), lineWidth: 0.5))
+            .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).fill(DesignTokens.Colors.paperRaised))
+            .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(DesignTokens.Colors.inkA20, lineWidth: 0.5))
     }
 }
 
@@ -125,16 +188,16 @@ struct TextTab: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 SettingsGroup {
-                    SettingsRow(label: "Clean up with Apple Intelligence", subtitle: "Fixes punctuation, numbers and currency on device. Nothing leaves your Mac.", last: true) {
+                    SettingsRow(label: "clean up with apple intelligence", subtitle: "on device", last: true) {
                         Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
                     }
                 }
                 SettingsGroup {
-                    SettingsRow(label: "Learn from my corrections", subtitle: "When you fix a word Type Me It got wrong, in History or in the app you pasted into, it remembers the spelling.", last: true) {
+                    SettingsRow(label: "learn from my corrections", last: true) {
                         Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
                     }
                 }
-                SettingsGroup(title: "Custom words") {
+                SettingsGroup(title: "custom words") {
                     VStack(alignment: .leading, spacing: 0) {
                         if !settings.customWords.isEmpty {
                             FlowLayout(spacing: 6) {
@@ -143,34 +206,31 @@ struct TextTab: View {
                                         Text(word).font(.system(size: 12))
                                         Button { settings.removeCustomWord(word) } label: {
                                             Image("akar-cross").resizable().frame(width: 8, height: 8)
-                                        }.buttonStyle(.plain).foregroundStyle(.secondary)
+                                        }.buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
                                     }
                                     .padding(.leading, 9).padding(.trailing, 6)
                                     .frame(height: 22)
-                                    .background(Capsule().fill(Color.accentColor.opacity(0.12)))
+                                    .background(Capsule().fill(DesignTokens.Colors.inkA08))
                                 }
                             }
                             .padding(.horizontal, 12).padding(.vertical, 10)
-                            Divider().padding(.leading, 12)
+                            RowRule()
                         }
-                        HStack(spacing: 8) {
-                            TextField("Add a name or term", text: $newWord)
-                                .textFieldStyle(.roundedBorder)
-                                .onSubmit { settings.addCustomWord(newWord); newWord = "" }
-                            Text("Return to add").font(.system(size: 11)).foregroundStyle(.secondary)
-                        }
+                        TextField("add a word", text: $newWord)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { settings.addCustomWord(newWord); newWord = "" }
                         .padding(.horizontal, 12).padding(.vertical, 8)
                     }
                 }
-                SettingsGroup(title: "Paste") {
-                    SettingsRow(label: "Add a space after pasting") {
+                SettingsGroup(title: "paste") {
+                    SettingsRow(label: "space after paste") {
                         Toggle("", isOn: $settings.appendTrailingSpace).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "Press a key after pasting", last: !settings.autoSubmit) {
+                    SettingsRow(label: "key after paste", last: !settings.autoSubmit) {
                         Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
                     }
                     if settings.autoSubmit {
-                        SettingsRow(label: "Key", last: true) {
+                        SettingsRow(label: "key", last: true) {
                             Picker("", selection: $settings.autoSubmitKey) {
                                 ForEach(AutoSubmitKey.allCases, id: \.self) { Text($0.label).tag($0) }
                             }.labelsHidden().frame(width: 180)
@@ -218,28 +278,28 @@ struct AppTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                SettingsGroup(title: "General") {
-                    SettingsRow(label: "Open at login") {
+                SettingsGroup(title: "general") {
+                    SettingsRow(label: "open at login") {
                         Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; (NSApp.delegate as? AppDelegate)?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "Check for updates automatically") {
-                        Toggle("", isOn: Binding(get: { Updates.shared.automaticallyChecks }, set: { Updates.shared.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
+                    SettingsRow(label: "check for updates") {
+                        Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "Check for updates now") {
-                        Button("Check Now") { Updates.shared.checkForUpdates() }
+                    SettingsRow(label: "dock icon", last: true) {
+                        Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; (NSApp.delegate as? AppDelegate)?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
+                    }
+                }
+                SettingsGroup(title: "about") {
+                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
+                        Button("check now") { updates.checkForUpdates() }
+                            .buttonStyle(InkButtonStyle())
                             .disabled(!updates.canCheck)
                     }
-                    SettingsRow(label: "Website", last: true) {
-                        Link("typeme.it", destination: URL(string: "https://typeme.it")!)
+                    SettingsRow(label: "website", last: true) {
+                        Link("typeme.it", destination: Fixed.websiteURL)
+                            .font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink).underline()
                     }
                 }
-                VStack(spacing: 2) {
-                    Text("Type Me It \(AppVersion.current) · Parakeet 0.6B on device")
-                    Text("Apple Intelligence available")
-                }
-                .font(.system(size: 11)).foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 6)
             }
             .padding(20)
         }
