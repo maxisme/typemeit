@@ -127,7 +127,7 @@ async function versionedDMG() {
 document.getElementById("download").addEventListener("mousedown", (ev) => ev.preventDefault());
 document.getElementById("download").addEventListener("click", async () => {
   if (!isMac()) {
-    document.getElementById("notmac").textContent = "Type me it is for macOS only";
+    document.getElementById("notmac").textContent = "type me it is for macos only";
     return;
   }
   location.href = await versionedDMG().catch(() => DMG);
