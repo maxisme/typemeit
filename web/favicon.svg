@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="6.4 5.4 52 52" fill="none" stroke="#0a0a0a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- The menu bar puff from TypeMeIt/Support/Icon/puff.svg, stroked heavier
+       so it survives 16 px. Follows the tab bar's colour scheme in browsers
+       that render SVG favicons; the PNG and ICO cover the rest. -->
+  <style>@media (prefers-color-scheme: dark) { svg { stroke: #fafafa; } }</style>
+  <path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/>
+  <path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/>
+  <path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/>
+  <path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/>
+  <path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/>
+</svg>
