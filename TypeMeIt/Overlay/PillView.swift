@@ -13,7 +13,7 @@ struct VisualEffect: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) { nsView.material = material }
 }
 
-/// The pill for the prompts and toasts after a dictation: 40 pt tall,
+/// The pill for the prompts and toasts after a dictation: 44 pt tall,
 /// capsule, three columns with the label dead centre, an icon on the left,
 /// the buttons on the right. Set like the rest of the design system: flat
 /// paper, an ink hairline, mono lowercase labels, ink buttons, and the one
@@ -30,9 +30,9 @@ struct PillView: View {
             Spacer(minLength: 0)
             rightSlot.frame(minWidth: 24, alignment: .trailing)
         }
-        .padding(.leading, 14)
-        .padding(.trailing, 8)
-        .frame(width: model.width, height: 40)
+        .padding(.leading, 16)
+        .padding(.trailing, 9)
+        .frame(width: model.width, height: 44)
         .background(Capsule().fill(DesignTokens.Colors.paper))
         .overlay(Capsule().strokeBorder(DesignTokens.Colors.ink, lineWidth: DesignTokens.hairline))
         .shadow(color: .black.opacity(scheme == .dark ? 0.32 : 0.14), radius: 14, y: 10)
