@@ -136,13 +136,18 @@ to one field, which is the closest equivalent of guided generation. Machine: M4
 (base), 24 GB, macOS 26.6.1, llama.cpp 0.4.0, Q4_K_M weights. The prompt is read
 from `PostProcessor.swift`, so these are the app's live instructions.
 
-| Engine | File | Load | Resident with weights | Passed | Mean short case | Mean long dictation | Generation tok/s |
-|---|---|---|---|---|---|---|---|
-| Apple Intelligence | none | 0 | none in our process | 5/9 | 0.6 s | 1.6 s | ~19 (estimated) |
-| Qwen3.5 2B | 1.3 GB | 0.9 s | 1.7 GB | 7/9 | 1.5 s | 5.2 s | 24 |
-| Qwen3.5 4B | 2.7 GB | 1.4 s | 3.3 GB | 7/9 | 2.8 s | 9.2 s | 16 |
-| Gemma 4 E2B | 3.1 GB | 2.1 s | 3.5 GB | 7/9 | 1.6 s | 6.4 s | 21 |
-| Gemma 4 E4B | 5.0 GB | 3.4 s | 5.3 GB | 7/9 | 2.7 s | 9.4 s | 15 |
+| Engine | File | Load | Resident with weights | Short cases | Long layouts | Mean short case | Mean long dictation | Generation tok/s |
+|---|---|---|---|---|---|---|---|---|
+| Apple Intelligence | none | 0 | none in our process | 6/9 | 0/3 | 0.6 s | 1.7 s | ~18 (estimated) |
+| Qwen3.5 2B | 1.3 GB | 0.9 s | 1.7 GB | 8/9 | 0/3 | 1.5 s | 5.3 s | 24 |
+| Qwen3.5 4B | 2.7 GB | 1.9 s | 3.2 GB | 8/9 | 1/3 | 3.0 s | 9.8 s | 15 |
+| Gemma 4 E2B | 3.1 GB | 2.4 s | 3.3 GB | 8/9 | 0/3 | 1.7 s | 6.6 s | 21 |
+| Gemma 4 E4B | 5.0 GB | 3.5 s | 5.3 GB | 8/9 | 1/3 | 2.8 s | 10.5 s | 15 |
+
+A case passes when the output matches any of its accepted wordings with case and
+punctuation ignored, so "cafe" for "café" and "and third" for "third" both count.
+The long layouts are compared line by line with blank lines dropped, so the list
+has to come out as numbered lines but paragraph spacing is free.
 
 Machine-wide CPU sat at 22 to 25 percent busy for every engine, Apple included,
 so CPU is not what separates them; the GGUF engines spend 14 to 17 CPU-seconds
@@ -155,26 +160,36 @@ What the failures are:
 
 - Apple Intelligence drops words: "that will be twenty five dollars please" comes
   back as "twenty-five dollars please" and "um so I think we should uh ship it on
-  Friday" as "we should ship it on Friday". It also strips French accents and
-  leaves one "um" in the list case. None of the other engines drop words in the
-  short cases.
-- Every GGUF "fails" the list case only by inserting an "and" before the last
-  item, so their effective score is 8/9. Qwen3.5 2B and Gemma 4 E2B each miss one
-  currency conversion; Qwen3.5 4B rewrites "half an hour" as "30 minutes"; Gemma 4
-  E4B drops "So".
+  Friday" as "we should ship it on Friday". It leaves one "um" in the list case.
+  None of the other engines drop words in the short cases.
+- Each GGUF misses one short case: Qwen3.5 2B and Gemma 4 E2B a currency
+  conversion ("twenty-five dollars" kept, or "That will be" dropped), Qwen3.5 4B
+  rewrites "half an hour" as "30 minutes", Gemma 4 E4B drops "So".
 - Gemma 4 E2B is a 3 GB file despite the 2B name because the per-layer
   embeddings are stored in full; the memory table above that put it at 1.3 GB is
   wrong for the GGUF builds.
 
-Formatting. The long dictations ran with an added rule asking for one item per
-line and a blank line between topics. Only Qwen3.5 4B did it, and it did it well:
-a lead-in line, a dash list, a blank line, then the change of subject as its own
-paragraph, with numbers and currency converted. Apple Intelligence, Qwen3.5 2B and
-both Gemma sizes returned one block; Gemma 4 E2B wrote the dashes inline in the
-sentence. On the 91-word dictation Apple Intelligence returned the transcript
-untouched, lower case and all. Qwen3.5 4B pays for this with 7 to 11 seconds a
-dictation against Apple's 1.6, and it trimmed "we mentioned last time" into the
-wrong clause in one list.
+Formatting. The long dictations ran with an added rule asking for a lead-in
+ending in a colon, counted items as a numbered list, and a blank line between
+topics. The target for the first one is:
+
+```
+Okay so three things for tomorrow:
+1. We need to finish the landing page
+2. Call the accountant about the VAT return.
+3. Book the train tickets for Friday.
+
+Also separately, I was thinking about the pricing page. ...
+```
+
+Qwen3.5 4B and Gemma 4 E4B produce exactly that shape, and 4B also lays out the
+supplier notes as a numbered list with a separate paragraph for the change of
+contact. Both miss the third case only on wording. Apple Intelligence, Qwen3.5
+2B and Gemma 4 E2B return one block; E2B writes "1. 2. 3." inline in the sentence.
+On the 91-word dictation Apple Intelligence and Qwen3.5 2B return the transcript
+untouched, lower case and all, which looks like the output field being filled
+with the input when the model gives up. The 4B-class models pay for the layout
+with 7 to 11 seconds a dictation against Apple's 1.7.
 
 ## Recommendation
 
@@ -183,8 +198,8 @@ anything we could embed and costs no memory in our process, and its failures are
 dropped words in short transcripts that a prompt change may still fix.
 
 The measurements change one thing in the earlier advice: the model to try first
-is Qwen3.5 4B, not the 2B or Gemma. It is the only one that lays out a long
-dictation, and it is the most careful with words in the short cases. The cost is
+is Qwen3.5 4B, with Gemma 4 E4B as the alternative. Those two are the only ones
+that lay out a long dictation, and 4B is the smaller file by 2.3 GB. The cost is
 3.3 GB resident while loaded and about ten seconds for a paragraph, so it belongs
 behind a setting, loaded on demand and unloaded on the `Fixed.modelUnloadIdle`
 timer, and used only above a length threshold where layout matters. On macOS 27

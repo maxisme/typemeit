@@ -67,7 +67,7 @@ struct Metrics {
 }
 
 struct CaseResult: Encodable {
-    var input: String, expected: String?, got: String, pass: Bool?
+    var input: String, expected: [String]?, got: String, pass: Bool?
     var wallSeconds: Double, promptTokens: Int, outputTokens: Int, promptTokensPerSecond: Double, generationTokensPerSecond: Double
 }
 
@@ -83,6 +83,7 @@ struct Summary: Encodable {
     var processCPUSeconds: Double
     var machineCPUBusyPercent: Double
     var passed: String
+    var longPassed: String
     var meanWallSeconds: Double
     var meanGenerationTokensPerSecond: Double
     var longMeanWallSeconds: Double

@@ -16,29 +16,32 @@ func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, Str
     var results: [CaseResult] = [], long: [CaseResult] = []
     for c in cases {
         let o = try await run(Cases.instructions, template.replacingOccurrences(of: "${output}", with: c.input))
-        let ok = Cases.normalise(o.text) == Cases.normalise(c.expected)
+        let ok = c.expected.contains { Cases.normalise(o.text) == Cases.normalise($0) }
         results.append(CaseResult(input: c.input, expected: c.expected, got: o.text, pass: ok, wallSeconds: o.promptSeconds + o.generateSeconds, promptTokens: o.promptTokens, outputTokens: o.outputTokens,
                                   promptTokensPerSecond: o.promptSeconds > 0 ? Double(o.promptTokens) / o.promptSeconds : 0, generationTokensPerSecond: o.generateSeconds > 0 ? Double(o.outputTokens) / o.generateSeconds : 0))
         print("  \(ok ? "PASS" : "FAIL")  \(String(format: "%.2fs", o.promptSeconds + o.generateSeconds))  \(c.input)")
-        if !ok { print("        expected: \(c.expected)\n        got:      \(o.text)") }
+        if !ok { print("        expected: \(c.expected.joined(separator: "\n              or: "))\n        got:      \(o.text)") }
     }
-    for s in Cases.long {
+    for c in Cases.long {
+        let s = c.input
         let o = try await run(Cases.instructions, templateFmt.replacingOccurrences(of: "${output}", with: s))
-        long.append(CaseResult(input: s, expected: nil, got: o.text, pass: nil, wallSeconds: o.promptSeconds + o.generateSeconds, promptTokens: o.promptTokens, outputTokens: o.outputTokens,
+        let ok = c.expected.contains { Cases.normaliseLayout(o.text) == Cases.normaliseLayout($0) }
+        long.append(CaseResult(input: s, expected: c.expected, got: o.text, pass: ok, wallSeconds: o.promptSeconds + o.generateSeconds, promptTokens: o.promptTokens, outputTokens: o.outputTokens,
                                promptTokensPerSecond: o.promptSeconds > 0 ? Double(o.promptTokens) / o.promptSeconds : 0, generationTokensPerSecond: o.generateSeconds > 0 ? Double(o.outputTokens) / o.generateSeconds : 0))
-        print("  LONG  \(String(format: "%.2fs", o.promptSeconds + o.generateSeconds))  \(s.split(separator: " ").count) words in, \(o.text.split(separator: " ").count) out, \(o.text.contains("\n") ? "has line breaks" : "single block")")
+        print("  \(ok ? "PASS" : "FAIL")  \(String(format: "%.2fs", o.promptSeconds + o.generateSeconds))  long: \(s.split(separator: " ").count) words in, \(o.text.split(separator: " ").count) out, \(o.text.contains("\n") ? "has line breaks" : "single block")")
         print("        " + o.text.replacingOccurrences(of: "\n", with: "\n        "))
     }
     let cpu1 = Metrics.processCPUSeconds(), m1 = Metrics.machineTicks()
     let peak = sampler.stop()
     let passed = results.filter { $0.pass == true }.count
+    let longPassed = long.filter { $0.pass == true }.count
     let summary = Summary(
         engine: name, fileGB: fileGB, loadSeconds: (loadSeconds * 100).rounded() / 100,
         residentAfterLoadGB: (Double(residentAfterLoad) / 1e7).rounded() / 100, peakResidentGB: (Double(peak) / 1e7).rounded() / 100,
         footprintGB: (Double(Metrics.residentBytes()) / 1e7).rounded() / 100,
         processCPUSeconds: ((cpu1 - cpu0) * 10).rounded() / 10,
         machineCPUBusyPercent: m1.total > m0.total ? (Double(m1.busy - m0.busy) / Double(m1.total - m0.total) * 1000).rounded() / 10 : 0,
-        passed: "\(passed)/\(cases.count)",
+        passed: "\(passed)/\(cases.count)", longPassed: "\(longPassed)/\(long.count)",
         meanWallSeconds: (results.map(\.wallSeconds).reduce(0, +) / Double(results.count) * 100).rounded() / 100,
         meanGenerationTokensPerSecond: (results.map(\.generationTokensPerSecond).reduce(0, +) / Double(results.count)).rounded(),
         longMeanWallSeconds: (long.map(\.wallSeconds).reduce(0, +) / Double(long.count) * 100).rounded() / 100)

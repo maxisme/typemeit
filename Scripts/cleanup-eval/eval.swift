@@ -3,12 +3,22 @@ import FoundationModels
 
 /// Runs the cases in cases.json through the on-device model with the prompt
 /// template pulled from PostProcessor.swift, and prints each result against
-/// the expected text. The comparison ignores case and punctuation so a comma
-/// for a full stop does not fail a case; word changes do. An optional argument
-/// names another PostProcessor.swift to read the template from.
+/// the expected text. `expected` is one string or a list of acceptable ones, for
+/// wordings that are all fine. The comparison ignores case and punctuation so a
+/// comma for a full stop does not fail a case; word changes do. An optional
+/// argument names another PostProcessor.swift to read the template from.
 @Generable struct CleanedTranscript: Sendable { let cleanedText: String }
 
-struct Case: Decodable { let input: String; let expected: String }
+struct Case: Decodable {
+    let input: String
+    let expected: [String]
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        input = try c.decode(String.self, forKey: .input)
+        if let list = try? c.decode([String].self, forKey: .expected) { expected = list } else { expected = [try c.decode(String.self, forKey: .expected)] }
+    }
+    enum CodingKeys: CodingKey { case input, expected }
+}
 
 @main struct Eval {
     static func normalise(_ s: String) -> String {
@@ -36,10 +46,10 @@ struct Case: Decodable { let input: String; let expected: String }
             let session = LanguageModelSession(model: model, instructions: "You clean up speech-to-text transcripts. Return only the cleaned transcript text.")
             let r = try await session.respond(to: tpl.replacingOccurrences(of: "${output}", with: c.input), generating: CleanedTranscript.self, options: GenerationOptions(sampling: .greedy))
             let out = r.content.cleanedText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let ok = normalise(out) == normalise(c.expected)
+            let ok = c.expected.contains { normalise(out) == normalise($0) }
             if !ok { failed += 1 }
             print("\(ok ? "PASS" : "FAIL")  \(c.input)")
-            if !ok { print("      expected: \(c.expected)\n      got:      \(out)") }
+            if !ok { print("      expected: \(c.expected.joined(separator: "\n             or: "))\n      got:      \(out)") }
         }
         print("\n\(cases.count - failed)/\(cases.count) passed")
         exit(failed == 0 ? 0 : 1)
