@@ -53,7 +53,7 @@ struct PillView: View {
         case .copyPrompt:
             Image("akar-clipboard").resizable().frame(width: 15, height: 15).foregroundStyle(labelColor)
         case .learned:
-            Image("akar-circle-check").resizable().frame(width: 15, height: 15).foregroundStyle(Color(red: 0.19, green: 0.82, blue: 0.35))
+            Image("akar-circle-check").resizable().frame(width: 15, height: 15).foregroundStyle(DesignTokens.Colors.ink)
         default:
             Color.clear.frame(width: 24, height: 24)
         }
@@ -62,11 +62,11 @@ struct PillView: View {
     @ViewBuilder private var centre: some View {
         switch model.state {
         case .copyPrompt:
-            Text("Nothing to paste into").font(.system(size: 12)).foregroundStyle(labelColor).lineLimit(1)
+            Text("nothing to paste into").font(.system(size: 12)).foregroundStyle(labelColor).lineLimit(1)
         case .learned(_, let label):
             Text(label).font(.system(size: 12)).foregroundStyle(labelColor).lineLimit(1)
         case .undone:
-            Text("Undone").font(.system(size: 12)).foregroundStyle(labelColor)
+            Text("undone").font(.system(size: 12)).foregroundStyle(labelColor)
         default:
             EmptyView()
         }
@@ -76,12 +76,12 @@ struct PillView: View {
         switch model.state {
         case .copyPrompt:
             HStack(spacing: 8) {
-                pillButton(model.copied ? "Copied" : "Copy") { model.onCopy?() }.disabled(model.copied)
+                pillButton(model.copied ? "copied" : "copy") { model.onCopy?() }.disabled(model.copied)
                 cancelButton
             }
         case .learned:
             HStack(spacing: 8) {
-                pillButton("Undo") { model.onUndo?() }
+                pillButton("undo") { model.onUndo?() }
                 chip(size: 22, action: { model.onKeep?() }) {
                     Image("akar-check").resizable().frame(width: 11, height: 11)
                 }

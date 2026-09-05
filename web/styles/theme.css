@@ -1,0 +1,160 @@
+/* Generated from design/tokens.json by design/build-tokens.mjs. Do not edit. */
+
+:root {
+  --tmi-paper: #ffffff;
+  --tmi-paper-sunk: #f7f7f7;
+  --tmi-paper-raised: #ffffff;
+  --tmi-ink: #0a0a0a;
+  --tmi-ink-2: #4a4a4a;
+  --tmi-ink-3: #6e6e6e;
+  --tmi-rule: #e4e4e4;
+  --tmi-rule-control: #949494;
+  --tmi-slab: #0a0a0a;
+  --tmi-on-slab: #ffffff;
+  --tmi-ink-a04: rgba(10, 10, 10, 0.04);
+  --tmi-ink-a08: rgba(10, 10, 10, 0.08);
+  --tmi-ink-a12: rgba(10, 10, 10, 0.12);
+  --tmi-ink-a20: rgba(10, 10, 10, 0.20);
+  --tmi-ink-a32: rgba(10, 10, 10, 0.32);
+  --tmi-ink-a48: rgba(10, 10, 10, 0.48);
+  --tmi-ink-a64: rgba(10, 10, 10, 0.64);
+  --tmi-ink-a88: rgba(10, 10, 10, 0.88);
+  --tmi-shadow-lift: 0 10px 24px -6px rgba(10, 10, 10, 0.18), 0 2px 6px -2px rgba(10, 10, 10, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --tmi-paper: #0b0b0b;
+    --tmi-paper-sunk: #060606;
+    --tmi-paper-raised: #161616;
+    --tmi-ink: #fafafa;
+    --tmi-ink-2: #b4b4b4;
+    --tmi-ink-3: #8a8a8a;
+    --tmi-rule: #262626;
+    --tmi-rule-control: #6e6e6e;
+    --tmi-slab: #fafafa;
+    --tmi-on-slab: #0b0b0b;
+    --tmi-ink-a04: rgba(250, 250, 250, 0.05);
+    --tmi-ink-a08: rgba(250, 250, 250, 0.10);
+    --tmi-ink-a12: rgba(250, 250, 250, 0.15);
+    --tmi-ink-a20: rgba(250, 250, 250, 0.24);
+    --tmi-ink-a32: rgba(250, 250, 250, 0.36);
+    --tmi-ink-a48: rgba(250, 250, 250, 0.52);
+    --tmi-ink-a64: rgba(250, 250, 250, 0.68);
+    --tmi-ink-a88: rgba(250, 250, 250, 0.90);
+    --tmi-shadow-lift: 0 10px 28px -6px rgba(0, 0, 0, 0.70), 0 2px 8px -2px rgba(0, 0, 0, 0.50);
+  }
+}
+
+:root[data-theme='dark'] {
+  --tmi-paper: #0b0b0b;
+  --tmi-paper-sunk: #060606;
+  --tmi-paper-raised: #161616;
+  --tmi-ink: #fafafa;
+  --tmi-ink-2: #b4b4b4;
+  --tmi-ink-3: #8a8a8a;
+  --tmi-rule: #262626;
+  --tmi-rule-control: #6e6e6e;
+  --tmi-slab: #fafafa;
+  --tmi-on-slab: #0b0b0b;
+  --tmi-ink-a04: rgba(250, 250, 250, 0.05);
+  --tmi-ink-a08: rgba(250, 250, 250, 0.10);
+  --tmi-ink-a12: rgba(250, 250, 250, 0.15);
+  --tmi-ink-a20: rgba(250, 250, 250, 0.24);
+  --tmi-ink-a32: rgba(250, 250, 250, 0.36);
+  --tmi-ink-a48: rgba(250, 250, 250, 0.52);
+  --tmi-ink-a64: rgba(250, 250, 250, 0.68);
+  --tmi-ink-a88: rgba(250, 250, 250, 0.90);
+  --tmi-shadow-lift: 0 10px 28px -6px rgba(0, 0, 0, 0.70), 0 2px 8px -2px rgba(0, 0, 0, 0.50);
+}
+
+@theme inline {
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --ease-*: initial;
+  --tracking-*: initial;
+  --leading-*: initial;
+
+  --color-paper: var(--tmi-paper);
+  --color-paper-sunk: var(--tmi-paper-sunk);
+  --color-paper-raised: var(--tmi-paper-raised);
+  --color-ink: var(--tmi-ink);
+  --color-ink-2: var(--tmi-ink-2);
+  --color-ink-3: var(--tmi-ink-3);
+  --color-rule: var(--tmi-rule);
+  --color-rule-control: var(--tmi-rule-control);
+  --color-slab: var(--tmi-slab);
+  --color-on-slab: var(--tmi-on-slab);
+  --color-ink-a04: var(--tmi-ink-a04);
+  --color-ink-a08: var(--tmi-ink-a08);
+  --color-ink-a12: var(--tmi-ink-a12);
+  --color-ink-a20: var(--tmi-ink-a20);
+  --color-ink-a32: var(--tmi-ink-a32);
+  --color-ink-a48: var(--tmi-ink-a48);
+  --color-ink-a64: var(--tmi-ink-a64);
+  --color-ink-a88: var(--tmi-ink-a88);
+
+  --font-display: 'DM Mono', 'ui-monospace', 'SF Mono', Menlo, monospace;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, 'system-ui', 'Segoe UI', 'sans-serif';
+  --font-mono: 'DM Mono', 'ui-monospace', 'SF Mono', Menlo, monospace;
+
+  --text-display-1: clamp(3rem, 8vw, 5.5rem);
+  --text-display-1--line-height: 1.02;
+  --text-display-1--letter-spacing: -0.028em;
+  --text-display-1--font-weight: 400;
+  --text-display-2: clamp(2.25rem, 5vw, 3.5rem);
+  --text-display-2--line-height: 1.05;
+  --text-display-2--letter-spacing: -0.024em;
+  --text-display-2--font-weight: 400;
+  --text-display-3: clamp(1.75rem, 3.5vw, 2.25rem);
+  --text-display-3--line-height: 1.1;
+  --text-display-3--letter-spacing: -0.02em;
+  --text-display-3--font-weight: 400;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.018em;
+  --text-title--font-weight: 600;
+  --text-heading: 1.0625rem;
+  --text-heading--line-height: 1.3;
+  --text-heading--letter-spacing: -0.012em;
+  --text-heading--font-weight: 600;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.55;
+  --text-body--letter-spacing: -0.005em;
+  --text-body--font-weight: 400;
+  --text-ui: 0.8125rem;
+  --text-ui--line-height: 1.35;
+  --text-ui--letter-spacing: 0;
+  --text-ui--font-weight: 400;
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1.3;
+  --text-label--letter-spacing: 0.085em;
+  --text-label--font-weight: 600;
+  --text-micro: 0.625rem;
+  --text-micro--line-height: 1.3;
+  --text-micro--letter-spacing: 0.01em;
+  --text-micro--font-weight: 400;
+
+  --spacing: 1px;
+
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-full: 999px;
+
+  --shadow-lift: var(--tmi-shadow-lift);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-1: 120ms;
+  --duration-2: 180ms;
+  --duration-3: 320ms;
+  --duration-4: 560ms;
+
+  --hairline: 1px;
+  --focus-width: 2px;
+  --focus-offset: 2px;
+}

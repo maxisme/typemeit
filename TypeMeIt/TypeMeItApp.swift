@@ -16,9 +16,11 @@ struct TypeMeItApp: App {
         }
         .menuBarExtraStyle(.menu)
 
-        SwiftUI.Settings {
+        Window("settings", id: "settings") {
             SettingsView()
         }
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 640, height: 520)
     }
 }
 
@@ -38,6 +40,7 @@ final class AppState {
 }
 
 struct MenuContent: View {
+    @Environment(\.openWindow) private var openWindow
     @State private var appState = AppState.shared
     @State private var updates = Updates.shared
     @State private var store = Store.shared
@@ -54,7 +57,7 @@ struct MenuContent: View {
         Button("Copy Last Transcript") { Pipeline.shared.copyLastTranscript() }
             .disabled(store.history.isEmpty)
         Divider()
-        SettingsLink { Text("Settings…") }.keyboardShortcut(",", modifiers: .command)
+        Button("Settings…") { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) }.keyboardShortcut(",", modifiers: .command)
         Button("Check for Updates…") { updates.checkForUpdates() }
             .disabled(!updates.canCheck)
         Divider()
@@ -71,6 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         _ = Settings.shared
         _ = Store.shared
+        applyDockIcon()
         switch PostProcessor.availability {
         case .available:
             break
@@ -125,6 +129,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } catch {
             Log.app.error("Launch at login could not be changed: \(error.localizedDescription)")
         }
+    }
+
+    /// Info.plist launches the app as an agent; the Dock icon is opted into
+    /// here so the setting can flip it without a relaunch.
+    func applyDockIcon() {
+        NSApp.setActivationPolicy(Settings.shared.showDockIcon ? .regular : .accessory)
     }
 
     // MARK: Windows

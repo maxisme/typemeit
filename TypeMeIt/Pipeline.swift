@@ -69,6 +69,7 @@ final class Pipeline {
         case .recordingStarted: beginRecording()
         case .pinned:
             pinned = true
+            if settings.audioFeedback { Feedback.play(.pin) }
             if overlay.model.isRecording { overlay.show(.pinned) }
         case .recordingEnded: endRecording()
         case .cancelled: cancel()
@@ -139,6 +140,7 @@ final class Pipeline {
         Task { [weak self] in
             guard let self else { return }
             let raw: String
+            let transcribeStart = ContinuousClock.now
             do {
                 raw = try await Transcriber.shared.transcribe(pcm)
             } catch {
@@ -149,7 +151,9 @@ final class Pipeline {
                 return
             }
             guard gen == self.generation else { return }
-            await self.deliver(raw: raw, durationMs: durationMs, target: target, generation: gen)
+            let transcribeMs = Pipeline.elapsedMs(since: transcribeStart)
+            Log.transcriber.info("Transcribed \(durationMs) ms of audio in \(transcribeMs) ms")
+            await self.deliver(raw: raw, durationMs: durationMs, transcribeMs: transcribeMs, target: target, generation: gen)
         }
     }
 
@@ -159,19 +163,29 @@ final class Pipeline {
         overlay.hide()
     }
 
-    private func deliver(raw: String, durationMs: Int, target: Frontmost.Target?, generation gen: Int) async {
+    private static func elapsedMs(since start: ContinuousClock.Instant) -> Int {
+        let d = ContinuousClock.now - start
+        return Int(d.components.seconds * 1000) + Int(d.components.attoseconds / 1_000_000_000_000_000)
+    }
+
+    private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, generation gen: Int) async {
         if TextCleanup.isBlank(raw) { finishIdle(); return }
         let customWords = settings.customWords
         let cleaned = TextCleanup.run(raw, customWords: customWords, aliases: store.aliases(customWords: customWords), threshold: Fixed.wordCorrectionThreshold)
         var finalText = cleaned.text
         var postProcessed: String?
+        var postProcessMs: Int?
         let requested = settings.postProcessingEnabled
 
         if requested {
             phase = .cleaningUp
             shortcuts.setPhase(.cleaningUp)
             if settings.overlayEnabled { overlay.show(.cleaningUp) }
+            let start = ContinuousClock.now
             postProcessed = await PostProcessor.shared.run(cleaned.text, customWords: customWords)
+            let ms = Pipeline.elapsedMs(since: start)
+            postProcessMs = ms
+            Log.postProcess.info("Post-processing took \(ms) ms (\(postProcessed == nil ? "fell back to local cleanup" : "applied"))")
             guard gen == generation else { return }
             if let postProcessed { finalText = postProcessed }
         }
@@ -183,7 +197,7 @@ final class Pipeline {
 
         let entry = HistoryEntry(
             timestamp: Date(), transcript: cleaned.text, postProcessed: postProcessed, postProcessRequested: requested,
-            durationMs: durationMs, appId: target?.appId, appName: target?.appName, windowTitle: target?.windowTitle,
+            durationMs: durationMs, transcribeMs: transcribeMs, postProcessMs: postProcessMs, appId: target?.appId, appName: target?.appName, windowTitle: target?.windowTitle,
             dictionaryFixes: cleaned.dictionaryFixes)
         store.append(entry, limit: settings.historyLimit)
 

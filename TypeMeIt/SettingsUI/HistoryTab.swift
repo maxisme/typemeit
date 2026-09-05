@@ -5,8 +5,6 @@ struct HistoryTab: View {
     @State private var settings = Settings.shared
     @State private var search = ""
     @State private var expanded: Set<UUID> = []
-    @State private var editing: UUID?
-    @State private var editText = ""
 
     private var filtered: [HistoryEntry] {
         let q = search.trimmingCharacters(in: .whitespaces).lowercased()
@@ -19,9 +17,9 @@ struct HistoryTab: View {
         var out: [(String, [HistoryEntry])] = []
         for e in filtered {
             let title: String
-            if cal.isDateInToday(e.timestamp) { title = "Today" }
-            else if cal.isDateInYesterday(e.timestamp) { title = "Yesterday" }
-            else { title = e.timestamp.formatted(.dateTime.day().month(.wide)) }
+            if cal.isDateInToday(e.timestamp) { title = "today" }
+            else if cal.isDateInYesterday(e.timestamp) { title = "yesterday" }
+            else { title = e.timestamp.formatted(.dateTime.day().month(.wide)).lowercased() }
             if let last = out.last, last.0 == title { out[out.count - 1].1.append(e) } else { out.append((title, [e])) }
         }
         return out
@@ -33,18 +31,18 @@ struct HistoryTab: View {
                 VStack(alignment: .leading, spacing: 18) {
                     HStack(spacing: 8) {
                         HStack(spacing: 6) {
-                            Image("akar-search").resizable().frame(width: 13, height: 13).foregroundStyle(.tertiary)
-                            TextField("Search", text: $search).textFieldStyle(.plain)
+                            Image("akar-search").resizable().frame(width: 13, height: 13).foregroundStyle(DesignTokens.Colors.ink3)
+                            TextField("search", text: $search).textFieldStyle(.plain)
                         }
                         .padding(.horizontal, 8).frame(height: 26)
-                        .background(RoundedRectangle(cornerRadius: 7).fill(Color(nsColor: .controlBackgroundColor)))
-                        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Color.black.opacity(0.2), lineWidth: 0.5))
-                        Text("\(store.history.count) dictations · cleaned and raw text, no audio")
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.md).fill(DesignTokens.Colors.paperRaised))
+                        .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.md).strokeBorder(DesignTokens.Colors.ruleControl, lineWidth: 0.5))
+                        Text("\(store.history.count) dictations")
+                            .font(.system(size: 11).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
                     }
                     if groups.isEmpty {
-                        Text(store.history.isEmpty ? "Hold fn and speak. Your dictations will appear here." : "No matches.")
-                            .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 40)
+                        Text(store.history.isEmpty ? "nothing yet" : "no matches")
+                            .foregroundStyle(DesignTokens.Colors.ink2).frame(maxWidth: .infinity).padding(.vertical, 40)
                     }
                     ForEach(groups, id: \.title) { group in
                         SettingsGroup(title: group.title) {
@@ -56,12 +54,10 @@ struct HistoryTab: View {
                 }
                 .padding(20)
             }
-            Divider()
+            RowRule()
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Keep the last").font(.system(size: 13))
-                    Text("Each entry keeps the cleaned text and what was heard. Starred entries are always kept. Audio is never saved.")
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text("keep the last").font(DesignTokens.Fonts.ui.monospaced())
                 }
                 Spacer()
                 Picker("", selection: Binding(get: { settings.historyLimit }, set: { settings.historyLimit = $0; store.prune(limit: $0) })) {
@@ -77,66 +73,78 @@ struct HistoryTab: View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
                 Text(e.timestamp.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute()))
-                    .font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary).frame(width: 44, alignment: .leading).padding(.top, 2)
+                    .font(.system(size: 11).monospaced()).foregroundStyle(DesignTokens.Colors.ink2).frame(width: 44, alignment: .leading).padding(.top, 2)
                 VStack(alignment: .leading, spacing: 4) {
-                    if editing == e.id {
-                        TextEditor(text: $editText).font(.system(size: 13)).frame(minHeight: 60).scrollContentBackground(.hidden)
-                            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.accentColor, lineWidth: 1))
-                        HStack {
-                            Button("Save") { saveEdit(e) }.keyboardShortcut(.defaultAction)
-                            Button("Cancel") { editing = nil }
-                        }.controlSize(.small)
-                    } else {
-                        Text(e.displayText).font(.system(size: 13)).textSelection(.enabled)
-                    }
+                    Text(e.displayText).font(.system(size: 13)).textSelection(.enabled)
                     HStack(spacing: 6) {
                         if e.edited != nil {
-                            Text("Edited").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
-                                .padding(.horizontal, 5).padding(.vertical, 1).background(RoundedRectangle(cornerRadius: 4).fill(Color.black.opacity(0.06)))
+                            Text("edited").font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+                                .padding(.horizontal, 5).padding(.vertical, 1).background(Rectangle().fill(DesignTokens.Colors.inkA08))
                         }
-                        if let app = e.appName { Text(app).font(.system(size: 10)).foregroundStyle(.tertiary) }
-                        if let ms = e.durationMs { Text(String(format: "%.0f s", Double(ms) / 1000)).font(.system(size: 10)).foregroundStyle(.tertiary) }
+                        if let app = e.appName { Text(app.lowercased()).font(.system(size: 10)).foregroundStyle(DesignTokens.Colors.ink3) }
+                        if let ms = e.durationMs { Text(String(format: "%.0f s", Double(ms) / 1000)).font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink3) }
                     }
+                    telemetry(e)
                     if expanded.contains(e.id), e.transcript != e.displayText {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("HEARD").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
-                            Text(e.transcript).font(.system(size: 12)).foregroundStyle(.secondary).textSelection(.enabled)
+                            Text("heard").font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+                            Text(e.transcript).font(.system(size: 12)).foregroundStyle(DesignTokens.Colors.ink2).textSelection(.enabled)
                         }
                         .padding(.horizontal, 8).padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.black.opacity(0.04)))
+                        .background(Rectangle().fill(DesignTokens.Colors.inkA04))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture { if expanded.contains(e.id) { expanded.remove(e.id) } else { expanded.insert(e.id) } }
                 HStack(spacing: 4) {
-                    iconButton("akar-copy", "Copy") { Output.copyToClipboard(e.displayText) }
-                    iconButton("akar-pencil", "Edit") { editing = e.id; editText = e.displayText }
-                    iconButton("akar-star", e.starred ? "Unstar" : "Star", filled: e.starred) { store.toggleStar(id: e.id) }
-                    iconButton("akar-trash-can", "Delete") { store.delete(id: e.id) }
+                    iconButton("akar-copy", "copy") { Output.copyToClipboard(e.displayText) }
+                    iconButton("akar-trash-can", "delete") { store.delete(id: e.id) }
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
-            if !last { Divider().padding(.leading, 12) }
+            if !last { RowRule() }
         }
     }
 
-    private func iconButton(_ image: String, _ help: String, filled: Bool = false, action: @escaping () -> Void) -> some View {
+    /// Stage timings, monospaced and always visible.
+    @ViewBuilder
+    private func telemetry(_ e: HistoryEntry) -> some View {
+        HStack(spacing: 0) {
+            stat("asr", e.transcribeMs.map { "\($0)ms" } ?? "n/a")
+            if let ms = e.transcribeMs, let audio = e.durationMs, audio > 0 {
+                Text("  rtf=" + String(format: "%.2fx", Double(ms) / Double(audio)))
+            }
+            Text("  │  ")
+            stat("llm", e.postProcessRequested ? (e.postProcessMs.map { "\($0)ms" } ?? "n/a") : "off")
+            if e.postProcessRequested, e.postProcessMs != nil {
+                Text("  " + (e.postProcessed == nil ? "→fallback" : "→applied"))
+            }
+            Text("  │  ")
+            let total = (e.transcribeMs ?? 0) + (e.postProcessMs ?? 0)
+            stat("total", e.transcribeMs == nil ? "n/a" : "\(total)ms")
+        }
+        .font(.system(size: 10, design: .monospaced))
+        .foregroundStyle(DesignTokens.Colors.ink2)
+        .padding(.horizontal, 7).padding(.vertical, 3)
+        .background(Rectangle().fill(DesignTokens.Colors.inkA04))
+        .textSelection(.enabled)
+    }
+
+    private func stat(_ key: String, _ value: String) -> some View {
+        HStack(spacing: 0) {
+            Text(key + "=").foregroundStyle(DesignTokens.Colors.ink3)
+            Text(value)
+        }
+    }
+
+    private func iconButton(_ image: String, _ help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(image).resizable().frame(width: 14, height: 14)
-                .foregroundStyle(filled ? Color.accentColor : Color.secondary)
+                .foregroundStyle(DesignTokens.Colors.ink2)
                 .frame(width: 24, height: 24)
         }
         .buttonStyle(.plain)
         .help(help)
-    }
-
-    private func saveEdit(_ e: HistoryEntry) {
-        let new = editText.trimmingCharacters(in: .whitespacesAndNewlines)
-        editing = nil
-        guard !new.isEmpty, new != e.displayText else { return }
-        let original = e.displayText
-        store.setEdited(id: e.id, text: new)
-        LearningCoordinator.shared.learn(original: original, edited: new, source: "history", historyId: e.id)
     }
 }

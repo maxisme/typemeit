@@ -1,2 +1,7 @@
 # The generator is a build tool, not part of the site.
 generate.py
+# Tailwind source and toolchain; the site only needs dist/site.css.
+node_modules
+package.json
+package-lock.json
+styles
