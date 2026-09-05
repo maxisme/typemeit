@@ -239,7 +239,12 @@ vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, 
     // body is as thin as its own size demands; the fragments as thin as the
     // size they were shed from.
     float alpha = 1.0 - exp(-1.9 * (conserve(e) * body + conserve(tr) * left));
-    float shade = mix(0.64, 1.0, lit) * mix(0.88, 1.0, saturate(f)) * (0.96 + 0.06 * grain);
+    // A white or grey tint takes deep shadows; a coloured one is shaded
+    // only lightly, since darkening a hue towards black reads as soot.
+    float peak = max(tint.r, max(tint.g, tint.b));
+    float saturation = peak > 0.0 ? (peak - min(tint.r, min(tint.g, tint.b))) / peak : 0.0;
+    float floor_ = mix(0.64, 0.86, saturation);
+    float shade = mix(floor_, 1.0, lit) * mix(mix(0.88, 0.96, saturation), 1.0, saturate(f)) * (0.96 + 0.06 * grain);
 
     float a = float(alpha) * tint.a;
     return vec4(tint.rgb * float(shade) * a, a);
