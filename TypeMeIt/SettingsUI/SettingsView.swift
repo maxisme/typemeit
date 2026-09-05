@@ -151,7 +151,7 @@ struct GeneralTab: View {
                     }
                 }
                 SettingsGroup(title: "feedback") {
-                    SettingsRow(label: "recording pill") {
+                    SettingsRow(label: "recording cloud") {
                         Toggle("", isOn: $settings.overlayEnabled).toggleStyle(.switch).labelsHidden()
                     }
                     SettingsRow(label: "sounds") {

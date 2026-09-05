@@ -13,14 +13,13 @@ struct VisualEffect: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) { nsView.material = material }
 }
 
-/// The recording pill: 40 pt tall, capsule, three columns with the meter or
-/// label dead centre, pin or skip on the left, cancel on the right.
+/// The pill for the prompts and toasts after a dictation: 40 pt tall,
+/// capsule, three columns with the label dead centre, an icon on the left,
+/// the buttons on the right.
 struct PillView: View {
     @Bindable var model: OverlayModel
     @Environment(\.colorScheme) private var scheme
-    @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
 
-    private var meterColor: Color { DesignTokens.Colors.ink }
     private var labelColor: Color { scheme == .dark ? .white.opacity(0.62) : Color(white: 0.43) }
     private var chipFill: Color { scheme == .dark ? .white.opacity(0.12) : .black.opacity(0.07) }
     private var glyph: Color { scheme == .dark ? .white.opacity(0.75) : Color(white: 0.35) }
@@ -51,21 +50,6 @@ struct PillView: View {
 
     @ViewBuilder private var leftSlot: some View {
         switch model.state {
-        case .arming, .recording:
-            chip(size: 24, filled: false, dimmed: model.state == .arming, action: { model.onPin?() }) {
-                Image("akar-pin").resizable().frame(width: 15, height: 15)
-            }
-            .help("Keep recording")
-        case .pinned:
-            chip(size: 24, filled: true, dimmed: false, action: { model.onStop?() }) {
-                Image("akar-check").resizable().frame(width: 15, height: 15)
-            }
-            .help("Finish")
-        case .cleaningUp:
-            chip(size: 24, filled: false, dimmed: false, action: { model.onSkip?() }) {
-                Image("akar-arrow-forward-thick").resizable().frame(width: 14, height: 14)
-            }
-            .help("Skip clean-up")
         case .copyPrompt:
             Image("akar-clipboard").resizable().frame(width: 15, height: 15).foregroundStyle(labelColor)
         case .learned:
@@ -77,38 +61,19 @@ struct PillView: View {
 
     @ViewBuilder private var centre: some View {
         switch model.state {
-        case .arming, .recording, .pinned:
-            HStack(spacing: 10) {
-                meter
-                Text(timeString(model.elapsedSeconds))
-                    .font(.system(size: 12).monospaced())
-                    .foregroundStyle(scheme == .dark ? .white.opacity(0.45) : Color(white: 0.6))
-            }
-        case .transcribing:
-            HStack(spacing: 8) {
-                wave
-                Text("transcribing").font(.system(size: 12)).foregroundStyle(labelColor)
-            }
-        case .cleaningUp:
-            HStack(spacing: 8) {
-                dots
-                shimmerLabel("cleaning up")
-            }
         case .copyPrompt:
             Text("nothing to paste into").font(.system(size: 12)).foregroundStyle(labelColor).lineLimit(1)
         case .learned(_, let label):
             Text(label).font(.system(size: 12)).foregroundStyle(labelColor).lineLimit(1)
         case .undone:
             Text("undone").font(.system(size: 12)).foregroundStyle(labelColor)
-        case .hidden:
+        default:
             EmptyView()
         }
     }
 
     @ViewBuilder private var rightSlot: some View {
         switch model.state {
-        case .arming, .recording, .pinned, .transcribing, .cleaningUp:
-            cancelButton
         case .copyPrompt:
             HStack(spacing: 8) {
                 pillButton(model.copied ? "copied" : "copy") { model.onCopy?() }.disabled(model.copied)
@@ -117,7 +82,7 @@ struct PillView: View {
         case .learned:
             HStack(spacing: 8) {
                 pillButton("undo") { model.onUndo?() }
-                chip(size: 22, filled: false, dimmed: false, action: { model.onKeep?() }) {
+                chip(size: 22, action: { model.onKeep?() }) {
                     Image("akar-check").resizable().frame(width: 11, height: 11)
                 }
                 .help("Keep")
@@ -128,18 +93,18 @@ struct PillView: View {
     }
 
     private var cancelButton: some View {
-        chip(size: 22, filled: false, dimmed: false, action: { model.onCancel?() }) {
+        chip(size: 22, action: { model.onCancel?() }) {
             Image("akar-cross").resizable().frame(width: 10, height: 10)
         }
         .help("Cancel")
     }
 
-    private func chip<Content: View>(size: CGFloat, filled: Bool, dimmed: Bool, action: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
+    private func chip<Content: View>(size: CGFloat, action: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
         Button(action: action) {
             content()
-                .foregroundStyle(filled ? (scheme == .dark ? Color(white: 0.11) : .white) : (dimmed ? glyph.opacity(0.5) : glyph))
+                .foregroundStyle(glyph)
                 .frame(width: size, height: size)
-                .background(Circle().fill(filled ? (scheme == .dark ? Color.white.opacity(0.92) : Color(white: 0.11)) : chipFill))
+                .background(Circle().fill(chipFill))
         }
         .buttonStyle(.plain)
     }
@@ -155,70 +120,4 @@ struct PillView: View {
         }
         .buttonStyle(.plain)
     }
-
-    // MARK: Meter and animations
-
-    private static let barWeights: [Float] = [0.45, 0.8, 1.0, 0.6, 0.9, 0.5, 0.95, 0.7]
-
-    private var meter: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<8, id: \.self) { i in
-                let armed = model.state != .arming
-                let h: CGFloat = armed ? CGFloat(3 + pow(Double(min(1, model.level * PillView.barWeights[i] * 1.6)), 0.7) * 15) : 6
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(armed ? meterColor : labelColor.opacity(0.35))
-                    .frame(width: 4, height: h)
-                    .animation(.linear(duration: 0.08), value: h)
-            }
-        }
-        .frame(height: 18)
-    }
-
-    private var wave: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { ctx in
-            let t = ctx.date.timeIntervalSinceReferenceDate
-            HStack(spacing: 3) {
-                ForEach(0..<8, id: \.self) { i in
-                    let phase = reduceMotion ? 0.55 : 0.28 + 0.72 * max(0, sin((t / 1.15 - Double(i) * 0.09) * 2 * .pi))
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(labelColor.opacity(reduceMotion ? 0.8 : 0.45 + 0.55 * phase))
-                        .frame(width: 4, height: 18 * phase)
-                }
-            }
-            .frame(height: 18)
-        }
-    }
-
-    private var dots: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { ctx in
-            let t = ctx.date.timeIntervalSinceReferenceDate
-            HStack(spacing: 3) {
-                ForEach(0..<8, id: \.self) { i in
-                    let o = reduceMotion ? 0.6 : 0.35 + 0.55 * (0.5 + 0.5 * sin((t / 1.4 - Double(i) * 0.11) * 2 * .pi))
-                    Circle().fill(labelColor.opacity(o)).frame(width: 4, height: 4)
-                }
-            }
-            .frame(height: 18)
-        }
-    }
-
-    private func shimmerLabel(_ text: String) -> some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { ctx in
-            let t = ctx.date.timeIntervalSinceReferenceDate
-            let x = reduceMotion ? 0.5 : (t.truncatingRemainder(dividingBy: 2.1) / 2.1) * 2.2 - 0.6
-            Text(text)
-                .font(.system(size: 12))
-                .foregroundStyle(
-                    LinearGradient(
-                        stops: [
-                            .init(color: labelColor.opacity(0.6), location: max(0, x - 0.3)),
-                            .init(color: labelColor.opacity(1.0), location: max(0, min(1, x))),
-                            .init(color: labelColor.opacity(0.6), location: min(1, x + 0.3)),
-                        ],
-                        startPoint: .leading, endPoint: .trailing)
-                )
-        }
-    }
-
-    private func timeString(_ s: Int) -> String { String(format: "%d:%02d", s / 60, s % 60) }
 }

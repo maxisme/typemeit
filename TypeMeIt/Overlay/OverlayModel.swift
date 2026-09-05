@@ -1,7 +1,8 @@
 import Foundation
 import Observation
 
-/// What the pill shows. Driven by the pipeline, read by PillView.
+/// What the overlay shows. Driven by the pipeline, read by CloudView and
+/// PillView.
 @MainActor
 @Observable
 final class OverlayModel {
@@ -17,19 +18,33 @@ final class OverlayModel {
         case undone
     }
 
+    /// Which view a state is shown in: the dictation itself is the cloud,
+    /// the prompts and toasts afterwards are the pill.
+    enum Presentation: Equatable { case none, cloud, pill }
+
     var state: State = .hidden
     var level: Float = 0
-    var elapsedSeconds: Int = 0
     var copied = false
     var toastPaused = false
+    /// When the cloud last arrived. Each dictation gets a new one, so the
+    /// cloud grows in again even if the previous one had not finished fading.
+    var shownAt: Date?
+    /// When the cloud started to puff out, or nil while it is still wanted.
+    var departedAt: Date?
+
+    var presentation: Presentation {
+        switch state {
+        case .hidden: .none
+        case .arming, .recording, .pinned, .transcribing, .cleaningUp: .cloud
+        case .copyPrompt, .learned, .undone: .pill
+        }
+    }
 
     /// Pill width per state, from the design.
     var width: CGFloat {
         switch state {
-        case .hidden, .arming, .recording, .pinned: 200
-        case .transcribing, .cleaningUp: 216
         case .copyPrompt: 300
-        case .learned, .undone: 286
+        default: 286
         }
     }
 

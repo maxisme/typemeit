@@ -32,7 +32,7 @@ final class Pipeline {
         capture.onFirstBuffer = { [weak self] in
             Task { @MainActor in
                 guard let self, self.overlay.model.state == .arming else { return }
-                self.overlay.model.state = .recording
+                self.overlay.show(.recording)
             }
         }
         overlay.model.onPin = { [weak self] in self?.shortcuts.pinFromOverlay() }
@@ -70,7 +70,7 @@ final class Pipeline {
         case .pinned:
             pinned = true
             if settings.audioFeedback { Feedback.play(.pin) }
-            if overlay.model.isRecording { overlay.model.state = .pinned }
+            if overlay.model.isRecording { overlay.show(.pinned) }
         case .recordingEnded: endRecording()
         case .cancelled: cancel()
         case .skipRequested: skipPostProcessing()
