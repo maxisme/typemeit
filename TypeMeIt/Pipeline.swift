@@ -161,6 +161,7 @@ final class Pipeline {
         }
 
         let target = Frontmost.capture()
+        let recordedAt = recordingStartedAt ?? Date()
         phase = .transcribing
         shortcuts.setPhase(.transcribing)
         overlay.show(.transcribing)
@@ -181,7 +182,7 @@ final class Pipeline {
             guard gen == self.generation else { return }
             let transcribeMs = Pipeline.elapsedMs(since: transcribeStart)
             Log.transcriber.info("Transcribed \(durationMs) ms of audio in \(transcribeMs) ms")
-            await self.deliver(raw: raw, durationMs: durationMs, transcribeMs: transcribeMs, target: target, generation: gen)
+            await self.deliver(raw: raw, durationMs: durationMs, transcribeMs: transcribeMs, target: target, recordedAt: recordedAt, generation: gen)
         }
     }
 
@@ -196,7 +197,7 @@ final class Pipeline {
         return Int(d.components.seconds * 1000) + Int(d.components.attoseconds / 1_000_000_000_000_000)
     }
 
-    private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, generation gen: Int) async {
+    private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, recordedAt: Date, generation gen: Int) async {
         if TextCleanup.isBlank(raw) { finishIdle(); return }
         let customWords = settings.customWords
         let cleaned = TextCleanup.run(raw, customWords: customWords, aliases: store.aliases(customWords: customWords), threshold: Fixed.wordCorrectionThreshold)
@@ -218,6 +219,7 @@ final class Pipeline {
             if let postProcessed { finalText = postProcessed }
         }
 
+        RecordingArchive.saveText(raw: raw, cleaned: cleaned.text, postProcessed: postProcessed, recordedAt: recordedAt)
         if settings.appendTrailingSpace { finalText += " " }
         let focusedIsTextInput = Focus.focusedElementIsTextInput()
         let pasted = await Output.paste(finalText, autoSubmit: settings.autoSubmit, autoSubmitKey: settings.autoSubmitKey)

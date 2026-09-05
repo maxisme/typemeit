@@ -34,6 +34,23 @@ enum RecordingArchive {
         }
     }
 
+    /// The transcripts that came out of the recording started at `recordedAt`,
+    /// written next to its audio with the same name.
+    static func saveText(raw: String, cleaned: String, postProcessed: String?, recordedAt: Date) {
+        guard enabled else { return }
+        let url = directory.appendingPathComponent(nameFormatter.string(from: recordedAt)).appendingPathExtension("txt")
+        var text = "raw: \(raw)\ncleaned: \(cleaned)\n"
+        if let postProcessed { text += "post-processed: \(postProcessed)\n" }
+        queue.async {
+            do {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                try text.write(to: url, atomically: true, encoding: .utf8)
+            } catch {
+                Log.audio.error("Could not archive transcript: \(error.localizedDescription)")
+            }
+        }
+    }
+
     private static func write(_ pcm: [Float], to url: URL) throws {
         let format = AudioCapture.targetFormat
         let settings: [String: Any] = [
