@@ -11,6 +11,7 @@
 #   TIME       instant of the texture                  (default 250)
 #   CROP       fraction of the frame kept, centred    (default 0.62)
 #   DENSITY    brightness multiplier on the smoke      (default 2.5)
+#   BG         tile colour                             (default #141414)
 #   PREVIEW=1  write only preview.png next to this script, keep AppIcon.icns
 set -euo pipefail
 
@@ -22,7 +23,7 @@ TIME="${TIME:-250}"
 POINTS=512                       # window size in points; captured at 2x = 1024 px
 TILE=824                         # icon tile on the 1024 canvas, Apple's grid
 RADIUS=186                       # corner radius of the tile
-BG="#141414"
+BG="${BG:-#141414}"
 
 TMP="$(mktemp -d)"
 trap 'pkill -f "$TMP/render" 2>/dev/null || true; [ -n "${KEEP_TMP:-}" ] && echo "Kept $TMP" || rm -rf "$TMP"' EXIT
