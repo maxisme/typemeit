@@ -309,16 +309,16 @@ struct AppTab: View {
             VStack(alignment: .leading, spacing: 18) {
                 SettingsGroup(title: "general") {
                     SettingsRow(label: "open at login") {
-                        Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; (NSApp.delegate as? AppDelegate)?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
+                        Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
                     }
                     SettingsRow(label: "check for updates") {
                         Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
                     }
                     SettingsRow(label: "dock icon") {
-                        Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; (NSApp.delegate as? AppDelegate)?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
+                        Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
                     }
                     SettingsRow(label: "appearance", subtitle: "the windows and the recording cloud", last: true) {
-                        Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; (NSApp.delegate as? AppDelegate)?.applyAppearance() })) {
+                        Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; AppDelegate.shared?.applyAppearance() })) {
                             ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
                         }.labelsHidden().frame(width: 180)
                     }
