@@ -220,8 +220,8 @@ struct GeneralTab: View {
     }
 }
 
-/// A full-width row of breathing puffs, one in each colour; the chosen one
-/// sits in an ink ring.
+/// A full-width row of resting puffs, one in each colour, each showing its
+/// own smoke; the chosen one sits in an ink ring.
 struct CloudColorPalette: View {
     @Binding var selection: CloudColor
 
@@ -229,14 +229,14 @@ struct CloudColorPalette: View {
     /// the cloud fills the cell rather than resting a quarter of the way
     /// across it.
     private static let side: CGFloat = 64
-    private static let drawn: CGFloat = 136
+    private static let drawn: CGFloat = 200
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(Array(CloudColor.allCases.enumerated()), id: \.element) { i, c in
                 let on = c == selection
                 Button { selection = c } label: {
-                    PuffView(tint: Color(nsColor: c.color), breathPeriod: 4.2 + Double(i) * 0.37, breathFloor: 0.5)
+                    PuffView(level: 0, tint: Color(nsColor: c.color), timeOffset: Double(i) * 7.3)
                         .frame(width: CloudColorPalette.drawn, height: CloudColorPalette.drawn)
                         .frame(width: CloudColorPalette.side, height: CloudColorPalette.side)
                         .clipShape(Circle())
