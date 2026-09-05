@@ -92,8 +92,13 @@ struct MenuContent: View {
         if recentTranscripts.isEmpty {
             Text("No transcripts yet").disabled(true)
         }
-        ForEach(recentTranscripts) { entry in
-            Button(MenuContent.title(for: entry.displayText)) { Output.copyToClipboard(entry.displayText) }
+        ForEach(Array(recentTranscripts.enumerated()), id: \.element.id) { i, entry in
+            let button = Button(MenuContent.title(for: entry.displayText)) { Output.copyToClipboard(entry.displayText) }
+            if i == 0 {
+                button.keyboardShortcut("c", modifiers: .command)
+            } else {
+                button
+            }
         }
         if !recentTranscripts.isEmpty {
             Button {
