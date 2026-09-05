@@ -1,0 +1,43 @@
+<!doctype html><meta charset="utf-8"><title>puff render</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1320" height="820"></canvas>
+<pre id="status">rendering…</pre>
+<script src="/web/puff.glsl.js"></script>
+<script>
+const P = new URLSearchParams(location.search);
+const num = (k, d) => P.has(k) ? parseFloat(P.get(k)) : d;
+const SIZE = num('size', 1000), EXP = num('exp', 0.9), TRAIL = num('trail', 1.0),
+      FLOW = num('flow', 0.6), TIME = num('time', 120),
+      CX = num('cx', 660), CY = num('cy', 410);
+const gl = document.getElementById('c').getContext('webgl2', {preserveDrawingBuffer:true, alpha:true});
+const FRAG = `#version 300 es
+precision highp float;
+${PUFF_GLSL}
+uniform vec2 uCentre; uniform float uSize; uniform float uTime;
+uniform float uExpansion; uniform float uTrail; uniform float uFlow; uniform vec4 uTint;
+out vec4 fragColor;
+void main(){ vec2 p = gl_FragCoord.xy - uCentre; p.y = -p.y;
+  fragColor = render(p + 0.5*vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, uTint); }`;
+const VERT = `#version 300 es
+in vec2 aPos; void main(){ gl_Position = vec4(aPos,0.0,1.0); }`;
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+  if(!gl.getShaderParameter(o,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o;}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VERT));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FRAG));
+gl.linkProgram(pr);
+if(!gl.getProgramParameter(pr,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+gl.useProgram(pr);
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+const loc=gl.getAttribLocation(pr,'aPos');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+const U=n=>gl.getUniformLocation(pr,n);
+gl.viewport(0,0,1320,820);
+gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+gl.uniform2f(U('uCentre'),CX,CY); gl.uniform1f(U('uSize'),SIZE); gl.uniform1f(U('uTime'),TIME);
+gl.uniform1f(U('uExpansion'),EXP); gl.uniform1f(U('uTrail'),TRAIL); gl.uniform1f(U('uFlow'),FLOW);
+gl.uniform4f(U('uTint'),1,1,1,1);
+gl.drawArrays(gl.TRIANGLES,0,3);
+document.getElementById('c').toBlob(b=>{
+  b.arrayBuffer().then(a=>fetch('/save?name='+(P.get('name')||'puff')+'.png',{method:'POST',body:a})
+    .then(r=>r.text()).then(t=>document.getElementById('status').textContent='SAVED '+t));
+},'image/png');
+</script>
