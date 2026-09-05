@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # Draws web/og.png, the link preview for typeme.it: the puff growing from a
-# dense wisp at the left edge into a thin cloud in the middle of the site's
-# paper, the wordmark under the cloud in DM Mono. The big cloud and the
-# wordmark sit on the centre line because square fallbacks (a long iMessage
-# title, some feed thumbnails) crop the 1.9:1 image to its centre square, and
-# that crop has to be one whole cloud.
+# dense wisp into a thin cloud, left to right across the site's paper, with
+# the wordmark in DM Mono. Square fallbacks (a long iMessage title, some feed
+# thumbnails) crop this to its centre; that is accepted, the landscape is
+# what most previews show.
 # The puff is the app's own shader (web/puff.glsl.js) rendered by headless
 # Chrome through Scripts/og/render.html, since a browser is the only thing here
 # that can run it. The PNG is 2x (2400 x 1260) so it stays sharp on Retina
@@ -20,18 +19,17 @@ trap 'kill $SERVE $CHROME 2>/dev/null; wait $CHROME 2>/dev/null; rm -rf "$TMP"' 
 
 # x and y are fractions of the image; the rest are the shader's inputs. Density
 # eases down as the puff grows, so the wisp reads solid and the cloud as the
-# same smoke spread thin. The three small puffs stay left of the centre
-# square, which spans 0.2375 to 0.7625 of the width.
-FRAMES='[{"x":0.05,"y":0.47,"size":750,"exp":0.26,"flow":0.3,"time":140,"dens":1.2},
-         {"x":0.115,"y":0.46,"size":880,"exp":0.42,"trail":0.48,"flow":0.45,"time":150,"dens":1.15},
-         {"x":0.185,"y":0.45,"size":1000,"exp":0.56,"trail":0.64,"flow":0.55,"time":160,"dens":1.1},
-         {"x":0.5,"y":0.44,"size":2500,"exp":0.82,"trail":0.97,"flow":0.6,"time":160,"dens":1.35}]'
+# same smoke spread thin.
+FRAMES='[{"x":0.12,"size":950,"exp":0.3,"flow":0.3,"time":140,"dens":1.15},
+         {"x":0.34,"size":1100,"exp":0.5,"trail":0.55,"flow":0.45,"time":150,"dens":1.1},
+         {"x":0.58,"size":1400,"exp":0.72,"trail":0.8,"flow":0.6,"time":160,"dens":1.05},
+         {"x":0.82,"size":1600,"exp":0.95,"trail":1.0,"flow":0.75,"time":170,"dens":1.0}]'
 Q="$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$FRAMES")"
 
 python3 Scripts/og/serve.py "$TMP" & SERVE=$!
 sleep 1
 "$CH" --headless=new --use-angle=metal --window-size=2400,1400 --user-data-dir="$TMP/chrome" \
-  "http://127.0.0.1:8792/Scripts/og/render.html?name=og&ty=0.83&frames=$Q" >/dev/null 2>&1 & CHROME=$!
+  "http://127.0.0.1:8792/Scripts/og/render.html?name=og&frames=$Q" >/dev/null 2>&1 & CHROME=$!
 for _ in $(seq 1 90); do [ -f "$TMP/og.png" ] && break; sleep 1; done
 [ -f "$TMP/og.png" ] || { echo "render did not finish" >&2; exit 1; }
 sleep 1
