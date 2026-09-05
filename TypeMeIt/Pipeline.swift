@@ -69,6 +69,7 @@ final class Pipeline {
         case .recordingStarted: beginRecording()
         case .pinned:
             pinned = true
+            if settings.audioFeedback { Feedback.play(.pin) }
             if overlay.model.isRecording { overlay.model.state = .pinned }
         case .recordingEnded: endRecording()
         case .cancelled: cancel()
