@@ -10,6 +10,7 @@ final class OverlayModel {
         case arming
         case recording
         case pinned
+        case loadingModel
         case transcribing
         case cleaningUp
         case copyPrompt
@@ -27,7 +28,7 @@ final class OverlayModel {
     var width: CGFloat {
         switch state {
         case .hidden, .arming, .recording, .pinned: 200
-        case .transcribing, .cleaningUp: 216
+        case .loadingModel, .transcribing, .cleaningUp: 216
         case .copyPrompt: 300
         case .learned, .undone: 286
         }

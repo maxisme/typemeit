@@ -29,17 +29,22 @@ enum Output {
 
         pb.clearContents()
         pb.setString(text, forType: .string)
+        let ourChange = pb.changeCount
         await sleep(ms: Fixed.pasteDelayBeforeMs)
 
         let posted = post(keycode: 9, flags: .maskCommand)  // V
         if !posted { Log.output.error("Could not post Cmd+V; Accessibility may be missing") }
 
         await sleep(ms: Fixed.pasteDelayAfterMs)
-        pb.clearContents()
-        if let savedText {
-            pb.setString(savedText, forType: .string)
-        } else if let (data, type) = savedImage {
-            pb.setData(data, forType: type)
+        // Only restore if the pasteboard still holds the transcript. If the user or
+        // another app wrote to it meanwhile, that content wins.
+        if pb.changeCount == ourChange {
+            pb.clearContents()
+            if let savedText {
+                pb.setString(savedText, forType: .string)
+            } else if let (data, type) = savedImage {
+                pb.setData(data, forType: type)
+            }
         }
 
         if posted, autoSubmit {

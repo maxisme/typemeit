@@ -1,9 +1,9 @@
 import Foundation
 import TranscribeCpp
 
-/// transcribe.cpp with Metal. One model, one session, loaded on first use and
-/// freed after five idle minutes. Sessions are single-threaded; the actor
-/// guarantees one run at a time.
+/// transcribe.cpp with Metal. One model, one session, loaded at launch (or on
+/// first use) and freed after thirty idle minutes. Sessions are single-threaded;
+/// the actor guarantees one run at a time.
 actor Transcriber {
     static let shared = Transcriber()
 
@@ -12,6 +12,9 @@ actor Transcriber {
     private var unloadTask: Task<Void, Never>?
     private let abortFlag = AbortFlag()
     private var backendsReady = false
+    private var warmedUp = false
+
+    var isLoaded: Bool { session != nil }
 
     final class AbortFlag: @unchecked Sendable {
         private let lock = NSLock()
@@ -79,12 +82,38 @@ actor Transcriber {
             return Unmanaged<AbortFlag>.fromOpaque(userInfo).takeUnretainedValue().get()
         }, Unmanaged.passUnretained(flag).toOpaque())
         let backend = m.map { String(cString: transcribe_model_backend($0)) } ?? "?"
-        Log.transcriber.info("Model loaded on \(backend) in \(ContinuousClock.now - started)")
+        Log.transcriber.info("Model loaded on \(backend, privacy: .public) in \(ContinuousClock.now - started, privacy: .public)")
     }
 
+    /// Loads the model and runs one second of silence through it, so the first
+    /// real dictation does not pay for the Metal pipeline warm-up (measured at
+    /// two to five times the steady-state run time).
     func preload() {
-        do { try ensureLoaded() } catch { Log.transcriber.error("Preload failed: \(error.localizedDescription)") }
+        do {
+            try ensureLoaded()
+            try warmUp()
+        } catch { Log.transcriber.error("Preload failed: \(error.localizedDescription)") }
         scheduleUnload()
+    }
+
+    /// Loads without the warm-up run. The pipeline calls this when a recording
+    /// is already waiting, so the overlay can say what it is waiting for.
+    func load() throws {
+        unloadTask?.cancel()
+        try ensureLoaded()
+    }
+
+    private func warmUp() throws {
+        guard !warmedUp else { return }
+        let silence = [Float](repeating: 0, count: 16000)
+        var rp = transcribe_run_params()
+        transcribe_run_params_init(&rp)
+        abortFlag.set(false)
+        let started = ContinuousClock.now
+        let st = silence.withUnsafeBufferPointer { transcribe_run(session, $0.baseAddress, Int32(silence.count), &rp) }
+        try Transcriber.check(st)
+        warmedUp = true
+        Log.transcriber.info("Warm-up run took \(ContinuousClock.now - started, privacy: .public)")
     }
 
     /// pcm: mono Float32 at 16 kHz.
@@ -99,7 +128,7 @@ actor Transcriber {
         defer { scheduleUnload() }
         try Transcriber.check(st)
         let text = String(cString: transcribe_full_text(session))
-        Log.transcriber.info("Transcribed \(pcm.count / 16000) s of audio in \(ContinuousClock.now - started)")
+        Log.transcriber.info("Transcribed \(pcm.count / 16000, privacy: .public) s of audio in \(ContinuousClock.now - started, privacy: .public)")
         return text
     }
 
@@ -120,6 +149,7 @@ actor Transcriber {
         transcribe_model_free(model)
         session = nil
         model = nil
+        warmedUp = false
         Log.transcriber.info("Model unloaded after idle")
     }
 }

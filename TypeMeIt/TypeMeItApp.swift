@@ -92,6 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             startRunning()
         } else {
             showOnboarding()
+            if ModelStore.isInstalled { Pipeline.shared.warmUp() }
         }
     }
 
@@ -157,6 +158,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.onboardingWindow = nil
         } startRunning: { [weak self] in
             if AppState.shared.ready == false { self?.startRunning() }
+        } bringToFront: { [weak self] in
+            NSApp.activate(ignoringOtherApps: true)
+            self?.onboardingWindow?.makeKeyAndOrderFront(nil)
         }
         let window = NSWindow(contentViewController: NSHostingController(rootView: view))
         window.title = "Welcome to Type Me It"

@@ -17,7 +17,7 @@ The only dependency is the transcribe.cpp XCFramework, fetched by SwiftPM from t
 
 ## Permissions
 
-Microphone, Accessibility (pasting and reading corrections) and Input Monitoring (the fn key). Grants are keyed to the code signature, so run a Developer ID signed build from `/Applications` or expect to re-grant after each rebuild.
+Microphone, Accessibility (pasting and reading corrections) and Input Monitoring (the fn key). macOS keys a grant to the signing certificate, so every build configuration signs with the Developer ID identity and a Debug build shares the grants of the app in `/Applications`. If grants stop matching after a signing change, clear them with `tccutil reset All it.typeme.typemeit` and grant again.
 
 ## Release
 

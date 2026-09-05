@@ -9,7 +9,12 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
-    CODE_SIGN_STYLE: Automatic
+    # TCC keys Microphone, Accessibility and Input Monitoring grants to the
+    # signing certificate. Every configuration signs with the Developer ID so a
+    # Debug build from Xcode shares the grants of the app in /Applications.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "Developer ID Application"
+    PROVISIONING_PROFILE_SPECIFIER: ""
     ENABLE_HARDENED_RUNTIME: YES
     MACOSX_DEPLOYMENT_TARGET: "26.0"
     ARCHS: arm64

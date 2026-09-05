@@ -5,6 +5,7 @@ import SwiftUI
 struct OnboardingView: View {
     var finished: () -> Void
     var startRunning: () -> Void
+    var bringToFront: () -> Void
 
     enum Step: Int, CaseIterable { case welcome, model, microphone, accessibility, inputMonitoring, fnKey, tryIt }
 
@@ -15,6 +16,8 @@ struct OnboardingView: View {
     @State private var listenGranted = CGPreflightListenEventAccess()
     @State private var fnOK = SecureInput.fnKeyDoesNothing
     @State private var dictated = false
+    @State private var warmedUp = false
+    @State private var transcriberReady = false
     @State private var store = Store.shared
     private let poll = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -35,6 +38,7 @@ struct OnboardingView: View {
         .padding(28)
         .frame(width: 520, height: 560)
         .onReceive(poll) { _ in refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
         .onAppear { if modelStore.state == .installed, step == .welcome { } }
     }
 
@@ -114,9 +118,14 @@ struct OnboardingView: View {
                     Label("Heard you", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
                     Text(last.displayText).padding(12).frame(maxWidth: .infinity, alignment: .leading)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.04)))
-                } else {
+                } else if transcriberReady {
                     Label("Waiting for a dictation…", systemImage: "waveform").foregroundStyle(.secondary)
                     TextField("You can dictate into this field", text: .constant("")).textFieldStyle(.roundedBorder)
+                } else {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Loading the speech model…").foregroundStyle(.secondary)
+                    }
                 }
             }
         }
@@ -149,15 +158,26 @@ struct OnboardingView: View {
         if step == .tryIt { finished(); return }
         let next = Step(rawValue: step.rawValue + 1) ?? .tryIt
         if next == .model, modelStore.state == .missing { modelStore.download() }
+        if modelStore.state == .installed, !warmedUp {
+            warmedUp = true
+            Pipeline.shared.warmUp()
+        }
         if next == .tryIt { startRunning() }
         step = next
     }
 
     private func refresh() {
+        let before = (micGranted, axGranted, listenGranted)
         micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
         axGranted = AXIsProcessTrusted()
         listenGranted = CGPreflightListenEventAccess()
         fnOK = SecureInput.fnKeyDoesNothing
-        if step == .tryIt, let last = store.newest, Date().timeIntervalSince(last.timestamp) < 120 { dictated = true }
+        // Granting happens in System Settings or a system alert, which leaves
+        // this window behind them; come back as soon as the grant lands.
+        if (!before.0 && micGranted) || (!before.1 && axGranted) || (!before.2 && listenGranted) { bringToFront() }
+        if step == .tryIt {
+            Task { transcriberReady = await Transcriber.shared.isLoaded }
+            if let last = store.newest, Date().timeIntervalSince(last.timestamp) < 120 { dictated = true }
+        }
     }
 }

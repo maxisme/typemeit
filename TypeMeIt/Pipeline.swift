@@ -54,6 +54,14 @@ final class Pipeline {
             Log.app.error("Shortcuts not installed; Input Monitoring is missing")
         }
         if settings.alwaysOnMicrophone { capture.warmUp(uid: settings.microphoneUID) }
+        warmUp()
+    }
+
+    /// Loads the speech model and Apple Intelligence in the background so the
+    /// first dictation is not the one that pays for them. Safe to call again.
+    func warmUp() {
+        if settings.postProcessingEnabled { Task { await PostProcessor.shared.prewarm() } }
+        Task { await Transcriber.shared.preload() }
     }
 
     func applyMicrophoneSettings() {
@@ -98,8 +106,7 @@ final class Pipeline {
             return
         }
         if settings.overlayEnabled { overlay.show(.arming) }
-        if settings.postProcessingEnabled { Task { await PostProcessor.shared.prewarm() } }
-        Task { await Transcriber.shared.preload() }
+        warmUp()
     }
 
     private func cancel() {
@@ -138,6 +145,22 @@ final class Pipeline {
 
         Task { [weak self] in
             guard let self else { return }
+            let loaded = await Transcriber.shared.isLoaded
+            if !loaded {
+                guard gen == self.generation else { return }
+                if self.settings.overlayEnabled { self.overlay.show(.loadingModel) }
+                do {
+                    try await Transcriber.shared.load()
+                } catch {
+                    if gen == self.generation {
+                        Log.transcriber.error("\(error.localizedDescription)")
+                        self.finishIdle()
+                    }
+                    return
+                }
+                guard gen == self.generation else { return }
+                if self.settings.overlayEnabled { self.overlay.show(.transcribing) }
+            }
             let raw: String
             do {
                 raw = try await Transcriber.shared.transcribe(pcm)
