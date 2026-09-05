@@ -168,6 +168,24 @@ final class LearningEngineTests: XCTestCase {
         XCTAssertTrue(agreement.isEmpty)
     }
 
+    func testAnOrdinaryWordJudgedTechnicalIsNotLearned() async throws {
+        try XCTSkipIf(WordList.system.isEmpty, "no system word list at /usr/share/dict/words")
+        let learned = await Learning.learn(
+            original: "Please the scribe the change.",
+            edited: "Please describe the change.",
+            context: LearnContext(),
+            check: Scripted(kinds: [.technicalTerm])
+        )
+        XCTAssertTrue(learned.isEmpty)
+        let capitalised = await Learning.learn(
+            original: "Ask bridge for the keys.",
+            edited: "Ask Ridge for the keys.",
+            context: LearnContext(),
+            check: Scripted(kinds: [.personName])
+        )
+        XCTAssertEqual(meants(capitalised), ["Ridge"])
+    }
+
     func testCoinedWordsAreLearnedEvenAtSentenceStart() async throws {
         try XCTSkipIf(WordList.system.isEmpty, "no system word list at /usr/share/dict/words")
         let sentenceStart = await Learning.learn(
@@ -374,6 +392,23 @@ final class WordListTests: XCTestCase {
 
     func testEmptyListJudgesNothingCoined() {
         XCTAssertFalse(WordList(words: [String]()).isCoined("Zentryx"))
+    }
+
+    func testLowercaseListedWordsAreOrdinary() {
+        XCTAssertTrue(list().isOrdinary("cluster"))
+        XCTAssertTrue(list().isOrdinary("stage"))
+        XCTAssertTrue(list().isOrdinary("deployed"))
+        XCTAssertTrue(list().isOrdinary("clusters"))
+    }
+
+    func testCapitalisedCoinedOrShapedTermsAreNotOrdinary() {
+        XCTAssertFalse(list().isOrdinary("Cluster"))
+        XCTAssertFalse(list().isOrdinary("Stage"))
+        XCTAssertFalse(list().isOrdinary("kavuu"))
+        XCTAssertFalse(list().isOrdinary("K8s"))
+        XCTAssertFalse(list().isOrdinary("CI/CD"))
+        XCTAssertFalse(list().isOrdinary("two words"))
+        XCTAssertFalse(WordList(words: [String]()).isOrdinary("cluster"))
     }
 }
 

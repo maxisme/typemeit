@@ -158,6 +158,14 @@ enum Learning {
             let overridden = kind == .commonWord
                 && (writtenAsProperNoun(candidate.meant, in: edited)
                     || WordList.system.isCoined(candidate.meant))
+            // The model sometimes files an everyday word ("describe",
+            // "cache") as a technical term. A lowercase word the system list
+            // knows is one the speech model can already spell, so there is
+            // nothing to learn from it.
+            let ordinary = kind.isVocabulary && WordList.system.isOrdinary(candidate.meant)
+            if ordinary {
+                continue
+            }
             if kind.isVocabulary || overridden {
                 add(heard: candidate.heard, meant: candidate.meant)
             } else {

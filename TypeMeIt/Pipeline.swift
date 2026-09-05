@@ -280,8 +280,7 @@ final class Pipeline {
     func showLearnedToast(batchId: UUID, words: [String]) {
         guard !words.isEmpty else { return }
         toastBatch = batchId
-        let label = words.count == 1 ? "Added \(words[0])" : "Learned \(words.count) words"
-        overlay.show(.learned(batchId: batchId, label: label))
+        overlay.show(.learned(batchId: batchId, words: words))
         toastTask?.cancel()
         toastTask = Task { [weak self] in
             var remaining = ToastTiming.timeout

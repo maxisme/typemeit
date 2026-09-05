@@ -14,7 +14,7 @@ final class OverlayModel {
         case transcribing
         case cleaningUp
         case copyPrompt
-        case learned(batchId: UUID, label: String)
+        case learned(batchId: UUID, words: [String])
         case undone
     }
 
