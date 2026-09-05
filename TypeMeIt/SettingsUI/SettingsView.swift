@@ -1,25 +1,30 @@
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case insights, general, text, history, app
+    case insights, settings, cleanup, history
 
     var icon: String {
         switch self {
         case .insights: "akar-statistic-up"
-        case .general: "akar-microphone"
-        case .text: "akar-text-align-left"
-        case .history: "akar-clock"
-        case .app: "akar-gear"
+        case .settings: "akar-gear"
+        case .cleanup: "akar-sparkles"
+        case .history: "akar-history"
         }
     }
 }
 
 struct SettingsView: View {
     @State private var tab: SettingsTab? = .insights
+    @State private var appState = AppState.shared
 
     var body: some View {
         NavigationSplitView {
             VStack(alignment: .leading, spacing: 2) {
+                Image(nsImage: MenuBarIconRenderer.mark(side: 40))
+                    .resizable()
+                    .frame(width: 40, height: 40)
+                    .padding(.leading, 6)
+                    .padding(.bottom, 8)
                 ForEach(SettingsTab.allCases, id: \.self) { t in
                     let on = t == tab
                     Button { tab = t } label: {
@@ -42,11 +47,10 @@ struct SettingsView: View {
         } detail: {
             Group {
                 switch tab ?? .insights {
-                case .general: GeneralTab()
-                case .text: TextTab()
+                case .settings: MainSettingsTab()
+                case .cleanup: CleanupTab()
                 case .history: HistoryTab()
                 case .insights: InsightsTab()
-                case .app: AppTab()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -56,6 +60,14 @@ struct SettingsView: View {
         }
         .tint(DesignTokens.Colors.ink)
         .frame(minWidth: 780, minHeight: 480)
+        .onAppear(perform: takeRequestedTab)
+        .onChange(of: appState.settingsTab) { _, _ in takeRequestedTab() }
+    }
+
+    private func takeRequestedTab() {
+        guard let requested = appState.settingsTab else { return }
+        tab = requested
+        appState.settingsTab = nil
     }
 }
 
@@ -151,8 +163,9 @@ struct SettingsRow<Control: View>: View {
     }
 }
 
-struct GeneralTab: View {
+struct MainSettingsTab: View {
     @State private var settings = Settings.shared
+    @State private var updates = Updates.shared
     @State private var devices = AudioCapture.inputDevices()
 
     var body: some View {
@@ -163,13 +176,13 @@ struct GeneralTab: View {
                     SettingsRow(label: "pin", subtitle: "fn again to finish") { Keycap("space") }
                     SettingsRow(label: "cancel", last: true) { Keycap("esc") }
                 }
-                SettingsGroup(title: "audio") {
+                SettingsGroup(title: "microphone") {
                     SettingsRow(label: "microphone") {
                         Picker("", selection: Binding(get: { settings.microphoneUID ?? "" }, set: { settings.microphoneUID = $0.isEmpty ? nil : $0; Pipeline.shared.applyMicrophoneSettings() })) {
                             Text("system default").tag("")
                             ForEach(devices) { d in Text(d.name).tag(d.id) }
                         }
-                        .labelsHidden().frame(width: 220)
+                        .labelsHidden().fixedSize()
                         .onAppear { devices = AudioCapture.inputDevices() }
                     }
                     SettingsRow(label: "keep microphone open", subtitle: "faster start") {
@@ -179,9 +192,19 @@ struct GeneralTab: View {
                         Toggle("", isOn: $settings.muteWhileRecording).toggleStyle(.switch).labelsHidden()
                     }
                 }
-                SettingsGroup(title: "feedback") {
-                    SettingsRow(label: "recording cloud") {
-                        Toggle("", isOn: $settings.overlayEnabled).toggleStyle(.switch).labelsHidden()
+                SettingsGroup(title: "cloud") {
+                    SettingsRow(label: "cloud colour", subtitle: "off, it is white or grey with the appearance") {
+                        Toggle("", isOn: $settings.cloudColorEnabled).toggleStyle(.switch).labelsHidden()
+                    }
+                    if settings.cloudColorEnabled {
+                        CloudColorPalette(selection: $settings.cloudColor)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                        RowRule()
+                    }
+                    SettingsRow(label: "cloud position") {
+                        Picker("", selection: $settings.cloudPosition) {
+                            ForEach(CloudPosition.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }.pickerStyle(.segmented).labelsHidden().fixedSize()
                     }
                     SettingsRow(label: "sounds") {
                         Toggle("", isOn: $settings.audioFeedback).toggleStyle(.switch).labelsHidden()
@@ -190,26 +213,55 @@ struct GeneralTab: View {
                         Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
                     }
                 }
+                SettingsGroup(title: "paste") {
+                    SettingsRow(label: "space after paste") {
+                        Toggle("", isOn: $settings.appendTrailingSpace).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "key after paste", last: !settings.autoSubmit) {
+                        Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
+                    }
+                    if settings.autoSubmit {
+                        SettingsRow(label: "key", last: true) {
+                            Picker("", selection: $settings.autoSubmitKey) {
+                                ForEach(AutoSubmitKey.allCases, id: \.self) { Text($0.label).tag($0) }
+                            }.labelsHidden().fixedSize()
+                        }
+                    }
+                }
+                SettingsGroup(title: "app") {
+                    SettingsRow(label: "open at login") {
+                        Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "check for updates") {
+                        Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "dock icon") {
+                        Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "appearance", subtitle: "the windows and the recording cloud", last: true) {
+                        Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; AppDelegate.shared?.applyAppearance() })) {
+                            ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }.labelsHidden().fixedSize()
+                    }
+                }
+                SettingsGroup(title: "about") {
+                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
+                        Button("check now") { updates.checkForUpdates() }
+                            .buttonStyle(InkButtonStyle())
+                            .disabled(!updates.canCheck)
+                    }
+                    SettingsRow(label: "website", last: true) {
+                        Link("typeme.it", destination: Fixed.websiteURL)
+                            .font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink).underline()
+                    }
+                }
             }
             .padding(20)
         }
     }
 }
 
-struct Keycap: View {
-    var text: String
-    init(_ text: String) { self.text = text }
-    var body: some View {
-        Text(text)
-            .font(.system(size: 12))
-            .padding(.horizontal, 8)
-            .frame(height: 22)
-            .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).fill(DesignTokens.Colors.paperRaised))
-            .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(DesignTokens.Colors.inkA20, lineWidth: 0.5))
-    }
-}
-
-struct TextTab: View {
+struct CleanupTab: View {
     @State private var settings = Settings.shared
     @State private var store = Store.shared
     @State private var newWord = ""
@@ -217,13 +269,11 @@ struct TextTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                SettingsGroup {
-                    SettingsRow(label: "clean up with apple intelligence", subtitle: "on device", last: true) {
+                SettingsGroup(title: "clean-up") {
+                    SettingsRow(label: "clean up with apple intelligence", subtitle: "on device") {
                         Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
                     }
-                }
-                SettingsGroup {
-                    SettingsRow(label: "learn from my corrections", last: true) {
+                    SettingsRow(label: "learn from corrections", last: true) {
                         Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
                     }
                 }
@@ -261,24 +311,55 @@ struct TextTab: View {
                         .padding(.horizontal, 12).padding(.vertical, 8)
                     }
                 }
-                SettingsGroup(title: "paste") {
-                    SettingsRow(label: "space after paste") {
-                        Toggle("", isOn: $settings.appendTrailingSpace).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "key after paste", last: !settings.autoSubmit) {
-                        Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
-                    }
-                    if settings.autoSubmit {
-                        SettingsRow(label: "key", last: true) {
-                            Picker("", selection: $settings.autoSubmitKey) {
-                                ForEach(AutoSubmitKey.allCases, id: \.self) { Text($0.label).tag($0) }
-                            }.labelsHidden().frame(width: 180)
-                        }
-                    }
-                }
             }
             .padding(20)
         }
+    }
+}
+
+/// A full-width row of resting puffs, one in each colour, each showing its
+/// own smoke; the chosen one sits in an ink ring.
+struct CloudColorPalette: View {
+    @Binding var selection: CloudColor
+
+    /// The cell each puff sits in, and the larger square it is drawn in, so
+    /// the cloud fills the cell rather than resting a quarter of the way
+    /// across it.
+    private static let side: CGFloat = 64
+    private static let drawn: CGFloat = 200
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(CloudColor.allCases.enumerated()), id: \.element) { i, c in
+                let on = c == selection
+                Button { selection = c } label: {
+                    PuffView(level: 0, tint: Color(nsColor: c.color), timeOffset: Double(i) * 7.3)
+                        .frame(width: CloudColorPalette.drawn, height: CloudColorPalette.drawn)
+                        .frame(width: CloudColorPalette.side, height: CloudColorPalette.side)
+                        .clipShape(Circle())
+                        .overlay(Circle().strokeBorder(on ? DesignTokens.Colors.ink : .clear, lineWidth: 1.5).padding(2))
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help(c.label)
+                .accessibilityLabel(c.label)
+                .accessibilityAddTraits(on ? .isSelected : [])
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+}
+
+struct Keycap: View {
+    var text: String
+    init(_ text: String) { self.text = text }
+    var body: some View {
+        Text(text)
+            .font(.system(size: 12))
+            .padding(.horizontal, 8)
+            .frame(height: 22)
+            .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).fill(DesignTokens.Colors.paperRaised))
+            .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(DesignTokens.Colors.inkA20, lineWidth: 0.5))
     }
 }
 
@@ -306,46 +387,6 @@ struct FlowLayout: Layout {
             s.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
-        }
-    }
-}
-
-struct AppTab: View {
-    @State private var settings = Settings.shared
-    @State private var updates = Updates.shared
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                SettingsGroup(title: "general") {
-                    SettingsRow(label: "open at login") {
-                        Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "check for updates") {
-                        Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "dock icon") {
-                        Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "appearance", subtitle: "the windows and the recording cloud", last: true) {
-                        Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; AppDelegate.shared?.applyAppearance() })) {
-                            ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
-                        }.labelsHidden().frame(width: 180)
-                    }
-                }
-                SettingsGroup(title: "about") {
-                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
-                        Button("check now") { updates.checkForUpdates() }
-                            .buttonStyle(InkButtonStyle())
-                            .disabled(!updates.canCheck)
-                    }
-                    SettingsRow(label: "website", last: true) {
-                        Link("typeme.it", destination: Fixed.websiteURL)
-                            .font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink).underline()
-                    }
-                }
-            }
-            .padding(20)
         }
     }
 }

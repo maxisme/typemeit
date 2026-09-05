@@ -18,6 +18,14 @@ struct PuffView: View {
     var tint: Color = .white
     /// Length of one autonomous inhale + exhale, in seconds.
     var breathPeriod: Double = 4.2
+    /// The smallest the autonomous breath lets the puff get, in 0...1; the
+    /// breath runs from here to a full cloud.
+    var breathFloor: Double = 0
+    /// Where in its breath the puff starts, as a fraction of the period, so
+    /// puffs side by side are not all inhaling together.
+    var breathPhase: Double = 0
+    /// Added to the clock, so puffs side by side show different smoke.
+    var timeOffset: Double = 0
     /// When set, the puff renders this instant of its texture and does not
     /// animate. For stills such as the app icon.
     var frozenTime: Double? = nil
@@ -38,7 +46,7 @@ struct PuffView: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion || frozenTime != nil)) { ctx in
-            let now = frozenTime ?? ctx.date.timeIntervalSinceReferenceDate
+            let now = (frozenTime ?? ctx.date.timeIntervalSinceReferenceDate) + timeOffset
             let t = reduceMotion ? 0 : now.truncatingRemainder(dividingBy: 3600)
             let s = state(at: now)
             Color.white
@@ -81,7 +89,7 @@ struct PuffView: View {
             return dynamics.step(level: Double(level), reaction: reaction, swell: swell(at: now), at: now)
         }
         if reduceMotion { return Frame(expansion: 0.7, trail: 0.7, flow: 0) }
-        let e = PuffView.breath(at: t, period: breathPeriod)
+        let e = breathFloor + (1 - breathFloor) * PuffView.breath(at: t + breathPhase * breathPeriod, period: breathPeriod)
         return Frame(expansion: e, trail: trail.step(expansion: e, at: now), flow: PuffView.idleFlow(at: t, expansion: e))
     }
 
