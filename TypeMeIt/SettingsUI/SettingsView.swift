@@ -174,7 +174,10 @@ struct MainSettingsTab: View {
                 SettingsGroup(title: "shortcuts") {
                     SettingsRow(label: "hold to talk") { Keycap("fn") }
                     SettingsRow(label: "pin", subtitle: "fn again to finish") { Keycap("space") }
-                    SettingsRow(label: "cancel", last: true) { Keycap("esc") }
+                    SettingsRow(label: "cancel") { Keycap("esc") }
+                    SettingsRow(label: "copy last transcript", subtitle: "off until a shortcut is set", last: true) {
+                        ShortcutRecorder(combo: $settings.copyLastShortcut)
+                    }
                 }
                 SettingsGroup(title: "microphone") {
                     SettingsRow(label: "microphone") {
@@ -347,6 +350,69 @@ struct CloudColorPalette: View {
                 .frame(maxWidth: .infinity)
             }
         }
+    }
+}
+
+/// Shows a shortcut as keycaps, or "set shortcut" when there is none. A click
+/// starts listening; the next key with ⌘, ⌥ or ⌃ becomes the shortcut, esc
+/// gives up, and ⌫ on its own clears it. The × beside a set shortcut clears it too.
+struct ShortcutRecorder: View {
+    @Binding var combo: KeyCombo?
+    @State private var recording = false
+    @State private var monitor: Any?
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Button {
+                recording ? stop() : start()
+            } label: {
+                if recording {
+                    Text("press keys…").font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+                        .frame(height: 22).padding(.horizontal, 8)
+                        .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(DesignTokens.Colors.ink, style: StrokeStyle(lineWidth: 0.5, dash: [3, 2])))
+                } else if let combo {
+                    HStack(spacing: 4) { ForEach(combo.caps, id: \.self) { Keycap($0) } }
+                } else {
+                    Text("set shortcut").font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+                        .frame(height: 22).padding(.horizontal, 8)
+                        .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(DesignTokens.Colors.inkA20, lineWidth: 0.5))
+                }
+            }
+            .buttonStyle(.plain)
+            .help(recording ? "esc to cancel, ⌫ to clear" : "click, then press the keys")
+            if combo != nil, !recording {
+                Button { combo = nil } label: {
+                    Image("akar-cross").resizable().frame(width: 8, height: 8)
+                }
+                .buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
+                .help("clear")
+                .accessibilityLabel("clear shortcut")
+            }
+        }
+        .onDisappear(perform: stop)
+    }
+
+    private func start() {
+        recording = true
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let bare = KeyCombo.Modifiers(event.modifierFlags).isEmpty
+            if event.keyCode == 53, bare {  // esc
+                stop()
+            } else if event.keyCode == 51, bare {  // delete
+                combo = nil
+                stop()
+            } else if let new = KeyCombo(event: event) {
+                combo = new
+                stop()
+            }
+            return nil
+        }
+    }
+
+    private func stop() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
+        recording = false
     }
 }
 
