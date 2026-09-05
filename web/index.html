@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Type Me It</title>
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono&display=swap" rel="stylesheet">
 <style>
   html, body { margin: 0; height: 100%; background: #0e0e0e; overflow: hidden; }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
@@ -26,17 +32,36 @@
     text-indent: -9999px; overflow: hidden;
   }
   #download:focus-visible { outline: 2px solid #f0f0f0; outline-offset: 8px; }
+
+  /* Design-system note text: DM Mono, lowercase, ink-3 on paper, no surface. */
+  #notmac {
+    position: fixed; left: 50%; top: calc(50% + 120px); transform: translateX(-50%);
+    margin: 0; font: 12px/1.4 "DM Mono", ui-monospace, Menlo, monospace;
+    color: #8a8a8a; text-align: center; white-space: nowrap;
+  }
+  #notmac:empty { display: none; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <a id="download" href="https://github.com/maxisme/typemeit/releases/latest/download/TypeMeIt.dmg">Download Type Me It for macOS</a>
+<p id="notmac" role="status" aria-live="polite"></p>
 <pre id="err"></pre>
 
 <!-- Generated from TypeMeIt/Overlay/Puff.metal by web/generate.py. -->
 <script src="puff.glsl.js"></script>
 <script>
 "use strict";
+
+// iPadOS Safari reports "MacIntel" as its platform, so a touch screen is the
+// tell that a "Mac" is actually an iPad.
+const isMac = () => /mac/i.test(navigator.userAgentData?.platform ?? navigator.platform)
+  && navigator.maxTouchPoints < 2;
+document.getElementById("download").addEventListener("click", (e) => {
+  if (isMac()) return;
+  e.preventDefault();
+  document.getElementById("notmac").textContent = "Type Me It is macos only.";
+});
 
 // The shared shader renders one puff centred in a `size` square, exactly as
 // the Swift view does. Here that square is a fixed VIEW px wide in the middle
