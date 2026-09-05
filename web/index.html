@@ -3,17 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Puff</title>
+<title>Type Me It</title>
 <style>
   html, body { margin: 0; height: 100%; background: #0e0e0e; overflow: hidden; }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  #hint {
-    position: fixed; left: 0; right: 0; bottom: 28px; text-align: center;
-    font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: rgba(255, 255, 255, 0.35); letter-spacing: 0.02em;
-    transition: opacity 600ms ease; pointer-events: none;
-  }
-  #hint.gone { opacity: 0; }
   #err {
     position: fixed; left: 16px; top: 16px; margin: 0; padding: 12px;
     font: 12px ui-monospace, Menlo, monospace; color: #f2b8b5; background: rgba(0, 0, 0, 0.7);
@@ -24,7 +17,6 @@
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="hint">Move the pointer</div>
 <pre id="err"></pre>
 
 <!-- Generated from TypeMeIt/Overlay/Puff.metal by web/generate.py. -->
@@ -109,14 +101,13 @@ class Dynamics {
 
 // Pointer: the puff stays in the middle of the page; the pointer's speed is
 // the level, so a flick of the mouse is a syllable, and a click is a shout.
-const pointer = { x: innerWidth / 2, y: innerHeight / 2, t: performance.now(), speed: 0, moved: false, pressed: 0 };
+const pointer = { x: innerWidth / 2, y: innerHeight / 2, t: performance.now(), speed: 0, pressed: 0 };
 addEventListener("pointermove", (ev) => {
   const now = performance.now();
   const dt = Math.max((now - pointer.t) / 1000, 1 / 240);
   const d = Math.hypot(ev.clientX - pointer.x, ev.clientY - pointer.y);
   pointer.speed = pointer.speed * 0.6 + (d / dt) * 0.4;
   pointer.x = ev.clientX; pointer.y = ev.clientY; pointer.t = now;
-  if (!pointer.moved) { pointer.moved = true; document.getElementById("hint").classList.add("gone"); }
 });
 addEventListener("pointerdown", () => { pointer.pressed = performance.now(); });
 
