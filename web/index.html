@@ -201,15 +201,17 @@ class Dynamics {
 // Pointer: the puff stays in the middle of the page; the pointer's speed is
 // the level, so a flick of the mouse is a syllable, and a click is a shout.
 // The raw speed is heavily smoothed and then eased into the level, so the puff
-// swells behind the cursor rather than twitching with every event.
-const pointer = { x: innerWidth / 2, y: innerHeight / 2, t: performance.now(), speed: 0, level: 0, pressed: 0 };
+// swells behind the cursor rather than twitching with every event. The
+// position starts at the centre so the first move measures a sane distance;
+// `seen` says whether it is a real position yet.
+const pointer = { x: innerWidth / 2, y: innerHeight / 2, t: performance.now(), speed: 0, level: 0, pressed: 0, seen: false };
 const POINTER = { speedBlend: 0.12, speedFull: 3200, rest: 0.6, attack: 0.35, release: 0.9 };
 addEventListener("pointermove", (ev) => {
   const now = performance.now();
   const dt = Math.max((now - pointer.t) / 1000, 1 / 240);
   const d = Math.hypot(ev.clientX - pointer.x, ev.clientY - pointer.y);
   pointer.speed += ((d / dt) - pointer.speed) * POINTER.speedBlend;
-  pointer.x = ev.clientX; pointer.y = ev.clientY; pointer.t = now;
+  pointer.x = ev.clientX; pointer.y = ev.clientY; pointer.t = now; pointer.seen = true;
 });
 addEventListener("pointerdown", (ev) => {
   pointer.pressed = performance.now();
@@ -235,7 +237,7 @@ let shownInverted = null;
 // seconds and out over HOVER_OUT, so it neither flickers at the edge nor
 // lingers. Hover is a distance test on the pointer against the same circle
 // as the #download button, so the green and the hand agree. Touch devices
-// never hover.
+// never hover, and neither does a page the mouse has not moved over yet.
 const HOVER_TINT = [0.45, 0.9, 0.5];
 const HOVER_RADIUS = 90;
 const HOVER_IN = 0.6, HOVER_OUT = 0.45;
@@ -244,7 +246,7 @@ let hover = 0, hoverAt = null;
 
 function hoverAmount(nowMs) {
   const d = Math.hypot(pointer.x - innerWidth / 2, pointer.y - innerHeight / 2);
-  const hovering = canHover && d < HOVER_RADIUS;
+  const hovering = canHover && pointer.seen && d < HOVER_RADIUS;
   const dt = hoverAt === null ? 0 : Math.min((nowMs - hoverAt) / 1000, 0.1);
   hoverAt = nowMs;
   const target = hovering ? 1 : 0;
