@@ -55,10 +55,11 @@ document.fonts.load(`${Math.round(H*0.028)}px "DM Mono"`).then(() => document.fo
   cx.fillStyle = '#0e0e0e'; cx.fillRect(0, 0, W, H);
   cx.drawImage(glc, 0, 0);
   if (TEXT) {
-    const px = Math.round(H * 0.028);
+    const px = Math.round(H * 0.034);
     cx.font = `${px}px "DM Mono", ui-monospace, Menlo, monospace`;
-    cx.fillStyle = '#8a8a8a'; cx.textBaseline = 'alphabetic';
-    cx.fillText(TEXT, Math.round(W * 0.04), Math.round(H * 0.94));
+    cx.fillStyle = '#8a8a8a'; cx.textBaseline = 'alphabetic'; cx.textAlign = 'center';
+    // Under the cloud, on the centre line, so a square crop keeps it.
+    cx.fillText(TEXT, Math.round(W / 2), Math.round(H * num('ty', 0.86)));
   }
   out.toBlob(b => b.arrayBuffer().then(a => fetch('/save?name=' + (P.get('name') || 'og') + '.png', {method: 'POST', body: a})
     .then(r => r.text()).then(t => { document.getElementById('status').textContent = 'SAVED ' + t; document.title = 'SAVED'; })), 'image/png');
