@@ -211,6 +211,7 @@ struct Keycap: View {
 
 struct TextTab: View {
     @State private var settings = Settings.shared
+    @State private var store = Store.shared
     @State private var newWord = ""
 
     var body: some View {
@@ -231,13 +232,22 @@ struct TextTab: View {
                         if !settings.customWords.isEmpty {
                             FlowLayout(spacing: 6) {
                                 ForEach(settings.customWords, id: \.self) { word in
+                                    let learned = store.learnedRecord(for: word)
                                     HStack(spacing: 5) {
+                                        if let learned {
+                                            Image("akar-sparkles").resizable().frame(width: 10, height: 10)
+                                                .foregroundStyle(DesignTokens.Colors.ink2)
+                                                .help("learned from a correction: heard “\(learned.heard)”")
+                                        }
                                         Text(word).font(.system(size: 12))
-                                        Button { settings.removeCustomWord(word) } label: {
+                                        Button {
+                                            store.forgetLearned(word: word)
+                                            settings.removeCustomWord(word)
+                                        } label: {
                                             Image("akar-cross").resizable().frame(width: 8, height: 8)
                                         }.buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
                                     }
-                                    .padding(.leading, 9).padding(.trailing, 6)
+                                    .padding(.leading, learned == nil ? 9 : 7).padding(.trailing, 6)
                                     .frame(height: 22)
                                     .background(Capsule().fill(DesignTokens.Colors.inkA08))
                                 }
