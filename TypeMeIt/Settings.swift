@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Observation
 
@@ -9,6 +10,29 @@ enum AutoSubmitKey: String, Codable, CaseIterable, Sendable {
         case .enter: "Return"
         case .ctrlEnter: "Control-Return"
         case .cmdEnter: "Command-Return"
+        }
+    }
+}
+
+/// Which appearance the app's windows and the recording cloud take: the
+/// system's, or light or dark regardless of it.
+enum Appearance: String, Codable, CaseIterable, Sendable {
+    case system, light, dark
+
+    var label: String {
+        switch self {
+        case .system: "system"
+        case .light: "light"
+        case .dark: "dark"
+        }
+    }
+
+    /// `nil` clears the override so the app follows the system again.
+    var nsAppearance: NSAppearance? {
+        switch self {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
         }
     }
 }
@@ -37,6 +61,7 @@ final class Settings {
     var historyLimit: Int { didSet { defaults.set(historyLimit, forKey: "historyLimit") } }
     var launchAtLogin: Bool { didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin") } }
     var showDockIcon: Bool { didSet { defaults.set(showDockIcon, forKey: "showDockIcon") } }
+    var appearance: Appearance { didSet { defaults.set(appearance.rawValue, forKey: "appearance") } }
     var onboardingComplete: Bool { didSet { defaults.set(onboardingComplete, forKey: "onboardingComplete") } }
     /// Words removed by the learned-words toast's Undo. Never learned again.
     var undoneWords: [String] { didSet { defaults.set(undoneWords, forKey: "undoneWords") } }
@@ -59,6 +84,7 @@ final class Settings {
         historyLimit = d.object(forKey: "historyLimit") == nil ? 500 : d.integer(forKey: "historyLimit")
         launchAtLogin = bool("launchAtLogin", false)
         showDockIcon = bool("showDockIcon", true)
+        appearance = Appearance(rawValue: d.string(forKey: "appearance") ?? "") ?? .system
         onboardingComplete = bool("onboardingComplete", false)
         undoneWords = d.stringArray(forKey: "undoneWords") ?? []
     }

@@ -61,6 +61,7 @@ struct OnboardingView: View {
         .tint(DesignTokens.Colors.ink)
         .animation(.easeOut(duration: DesignTokens.Duration.n2), value: step)
         .onReceive(poll) { _ in refresh() }
+        .onChange(of: canContinue) { _, ok in if ok { advanceWhenSettled() } }
     }
 
     private var title: String {
@@ -214,6 +215,18 @@ struct OnboardingView: View {
 
     private func move(to next: Step) {
         step = next
+    }
+
+    /// A step whose requirement was just met moves on by itself, after a beat
+    /// long enough to read the check. The welcome and try-it steps wait for the
+    /// button, and an arrival on an already-satisfied step does not fire here.
+    private func advanceWhenSettled() {
+        let current = step
+        guard current != .welcome, current != .tryIt else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(DesignTokens.Duration.n4))
+            if step == current, canContinue { advance() }
+        }
     }
 
     /// Every permission the app cannot run without.
