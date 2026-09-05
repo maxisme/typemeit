@@ -65,7 +65,11 @@ struct MenuContent: View {
     @State private var appState = AppState.shared
     @State private var store = Store.shared
 
-    private var recentTranscripts: [HistoryEntry] { Array(store.history.suffix(5).reversed()) }
+    /// The newest five with any text; a dictation that came out empty has
+    /// nothing to copy.
+    private var recentTranscripts: [HistoryEntry] {
+        Array(store.history.filter { !$0.displayText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.suffix(5).reversed())
+    }
 
     var body: some View {
         if appState.secureInputOn {
