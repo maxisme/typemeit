@@ -147,7 +147,7 @@ struct PuffView: View {
         static let attack = 0.012
         static let release = 0.22
         static let gain = 0.75
-        static let rest = 0.32
+        static let rest = 0.44
 
         private var env = 0.0
         private var flow = 0.0
