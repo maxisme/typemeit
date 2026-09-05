@@ -33,15 +33,7 @@ final class AppState {
     var ready = false
 
     var menuBarImage: NSImage {
-        let name: String
-        if recording { name = "tray_recording" }
-        else if transcribing { name = "tray_transcribing" }
-        else if secureInputOn { name = "tray_idle_warning" }
-        else { name = "tray_idle" }
-        let image = NSImage(named: name) ?? NSImage(systemSymbolName: "waveform", accessibilityDescription: "TypeMeIt")!
-        image.isTemplate = !secureInputOn
-        image.size = NSSize(width: 18, height: 18)
-        return image
+        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, secureInput: secureInputOn)
     }
 }
 

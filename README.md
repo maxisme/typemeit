@@ -28,4 +28,5 @@ A `v*` tag runs `.github/workflows/release.yml`, which builds, notarises and sta
 - `TypeMeIt/` app sources, one file per module
 - `TypeMeIt/Learning/`, `TypeMeIt/Insights/` ports of Handy's learning engine and insights, with their tests in `TypeMeItTests/`
 - `Packages/TranscribeCpp/` the XCFramework wrapper
+- `web/` the puff on a web page, driven by the pointer; `generate.py` transpiles the shader from `TypeMeIt/Overlay/Puff.metal`
 - `fastlane/`, `Scripts/`, `.github/workflows/` the release pipeline

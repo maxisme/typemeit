@@ -1,0 +1,14 @@
+# Assets-only Worker: every request is served from ./web as a static file, so
+# there is no `main` and no Worker code to run.
+name = "typemeit-web-dev"
+compatibility_date = "2026-07-01"
+
+[assets]
+directory = "./web"
+
+[env.production]
+name = "typemeit-web"
+routes = [{ pattern = "typeme.it", custom_domain = true }]
+
+[env.production.assets]
+directory = "./web"

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puff</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0e0e0e; overflow: hidden; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #hint {
+    position: fixed; left: 0; right: 0; bottom: 28px; text-align: center;
+    font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: rgba(255, 255, 255, 0.35); letter-spacing: 0.02em;
+    transition: opacity 600ms ease; pointer-events: none;
+  }
+  #hint.gone { opacity: 0; }
+  #err {
+    position: fixed; left: 16px; top: 16px; margin: 0; padding: 12px;
+    font: 12px ui-monospace, Menlo, monospace; color: #f2b8b5; background: rgba(0, 0, 0, 0.7);
+    white-space: pre-wrap; max-width: calc(100% - 56px);
+  }
+  #err:empty { display: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hint">Move the pointer</div>
+<pre id="err"></pre>
+
+<!-- Generated from TypeMeIt/Overlay/Puff.metal by web/generate.py. -->
+<script src="puff.glsl.js"></script>
+<script>
+"use strict";
+
+// The shared shader renders one puff centred in a `size` square, exactly as
+// the Swift view does. Here that square is a fixed VIEW px wide in the middle
+// of the page, and the y axis is flipped because gl_FragCoord runs upwards
+// while the shader (like SwiftUI) expects y down: its light comes from the top.
+const VIEW = 640;
+
+const FRAG = `#version 300 es
+precision highp float;
+${PUFF_GLSL}
+uniform vec2 uCentre;
+uniform float uSize;
+uniform float uTime;
+uniform float uExpansion;
+uniform float uTrail;
+uniform float uFlow;
+uniform vec4 uTint;
+out vec4 fragColor;
+void main() {
+  vec2 p = gl_FragCoord.xy - uCentre;
+  p.y = -p.y;
+  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, uTint);
+}
+`;
+
+const VERT = `#version 300 es
+in vec2 aPos;
+void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
+`;
+
+// Ports of PuffView.Trail and PuffView.Dynamics. The constants here mirror the
+// Swift; change them together.
+
+/** Peak-hold on the expansion with a slow decay, so a retreat leaves a trail. */
+class Trail {
+  value = 0; last = null;
+  step(expansion, now) {
+    if (this.last === null) { this.last = now; this.value = expansion; return this.value; }
+    const dt = Math.min(Math.max(now - this.last, 0), 0.1);
+    this.last = now;
+    this.value += (expansion - this.value) * (1 - Math.exp(-dt / 1.4));
+    this.value = Math.max(this.value, expansion);
+    return this.value;
+  }
+}
+
+/**
+ * Turns a 0...1 level into expansion, trail and flow. Rising edges in the
+ * level kick a heavily damped spring: the puff is pushed out sharply and
+ * settles back over about a second, streaming smoke outwards as it goes.
+ */
+class Dynamics {
+  fast = 0; slow = 0; x = 0; v = 0; flow = 0; last = null; trail = new Trail();
+  static rest(level) { return 0.34 + 0.12 * Math.min(Math.max(level, 0), 1); }
+  step(level, now) {
+    if (this.last === null) {
+      this.last = now;
+      const e = Dynamics.rest(level);
+      return { expansion: e, trail: this.trail.step(e, now), flow: this.flow };
+    }
+    const dt = Math.min(Math.max(now - this.last, 0), 0.1);
+    this.last = now;
+    this.fast += (level - this.fast) * (1 - Math.exp(-dt / 0.025));
+    this.slow += (level - this.slow) * (1 - Math.exp(-dt / 0.30));
+    const onset = Math.max(0, this.fast - this.slow - 0.03);
+    const omega = 7.0, zeta = 0.9;
+    const force = onset * 170.0;
+    const a = force - 2 * zeta * omega * this.v - omega * omega * this.x;
+    this.v += a * dt;
+    this.x += this.v * dt;
+    const e = Math.min(1, Math.max(0.05, Dynamics.rest(this.slow) + 0.4 * this.x));
+    this.flow += dt * (0.08 + 1.2 * Math.max(0, this.v));
+    return { expansion: e, trail: this.trail.step(e, now), flow: this.flow };
+  }
+}
+
+// Pointer: the puff stays in the middle of the page; the pointer's speed is
+// the level, so a flick of the mouse is a syllable, and a click is a shout.
+const pointer = { x: innerWidth / 2, y: innerHeight / 2, t: performance.now(), speed: 0, moved: false, pressed: 0 };
+addEventListener("pointermove", (ev) => {
+  const now = performance.now();
+  const dt = Math.max((now - pointer.t) / 1000, 1 / 240);
+  const d = Math.hypot(ev.clientX - pointer.x, ev.clientY - pointer.y);
+  pointer.speed = pointer.speed * 0.6 + (d / dt) * 0.4;
+  pointer.x = ev.clientX; pointer.y = ev.clientY; pointer.t = now;
+  if (!pointer.moved) { pointer.moved = true; document.getElementById("hint").classList.add("gone"); }
+});
+addEventListener("pointerdown", () => { pointer.pressed = performance.now(); });
+
+const canvas = document.getElementById("c");
+const err = document.getElementById("err");
+const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false });
+if (!gl) { err.textContent = "WebGL 2 is not available in this browser."; }
+
+function compile(type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+  return sh;
+}
+
+let program, uniforms;
+try {
+  program = gl.createProgram();
+  gl.attachShader(program, compile(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+  gl.useProgram(program);
+  const quad = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const aPos = gl.getAttribLocation(program, "aPos");
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uTint"]
+    .map((n) => [n, gl.getUniformLocation(program, n)]));
+} catch (e) {
+  err.textContent = String(e.message || e);
+}
+
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const dynamics = new Dynamics();
+const start = performance.now();
+let dpr = 1;
+
+function resize() {
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.round(innerWidth * dpr);
+  canvas.height = Math.round(innerHeight * dpr);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+}
+addEventListener("resize", resize);
+resize();
+
+let lastFrame = start;
+function frame(nowMs) {
+  const now = (nowMs - start) / 1000;
+  const dt = Math.min((nowMs - lastFrame) / 1000, 0.1);
+  lastFrame = nowMs;
+
+  // Speed decays once the pointer rests.
+  if (nowMs - pointer.t > 40) pointer.speed *= Math.exp(-dt / 0.08);
+  let level = Math.min(1, pointer.speed / 1800);
+  if (nowMs - pointer.pressed < 90) level = 1;
+
+  const s = reduceMotion
+    ? { expansion: 0.5, trail: 0.5, flow: 0 }
+    : dynamics.step(level, now);
+  const time = reduceMotion ? 100 : now;
+
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform2f(uniforms.uCentre, canvas.width / 2, canvas.height / 2);
+  gl.uniform1f(uniforms.uSize, VIEW * dpr);
+  gl.uniform1f(uniforms.uTime, time);
+  gl.uniform1f(uniforms.uExpansion, s.expansion);
+  gl.uniform1f(uniforms.uTrail, s.trail);
+  gl.uniform1f(uniforms.uFlow, s.flow);
+  gl.uniform4f(uniforms.uTint, 1, 1, 1, 1);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  if (!reduceMotion) requestAnimationFrame(frame);
+}
+if (program) requestAnimationFrame(frame);
+</script>
+</body>
+</html>
