@@ -75,7 +75,15 @@ final class Pipeline {
         case .recordingEnded: endRecording()
         case .cancelled: cancel()
         case .skipRequested: skipPostProcessing()
+        case .copyLastRequested: copyLast()
         }
+    }
+
+    /// The newest transcript with any text goes to the clipboard.
+    private func copyLast() {
+        guard let entry = Store.shared.history.last(where: { !$0.displayText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else { return }
+        Output.copyToClipboard(entry.displayText)
+        Log.app.info("Copied the newest transcript by shortcut")
     }
 
     /// The output device is muted while recording, so a cue played then has

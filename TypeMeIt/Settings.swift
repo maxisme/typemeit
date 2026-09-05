@@ -99,6 +99,10 @@ final class Settings {
     var cloudColor: CloudColor { didSet { defaults.set(cloudColor.rawValue, forKey: "cloudColor") } }
     var cloudPosition: CloudPosition { didSet { defaults.set(cloudPosition.rawValue, forKey: "cloudPosition") } }
     var onboardingComplete: Bool { didSet { defaults.set(onboardingComplete, forKey: "onboardingComplete") } }
+    /// Copies the newest transcript to the clipboard. Nil means no shortcut.
+    var copyLastShortcut: KeyCombo? {
+        didSet { defaults.set(copyLastShortcut.flatMap { try? JSONEncoder().encode($0) }, forKey: "copyLastShortcut") }
+    }
     /// Words removed by the learned-words toast's Undo. Never learned again.
     var undoneWords: [String] { didSet { defaults.set(undoneWords, forKey: "undoneWords") } }
 
@@ -124,6 +128,7 @@ final class Settings {
         cloudColor = CloudColor(rawValue: d.string(forKey: "cloudColor") ?? "") ?? .coral
         cloudPosition = CloudPosition(rawValue: d.string(forKey: "cloudPosition") ?? "") ?? .centre
         onboardingComplete = bool("onboardingComplete", false)
+        copyLastShortcut = d.data(forKey: "copyLastShortcut").flatMap { try? JSONDecoder().decode(KeyCombo.self, from: $0) }
         undoneWords = d.stringArray(forKey: "undoneWords") ?? []
     }
 

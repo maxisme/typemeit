@@ -71,6 +71,13 @@ struct MenuContent: View {
         Array(store.history.filter { !$0.displayText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.suffix(5).reversed())
     }
 
+    /// The user's copy-last shortcut when one is set and the menu can show
+    /// it, otherwise ⌘C.
+    private var copyLastKeyboardShortcut: KeyboardShortcut? {
+        guard let combo = Settings.shared.copyLastShortcut else { return KeyboardShortcut("c", modifiers: .command) }
+        return combo.keyboardShortcut
+    }
+
     var body: some View {
         if appState.secureInputOn {
             Text("Secure Input is on in another app. Fn is unavailable.")
@@ -94,9 +101,9 @@ struct MenuContent: View {
             Text("No transcripts yet").disabled(true)
         }
         ForEach(Array(recentTranscripts.enumerated()), id: \.element.id) { i, entry in
-            let button = Button(MenuContent.title(for: entry.displayText)) { Output.copyToClipboard(entry.displayText) }
+            let button = Button { Output.copyToClipboard(entry.displayText) } label: { Text(MenuContent.italic(MenuContent.title(for: entry.displayText))) }
             if i == 0 {
-                button.keyboardShortcut("c", modifiers: .command)
+                button.keyboardShortcut(copyLastKeyboardShortcut)
             } else {
                 button
             }
@@ -106,7 +113,7 @@ struct MenuContent: View {
                 appState.settingsTab = .history
                 openWindow(id: "settings")
                 NSApp.activate(ignoringOtherApps: true)
-            } label: { Text(MenuContent.bold("View All…")) }
+            } label: { Text("View All…") }
         }
         Divider()
         Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
@@ -118,6 +125,13 @@ struct MenuContent: View {
         var title = AttributedString(text)
         title.font = .body.bold()
         title.inlinePresentationIntent = .stronglyEmphasized
+        return title
+    }
+
+    static func italic(_ text: String) -> AttributedString {
+        var title = AttributedString(text)
+        title.font = .body.italic()
+        title.inlinePresentationIntent = .emphasized
         return title
     }
 
