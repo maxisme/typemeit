@@ -82,7 +82,7 @@ struct MenuContent: View {
         if Pipeline.shared.phase == .recording {
             Button("Stop Recording") { Pipeline.shared.shortcuts.stopFromMenu() }
         } else {
-            Button("Start Recording") { Pipeline.shared.shortcuts.startFromMenu() }
+            Button { Pipeline.shared.shortcuts.startFromMenu() } label: { Text(AttributedString("Start Recording") + MenuContent.hint("  fn")) }
                 .disabled(Pipeline.shared.isBusy || !appState.ready)
         }
         if Pipeline.shared.isBusy {
@@ -119,6 +119,14 @@ struct MenuContent: View {
         title.font = .body.bold()
         title.inlinePresentationIntent = .stronglyEmphasized
         return title
+    }
+
+    /// A key that is not a key equivalent, shown after the title the way
+    /// the menu shows its shortcuts: quieter, at the end.
+    static func hint(_ text: String) -> AttributedString {
+        var hint = AttributedString(text)
+        hint.foregroundColor = .secondary
+        return hint
     }
 
     /// One line of the transcript, cut so the menu stays narrow.
