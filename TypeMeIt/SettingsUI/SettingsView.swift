@@ -173,11 +173,10 @@ struct MainSettingsTab: View {
     private let poll = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
 
     /// Screen Recording is the only permission that lets the app read the
-    /// screen, and macOS says so to the user in its own words, so the row
-    /// says what is read and that macOS will remind them.
+    /// screen, so the row says what is read and what it asks for.
     private var backdropSubtitle: String {
-        if settings.cloudMatchesBackdrop, !screenGranted { return "needs screen recording, which is off" }
-        return "reads a few pixels under the cloud · asks for screen recording, which macos reminds you about"
+        if settings.cloudMatchesBackdrop, !screenGranted { return "needs screen recording permissions, which are off" }
+        return "reads a few pixels under the cloud · needs screen recording permissions"
     }
 
     var body: some View {
