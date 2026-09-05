@@ -20,6 +20,11 @@ struct SettingsView: View {
     var body: some View {
         NavigationSplitView {
             VStack(alignment: .leading, spacing: 2) {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .frame(width: 56, height: 56)
+                    .padding(.leading, 4)
+                    .padding(.bottom, 10)
                 ForEach(SettingsTab.allCases, id: \.self) { t in
                     let on = t == tab
                     Button { tab = t } label: {
