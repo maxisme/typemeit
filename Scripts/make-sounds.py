@@ -3,7 +3,8 @@
 
 start  an inhale: noise through two low formants over a pink bed, 230 ms
 pin    a dust pop: one click with a whisper of crackle behind it
-stop   a valve hum letting go: 82 Hz with its second harmonic, released
+stop   a second, lingering inhale
+hum    a valve hum letting go, played once transcription is under way
 """
 import math
 import struct
@@ -88,8 +89,8 @@ def hum_off():
     return out
 
 
-def write(path, samples):
-    scale = PEAK / max(abs(s) for s in samples)
+def write(path, samples, peak=PEAK):
+    scale = peak / max(abs(s) for s in samples)
     data = bytearray()
     for s in samples:
         v = int(max(-1.0, min(1.0, s * scale)) * 32767)
@@ -103,4 +104,6 @@ def write(path, samples):
 
 write("TypeMeIt/Resources/pop_start.wav", inhale(230, 180, 700, 0.8, 4))
 write("TypeMeIt/Resources/pop_pin.wav", dust_pop())
-write("TypeMeIt/Resources/pop_stop.wav", hum_off())
+# the stop and the hum sit under the start and pin
+write("TypeMeIt/Resources/pop_stop.wav", inhale(230, 180, 700, 0.8, 4, tail=2.4), peak=0.28)
+write("TypeMeIt/Resources/pop_hum.wav", hum_off(), peak=0.28)

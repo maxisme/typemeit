@@ -8,7 +8,10 @@ struct OnboardingView: View {
 
     enum Step: Int, CaseIterable { case welcome, model, microphone, accessibility, fnKey, tryIt }
 
-    @State private var step: Step = .welcome
+    /// Opens on the first step that is not yet satisfied, so a permission
+    /// lost since the last launch (a reinstall, a signature change, a TCC
+    /// reset) lands straight on its page.
+    @State private var step: Step = OnboardingView.firstUnsatisfiedStep()
     @State private var modelStore = ModelStore.shared
     @State private var micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
     @State private var axGranted = AXIsProcessTrusted()
@@ -211,6 +214,20 @@ struct OnboardingView: View {
 
     private func move(to next: Step) {
         step = next
+    }
+
+    /// Every permission the app cannot run without.
+    static var permissionsGranted: Bool {
+        AVCaptureDevice.authorizationStatus(for: .audio) == .authorized && AXIsProcessTrusted() && CGPreflightListenEventAccess()
+    }
+
+    private static func firstUnsatisfiedStep() -> Step {
+        guard Settings.shared.onboardingComplete else { return .welcome }
+        if !ModelStore.isInstalled { return .model }
+        if AVCaptureDevice.authorizationStatus(for: .audio) != .authorized { return .microphone }
+        if !AXIsProcessTrusted() { return .accessibility }
+        if !CGPreflightListenEventAccess() { return .inputMonitoring }
+        return .welcome
     }
 
     private func refresh() {
