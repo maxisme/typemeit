@@ -78,7 +78,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit
-        PRODUCT_NAME: TypeMeIt
+        PRODUCT_NAME: Type Me It
         PRODUCT_MODULE_NAME: TypeMeIt
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_OBJC_BRIDGING_HEADER: ""
@@ -90,7 +90,7 @@ targets:
         # release icon inverted and its menu bar puff is dashed.
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit.dev
-          PRODUCT_NAME: TypeMeIt Dev
+          PRODUCT_NAME: Type Me It Dev
           APP_ICON_FILE: AppIcon-Dev
   TypeMeItTests:
     type: bundle.unit-test
@@ -105,7 +105,7 @@ targets:
       configs:
         # The host app has a different product name in Debug.
         Debug:
-          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TypeMeIt Dev.app/Contents/MacOS/TypeMeIt Dev"
+          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Type Me It Dev.app/Contents/MacOS/Type Me It Dev"
           BUNDLE_LOADER: "$(TEST_HOST)"
 schemes:
   TypeMeIt:
