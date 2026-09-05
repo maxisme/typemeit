@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case insights, general, text, history, app
+    case insights, general, text, history
 
     var icon: String {
         switch self {
@@ -9,7 +9,6 @@ enum SettingsTab: String, CaseIterable {
         case .general: "akar-microphone"
         case .text: "akar-text-align-left"
         case .history: "akar-clock"
-        case .app: "akar-gear"
         }
     }
 }
@@ -47,7 +46,6 @@ struct SettingsView: View {
                 case .text: TextTab()
                 case .history: HistoryTab()
                 case .insights: InsightsTab()
-                case .app: AppTab()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -162,6 +160,7 @@ struct SettingsRow<Control: View>: View {
 
 struct GeneralTab: View {
     @State private var settings = Settings.shared
+    @State private var updates = Updates.shared
     @State private var devices = AudioCapture.inputDevices()
 
     var body: some View {
@@ -212,6 +211,33 @@ struct GeneralTab: View {
                     }
                     SettingsRow(label: "offer to copy when nothing is focused", last: true) {
                         Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
+                    }
+                }
+                SettingsGroup(title: "app") {
+                    SettingsRow(label: "open at login") {
+                        Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "check for updates") {
+                        Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "dock icon") {
+                        Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "appearance", subtitle: "the windows and the recording cloud", last: true) {
+                        Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; AppDelegate.shared?.applyAppearance() })) {
+                            ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }.labelsHidden().fixedSize()
+                    }
+                }
+                SettingsGroup(title: "about") {
+                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
+                        Button("check now") { updates.checkForUpdates() }
+                            .buttonStyle(InkButtonStyle())
+                            .disabled(!updates.canCheck)
+                    }
+                    SettingsRow(label: "website", last: true) {
+                        Link("typeme.it", destination: Fixed.websiteURL)
+                            .font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink).underline()
                     }
                 }
             }
@@ -353,46 +379,6 @@ struct FlowLayout: Layout {
             s.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
-        }
-    }
-}
-
-struct AppTab: View {
-    @State private var settings = Settings.shared
-    @State private var updates = Updates.shared
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                SettingsGroup(title: "general") {
-                    SettingsRow(label: "open at login") {
-                        Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "check for updates") {
-                        Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "dock icon") {
-                        Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "appearance", subtitle: "the windows and the recording cloud", last: true) {
-                        Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; AppDelegate.shared?.applyAppearance() })) {
-                            ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
-                        }.labelsHidden().fixedSize()
-                    }
-                }
-                SettingsGroup(title: "about") {
-                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
-                        Button("check now") { updates.checkForUpdates() }
-                            .buttonStyle(InkButtonStyle())
-                            .disabled(!updates.canCheck)
-                    }
-                    SettingsRow(label: "website", last: true) {
-                        Link("typeme.it", destination: Fixed.websiteURL)
-                            .font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink).underline()
-                    }
-                }
-            }
-            .padding(20)
         }
     }
 }
