@@ -39,7 +39,6 @@ targets:
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
         CFBundleIconFile: AppIcon
-        LSUIElement: true
         LSMinimumSystemVersion: "26.0"
         NSMicrophoneUsageDescription: "Type Me It records your voice while you hold the Fn key so it can transcribe it."
         NSHumanReadableCopyright: ""
