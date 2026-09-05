@@ -59,18 +59,47 @@ struct SettingsView: View {
     }
 }
 
-/// The design system's button: mono label, ink outline, inverts when primary.
+/// The design system's button: mono label, ink outline, inverts when primary,
+/// loses its outline when quiet. Disabled drops to ink-3 on a rule border.
 struct InkButtonStyle: ButtonStyle {
     var primary = false
+    var quiet = false
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12, design: .monospaced))
-            .foregroundStyle(primary ? DesignTokens.Colors.onSlab : DesignTokens.Colors.ink)
-            .padding(.horizontal, 10)
-            .frame(height: 26)
-            .background(primary ? DesignTokens.Colors.slab : Color.clear)
-            .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(DesignTokens.Colors.ink, lineWidth: DesignTokens.hairline))
-            .opacity(configuration.isPressed ? 0.6 : 1)
+        InkButtonLabel(configuration: configuration, primary: primary, quiet: quiet)
+    }
+
+    private struct InkButtonLabel: View {
+        let configuration: Configuration
+        let primary: Bool
+        let quiet: Bool
+        @Environment(\.isEnabled) private var enabled
+
+        var body: some View {
+            configuration.label
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundStyle(foreground)
+                .padding(.horizontal, 10)
+                .frame(height: 26)
+                .background(background)
+                .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(border, lineWidth: DesignTokens.hairline))
+                .opacity(configuration.isPressed ? 0.6 : 1)
+        }
+
+        private var foreground: Color {
+            if !enabled { return DesignTokens.Colors.ink3 }
+            if primary { return DesignTokens.Colors.onSlab }
+            return quiet ? DesignTokens.Colors.ink2 : DesignTokens.Colors.ink
+        }
+
+        private var background: Color {
+            guard primary else { return .clear }
+            return enabled ? DesignTokens.Colors.slab : DesignTokens.Colors.inkA12
+        }
+
+        private var border: Color {
+            if primary || quiet { return .clear }
+            return enabled ? DesignTokens.Colors.ink : DesignTokens.Colors.rule
+        }
     }
 }
 

@@ -161,7 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if AppState.shared.ready == false { self?.startRunning() }
         }
         let window = NSWindow(contentViewController: NSHostingController(rootView: view))
-        window.title = "Welcome to Type Me It"
+        window.title = "welcome"
         window.styleMask = [.titled, .closable, .miniaturizable]
         window.isReleasedWhenClosed = false
         window.setContentSize(NSSize(width: 520, height: 560))
