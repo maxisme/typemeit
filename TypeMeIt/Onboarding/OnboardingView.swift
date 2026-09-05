@@ -226,7 +226,7 @@ struct OnboardingView: View {
         if !ModelStore.isInstalled { return .model }
         if AVCaptureDevice.authorizationStatus(for: .audio) != .authorized { return .microphone }
         if !AXIsProcessTrusted() { return .accessibility }
-        if !CGPreflightListenEventAccess() { return .inputMonitoring }
+        if !CGPreflightListenEventAccess() { return .fnKey }
         return .welcome
     }
 
