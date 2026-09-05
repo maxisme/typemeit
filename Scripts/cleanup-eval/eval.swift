@@ -1,14 +1,29 @@
 import Foundation
 import FoundationModels
 
-/// Runs the cases in cases.json through the on-device model with the prompt
+/// Runs the cases in cases.txt through the on-device model with the prompt
 /// template pulled from PostProcessor.swift, and prints each result against
 /// the expected text. The comparison ignores case and punctuation so a comma
 /// for a full stop does not fail a case; word changes do. An optional argument
 /// names another PostProcessor.swift to read the template from.
 @Generable struct CleanedTranscript: Sendable { let cleanedText: String }
 
-struct Case: Decodable { let input: String; let expected: String }
+struct Case { let input: String; let expected: String }
+
+func parseCases(_ text: String) -> [Case] {
+    var out: [Case] = []
+    var heard: String?
+    for raw in text.split(separator: "\n", omittingEmptySubsequences: false) {
+        let line = raw.trimmingCharacters(in: .whitespaces)
+        if line.hasPrefix("#") || line.isEmpty { continue }
+        if line.hasPrefix("heard:") { heard = line.dropFirst(6).trimmingCharacters(in: .whitespaces) }
+        else if line.hasPrefix("expected:"), let h = heard {
+            out.append(Case(input: h, expected: line.dropFirst(9).trimmingCharacters(in: .whitespaces)))
+            heard = nil
+        }
+    }
+    return out
+}
 
 @main struct Eval {
     static func normalise(_ s: String) -> String {
@@ -28,7 +43,7 @@ struct Case: Decodable { let input: String; let expected: String }
         let sourceURL = CommandLine.arguments.count > 1 ? URL(fileURLWithPath: CommandLine.arguments[1]) : root.appendingPathComponent("TypeMeIt/PostProcessor.swift")
         let source = try String(contentsOf: sourceURL, encoding: .utf8)
         let tpl = template(from: source)
-        let cases = try JSONDecoder().decode([Case].self, from: Data(contentsOf: dir.appendingPathComponent("cases.json")))
+        let cases = parseCases(try String(contentsOf: dir.appendingPathComponent("cases.txt"), encoding: .utf8))
         let model = SystemLanguageModel(guardrails: .permissiveContentTransformations)
         guard case .available = model.availability else { print("Apple Intelligence is not available on this Mac"); exit(2) }
         var failed = 0
