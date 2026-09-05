@@ -6,12 +6,8 @@ import AppKit
 /// follows the label colour without being a template image, and the arcs can
 /// take a colour of their own.
 enum MenuBarIconRenderer {
-    /// The recording tint, the same red as the pill's level meter.
-    private static let recordingTint = NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 1, green: 0.412, blue: 0.38, alpha: 1)
-            : NSColor(red: 0.824, green: 0.271, blue: 0.231, alpha: 1)
-    }
+    /// The recording tint, the microphone's orange.
+    private static let recordingTint = NSColor(srgbRed: 0.961, green: 0.643, blue: 0.290, alpha: 1)
 
     static func puff(recording: Bool, transcribing: Bool, secureInput: Bool) -> NSImage {
         let size = NSSize(width: 20, height: 20)
@@ -30,12 +26,10 @@ enum MenuBarIconRenderer {
                 }.draw(in: rect, from: .zero, operation: .sourceOver, fraction: alpha)
             }
 
-            layer("menu_puff", tint: .labelColor)
-            // The arcs carry the state: red while the microphone is open,
-            // faded while the recording is being transcribed.
-            layer("menu_puff_arcs",
-                  tint: recording ? recordingTint : .labelColor,
-                  alpha: transcribing ? 0.35 : 1)
+            // The outline carries the state: orange while the microphone is
+            // open. The arcs fade while the recording is being transcribed.
+            layer("menu_puff", tint: recording ? recordingTint : .labelColor)
+            layer("menu_puff_arcs", tint: .labelColor, alpha: transcribing ? 0.35 : 1)
 
             // Secure Input is a slash through the whole mark, the way the OS
             // strikes wifi.slash. The gap under the stroke is cut first so the
