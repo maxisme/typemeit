@@ -4,11 +4,15 @@
 -- .DS_Store, and a compressed UDZO image is read-only, so a layout applied
 -- after conversion is discarded without an error.
 --
--- The coordinates below are the ones generate-dmg-background.sh prints. They
--- are duplicated rather than read from the asset because the asset is a PNG;
--- if either moves, both move.
+-- The icon coordinates below pair with the background art when there is any;
+-- they are duplicated rather than read from the asset because the asset is a
+-- PNG. If either moves, both move.
+-- The second argument says whether .background/background.png was staged. The
+-- repo has no background asset, and Finder errors (-10006) on setting a picture
+-- that is not there, so the caller decides rather than this script assuming.
 on run argv
 	set volumeName to item 1 of argv
+	set hasBackground to (count of argv) > 1 and item 2 of argv is "background"
 
 	tell application "Finder"
 		tell disk volumeName
@@ -28,7 +32,9 @@ on run argv
 			-- half is left clear for. To the side, they would run into the trail.
 			set label position of opts to bottom
 			set text size of opts to 12
-			set background picture of opts to file ".background:background.png"
+			if hasBackground then
+				set background picture of opts to file ".background:background.png"
+			end if
 
 			set position of item "TypeMeIt.app" to {170, 214}
 			set position of item "Applications" to {490, 214}

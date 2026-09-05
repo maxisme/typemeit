@@ -115,9 +115,13 @@ rm -rf "$STAGE" "$DMG"
 mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/TypeMeIt.app"
 ln -s /Applications "$STAGE/Applications"
+# Finder errors on a background picture that is not staged, so the layout script
+# is told which case this is rather than left to guess.
+BACKGROUND="none"
 if [ -f Scripts/dmg-background.png ]; then
   mkdir -p "$STAGE/.background"
   cp Scripts/dmg-background.png "$STAGE/.background/background.png"
+  BACKGROUND="background"
 fi
 
 # Two passes: Finder stores the window layout in the volume's .DS_Store and a
@@ -129,7 +133,7 @@ MNT="/Volumes/Type Me It"
 rm -f "$RW"
 hdiutil create -volname "Type Me It" -srcfolder "$STAGE" -ov -format UDRW "$RW"
 hdiutil attach "$RW" -nobrowse -mountpoint "$MNT"
-osascript Scripts/dmg-layout.applescript "Type Me It"
+osascript Scripts/dmg-layout.applescript "Type Me It" "$BACKGROUND"
 sync
 # Finder is still writing the .DS_Store the layout just arranged, and a detach
 # that races it fails with "Resource busy". Patience first; -force is a last
