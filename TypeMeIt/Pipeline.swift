@@ -94,7 +94,6 @@ final class Pipeline {
     private func beginRecording() {
         guard phase == .idle else { return }
         generation += 1
-        let gen = generation
         phase = .recording
         pinned = false
         recordingStartedAt = Date()
@@ -102,14 +101,7 @@ final class Pipeline {
         toastTask?.cancel()
         ReadBack.shared.finishNow()
         shortcuts.setPhase(.recording)
-        if settings.audioFeedback { Feedback.play(.start) }
-        if settings.muteWhileRecording {
-            // The mute is on the output device, so it would swallow the cue.
-            let wait = settings.audioFeedback ? Feedback.duration(.start) : 0
-            DispatchQueue.main.asyncAfter(deadline: .now() + wait) { [weak self] in
-                if self?.phase == .recording, self?.generation == gen { OutputMute.mute() }
-            }
-        }
+        if settings.muteWhileRecording { OutputMute.mute() }
         do {
             try capture.start(uid: settings.microphoneUID)
         } catch {
