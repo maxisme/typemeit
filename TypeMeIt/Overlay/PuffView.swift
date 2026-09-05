@@ -4,31 +4,115 @@ import SwiftUI
 /// A puff of smoke that swells and shrinks around its centre. Rendered
 /// entirely in `Puff.metal`; this view only supplies time and parameters.
 ///
-/// Pass `expansion` (0 = wisp, 1 = full cloud) to drive it from outside, for
-/// example from the microphone level. Leave it nil and the puff breathes on
-/// its own.
+/// Three ways to drive it:
+/// - `level`: the microphone level in 0...1 as published by `AudioCapture`.
+///   Rising edges in the level kick the puff outwards; it then settles back
+///   over about half a second. The resting size follows the average level
+///   only slightly.
+/// - `expansion`: a fixed value in 0...1 (0 = wisp, 1 = full cloud).
+/// - neither: the puff breathes on its own.
 struct PuffView: View {
+    var level: Float? = nil
     var expansion: Double? = nil
     var tint: Color = .white
     /// Length of one autonomous inhale + exhale, in seconds.
     var breathPeriod: Double = 4.2
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    @State private var dynamics = Dynamics()
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion)) { ctx in
-            let t = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 3600)
-            let e = expansion ?? (reduceMotion ? 0.7 : PuffView.breath(at: t, period: breathPeriod))
+            let now = ctx.date.timeIntervalSinceReferenceDate
+            let t = reduceMotion ? 0 : now.truncatingRemainder(dividingBy: 3600)
+            let s = state(at: now)
             Color.white
                 .visualEffect { content, proxy in
                     content.colorEffect(ShaderLibrary.puff(
                         .float2(proxy.size),
                         .float(Float(t)),
-                        .float(Float(e)),
+                        .float(Float(s.expansion)),
+                        .float(Float(s.flow)),
                         .color(tint)))
                 }
         }
     }
+
+    /// What the shader needs for one frame.
+    struct Frame {
+        var expansion: Double
+        var flow: Double
+    }
+
+    private func state(at now: TimeInterval) -> Frame {
+        let t = now.truncatingRemainder(dividingBy: 3600)
+        if let expansion { return Frame(expansion: expansion, flow: PuffView.idleFlow(at: t, expansion: expansion)) }
+        if let level {
+            if reduceMotion { return Frame(expansion: Dynamics.restExpansion(forLevel: Double(level)), flow: 0) }
+            return dynamics.step(level: Double(level), at: now)
+        }
+        if reduceMotion { return Frame(expansion: 0.7, flow: 0) }
+        let e = PuffView.breath(at: t, period: breathPeriod)
+        return Frame(expansion: e, flow: PuffView.idleFlow(at: t, expansion: e))
+    }
+
+    /// Slow constant drift plus a term that follows expansion, for the fixed
+    /// and breathing modes.
+    private static func idleFlow(at t: Double, expansion: Double) -> Double {
+        t * 0.11 + 1.3 * expansion
+    }
+
+    // MARK: Level dynamics
+
+    /// Turns the microphone level into expansion and flow.
+    ///
+    /// The level is tracked with a fast and a slow average; their difference
+    /// is the onset of a syllable. Onsets drive a heavily damped spring: the
+    /// puff is pushed out sharply and settles back over about a second. While
+    /// it moves outwards the flow phase advances quickly, so the smoke streams
+    /// out on the push and hangs while it settles. The resting size follows
+    /// the slow average only a little.
+    ///
+    /// A reference type so the timeline closure can update it without
+    /// triggering a view update.
+    final class Dynamics {
+        private var fast = 0.0
+        private var slow = 0.0
+        private var x = 0.0
+        private var v = 0.0
+        private var flow = 0.0
+        private var lastTime: TimeInterval?
+
+        /// Resting size for a given slow average level.
+        nonisolated static func restExpansion(forLevel level: Double) -> Double {
+            0.34 + 0.12 * min(max(level, 0), 1)
+        }
+
+        func step(level: Double, at now: TimeInterval) -> Frame {
+            defer { lastTime = now }
+            guard let lastTime else { return Frame(expansion: Dynamics.restExpansion(forLevel: level), flow: flow) }
+            let dt = min(max(now - lastTime, 0), 0.1)
+
+            fast += (level - fast) * (1 - exp(-dt / 0.025))
+            slow += (level - slow) * (1 - exp(-dt / 0.30))
+            let onset = max(0, fast - slow - 0.03)
+
+            // Heavily damped spring: a sharp push out, then a settle over about
+            // a second with no bounce.
+            let omega = 7.0
+            let zeta = 0.9
+            let force = onset * 170.0
+            let a = force - 2 * zeta * omega * v - omega * omega * x
+            v += a * dt
+            x += v * dt
+
+            let e = min(1, max(0.05, Dynamics.restExpansion(forLevel: slow) + 0.4 * x))
+            flow += dt * (0.08 + 1.2 * max(0, v))
+            return Frame(expansion: e, flow: flow)
+        }
+    }
+
+    // MARK: Autonomous breath
 
     /// Slow inhale, quicker exhale, a short hold at each end.
     static func breath(at t: Double, period: Double) -> Double {

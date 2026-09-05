@@ -159,21 +159,16 @@ static float flowGrain(float2 uv, float flow, float time, float R) {
     return 0.5 + 0.5 * g / sqrt(wsq);
 }
 
-// Outward drift phase: a slow constant flow plus a term that follows the
-// expansion, so the smoke streams out while the puff swells and is drawn
-// back in while it shrinks.
-static float flowPhase(float time, float e) {
-    return time * 0.11 + 1.3 * e;
-}
-
 // Smoke density, 0...~1.4: the shape carved by advected fractal noise, then
 // thinned with distance from the centre so the rim is translucent wisps.
-static float field(float2 uv, float time, float e) {
+static float field(float2 uv, float time, float e, float flow) {
     float R = radius(e);
     float d2 = dot(uv, uv) / (R * R);
     // Dense lobed core plus a wide, thin haze that reaches the full radius.
     float mass = shape(uv, time, e) + 0.42 * exp(-1.1 * d2);
-    float n = flowNoise(uv, flowPhase(time, e), time, R);
+    // The noise is scaled by a fixed mid radius, not the current one, so a
+    // change of size moves smoke through the field instead of zooming it.
+    float n = flowNoise(uv, flow, time, radius(0.5));
 
     // Noise bites hardest where the mass is thin, so the rim is carved into
     // wisps while the centre stays solid.
@@ -183,9 +178,7 @@ static float field(float2 uv, float time, float e) {
     // Radial falloff: dense middle, thin edge.
     density *= exp(-1.1 * d2);
 
-    // The floor rises as the puff retracts, so it thins into wisps instead of
-    // shrinking as a disc.
-    return max(0.0, density - mix(0.22, 0.08, e));
+    return max(0.0, density - 0.12);
 }
 
 } // namespace smoke
@@ -194,15 +187,17 @@ static float field(float2 uv, float time, float e) {
 /// size: the view's size in points.
 /// time: seconds, any origin.
 /// expansion: 0 = fully retracted wisp, 1 = fully expanded cloud.
+/// flow: outward drift phase; one unit doubles the distance of every feature.
+///       Increase it to stream smoke outwards, hold it to let it hang.
 /// tint: colour of the smoke; alpha scales overall opacity.
-[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, half4 tint) {
+[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float flow, half4 tint) {
     using namespace smoke;
 
     float scale = min(size.x, size.y);
     float2 uv = (position - 0.5 * size) / scale;
     float e = saturate(expansion);
 
-    float f = field(uv, time, e);
+    float f = field(uv, time, e, flow);
     if (f <= 0.0) { return half4(0.0); }
 
     // Light the coarse shape from the upper left: each lobe gets a bright
@@ -217,10 +212,13 @@ static float field(float2 uv, float time, float e) {
     float lit = saturate(0.5 - 0.13 * R * dot(grad, light));
 
     // Fine grain, one high octave at low weight, drifting with the flow.
-    float grain = flowGrain(uv, flowPhase(time, e), time, radius(e));
+    float grain = flowGrain(uv, flow, time, radius(0.5));
 
-    // Beer-Lambert style opacity: dense centre, soft translucent edges.
-    float alpha = 1.0 - exp(-1.6 * f);
+    // Beer-Lambert style opacity: dense centre, soft translucent edges. There
+    // is a fixed amount of smoke: opacity falls with the puff's area, so the
+    // small puff is dense and the expanded one is the same smoke spread thin.
+    float conserve = clamp(pow(radius(0.35) / radius(e), 2.0), 0.12, 3.0);
+    float alpha = 1.0 - exp(-1.9 * conserve * f);
     float shade = mix(0.64, 1.0, lit) * mix(0.88, 1.0, saturate(f)) * (0.96 + 0.06 * grain);
 
     half a = half(alpha) * tint.a;
