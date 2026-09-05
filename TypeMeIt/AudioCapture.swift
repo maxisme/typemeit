@@ -173,7 +173,7 @@ final class AudioCapture: @unchecked Sendable {
             lastLevelAt = now
             let db = 20 * log10(max(peakSinceReport * 0.8, 1e-6))
             peakSinceReport = 0
-            let level = min(1, max(0, (db + 50) / 40))
+            let level = min(1, max(0, (db + 52) / 50))
             onLevel?(level)
         }
     }
