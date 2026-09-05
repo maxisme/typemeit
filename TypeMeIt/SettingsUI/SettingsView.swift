@@ -257,7 +257,7 @@ struct TypingTab: View {
                     SettingsRow(label: "clean up with apple intelligence", subtitle: "on device") {
                         Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "learn from my corrections", last: true) {
+                    SettingsRow(label: "learn from corrections", last: true) {
                         Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
                     }
                 }
