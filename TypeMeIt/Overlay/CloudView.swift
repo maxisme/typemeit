@@ -14,9 +14,9 @@ struct CloudView: View {
 
     /// Side of the square the puff is drawn in. The resting cloud is about a
     /// quarter of it across.
-    static let size: CGFloat = 200
+    static let size: CGFloat = 300
     /// Height of the cloud's centre above the bottom of the panel.
-    static let restHeight: CGFloat = 64
+    static let restHeight: CGFloat = 84
     /// Drawn this much smaller as it grows in and shrinks out, on top of the
     /// puff's own change of expansion.
     static let arrivalScale: CGFloat = 0.3
