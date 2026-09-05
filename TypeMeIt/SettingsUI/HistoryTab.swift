@@ -5,6 +5,8 @@ struct HistoryTab: View {
     @State private var settings = Settings.shared
     @State private var search = ""
     @State private var expanded: Set<UUID> = []
+    @State private var selected: Set<UUID> = []
+    @State private var confirmDeleteAll = false
 
     private var filtered: [HistoryEntry] {
         let q = search.trimmingCharacters(in: .whitespaces).lowercased()
@@ -39,6 +41,16 @@ struct HistoryTab: View {
                         .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.md).strokeBorder(DesignTokens.Colors.ruleControl, lineWidth: 0.5))
                         Text("\(store.history.count) dictations")
                             .font(.system(size: 11).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+                        if !selected.isEmpty {
+                            Button("delete \(selected.count)") { store.delete(ids: selected); selected = [] }
+                                .buttonStyle(InkButtonStyle())
+                        }
+                        Button("delete all") { confirmDeleteAll = true }
+                            .buttonStyle(InkButtonStyle(quiet: true))
+                            .disabled(store.history.isEmpty)
+                            .confirmationDialog("Delete all \(store.history.count) dictations?", isPresented: $confirmDeleteAll, titleVisibility: .visible) {
+                                Button("Delete All", role: .destructive) { store.deleteAllHistory(); selected = [] }
+                            } message: { Text("This cannot be undone.") }
                     }
                     if groups.isEmpty {
                         Text(store.history.isEmpty ? "nothing yet" : "no matches")
@@ -72,6 +84,7 @@ struct HistoryTab: View {
     private func row(_ e: HistoryEntry, last: Bool) -> some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
+                selectToggle(e.id)
                 Text(e.timestamp.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute()))
                     .font(.system(size: 11).monospaced()).foregroundStyle(DesignTokens.Colors.ink2).frame(width: 44, alignment: .leading).padding(.top, 2)
                 VStack(alignment: .leading, spacing: 4) {
@@ -82,7 +95,6 @@ struct HistoryTab: View {
                                 .padding(.horizontal, 5).padding(.vertical, 1).background(Rectangle().fill(DesignTokens.Colors.inkA08))
                         }
                         if let app = e.appName { Text(app.lowercased()).font(.system(size: 10)).foregroundStyle(DesignTokens.Colors.ink3) }
-                        if let ms = e.durationMs { Text(String(format: "%.0f s", Double(ms) / 1000)).font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink3) }
                     }
                     telemetry(e)
                     if expanded.contains(e.id), e.transcript != e.displayText {
@@ -136,6 +148,24 @@ struct HistoryTab: View {
             Text(key + "=").foregroundStyle(DesignTokens.Colors.ink3)
             Text(value)
         }
+    }
+
+    /// A hairline square that fills with ink when the row is selected.
+    private func selectToggle(_ id: UUID) -> some View {
+        let on = selected.contains(id)
+        return Button {
+            if on { selected.remove(id) } else { selected.insert(id) }
+        } label: {
+            ZStack {
+                Rectangle().fill(on ? DesignTokens.Colors.ink : .clear)
+                    .overlay(Rectangle().strokeBorder(on ? DesignTokens.Colors.ink : DesignTokens.Colors.ruleControl, lineWidth: DesignTokens.hairline))
+                    .frame(width: 12, height: 12)
+                if on { Image("akar-check").resizable().frame(width: 8, height: 8).foregroundStyle(DesignTokens.Colors.onSlab) }
+            }
+            .frame(width: 16, height: 16).padding(.top, 2)
+        }
+        .buttonStyle(.plain)
+        .help(on ? "deselect" : "select")
     }
 
     private func iconButton(_ image: String, _ help: String, action: @escaping () -> Void) -> some View {
