@@ -42,7 +42,13 @@ enum Appearance: String, Codable, CaseIterable, Sendable {
 enum CloudPosition: String, Codable, CaseIterable, Sendable {
     case left, centre, right
 
-    var label: String { rawValue }
+    var label: String {
+        switch self {
+        case .left: "left"
+        case .centre: "bottom"
+        case .right: "right"
+        }
+    }
 }
 
 /// The recording cloud's colour when it does not follow the appearance.
