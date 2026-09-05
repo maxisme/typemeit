@@ -14,6 +14,27 @@ enum MenuBarIconRenderer {
     private static let outlineLayer = dev ? "menu_puff_dashed" : "menu_puff"
     private static let arcsLayer = dev ? "menu_puff_arcs_dashed" : "menu_puff_arcs"
 
+    /// The glyph on its own, for the settings sidebar: the site's favicon,
+    /// in ink, at a size of the caller's choosing. Dashed in the dev build
+    /// like the menu bar's.
+    static func mark(side: CGFloat) -> NSImage {
+        let size = NSSize(width: side, height: side)
+        let image = NSImage(size: size, flipped: false) { rect in
+            for name in [outlineLayer, arcsLayer] {
+                guard let art = NSImage(named: name) else { continue }
+                NSImage(size: size, flipped: false) { layerRect in
+                    art.draw(in: layerRect)
+                    NSColor.labelColor.set()
+                    layerRect.fill(using: .sourceAtop)
+                    return true
+                }.draw(in: rect)
+            }
+            return true
+        }
+        image.isTemplate = false
+        return image
+    }
+
     static func puff(recording: Bool, transcribing: Bool, secureInput: Bool) -> NSImage {
         let size = NSSize(width: 20, height: 20)
         let image = NSImage(size: size, flipped: false) { rect in
