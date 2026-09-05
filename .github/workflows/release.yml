@@ -14,20 +14,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # A notarized, stapled DMG plus the Sparkle appcast, published as a GitHub
+  # Release. This is not cosmetic -- SUFeedURL is
+  # /releases/latest/download/appcast.xml, so shipping an update to existing
+  # users *is* creating this release.
   release-macos:
     runs-on: macos-26
     environment: production
     permissions:
-      contents: write # create the release and upload the DMG
+      contents: write # create the release and upload the DMG and appcast
     env:
       DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: brew install xcodegen
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.4"
-          bundler-cache: true
+      - run: echo "MARKETING_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
       - name: Import Developer ID signing assets
         env:
           DEVELOPER_ID_CERT_P12: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
@@ -48,15 +49,17 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/asc"
           echo "$ASC_API_KEY_P8" | base64 --decode > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
-      - name: Build, sign and notarize the DMG
+      - name: Build, notarize and sign the Sparkle appcast
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+          RELEASE_TAG: ${{ github.ref_name }}
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
         run: |
           export ASC_KEY_PATH="$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
-          bundle exec fastlane mac dmg
+          Scripts/release-dmg.sh
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -64,4 +67,6 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes \
-            build/TypeMeIt-*.dmg
+            build/TypeMeIt.dmg \
+            build/updates/appcast.xml
+

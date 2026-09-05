@@ -36,9 +36,7 @@ final class Settings {
     var autoSubmitKey: AutoSubmitKey { didSet { defaults.set(autoSubmitKey.rawValue, forKey: "autoSubmitKey") } }
     var historyLimit: Int { didSet { defaults.set(historyLimit, forKey: "historyLimit") } }
     var launchAtLogin: Bool { didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin") } }
-    var checkForUpdates: Bool { didSet { defaults.set(checkForUpdates, forKey: "checkForUpdates") } }
     var onboardingComplete: Bool { didSet { defaults.set(onboardingComplete, forKey: "onboardingComplete") } }
-    var lastUpdateCheck: Date? { didSet { defaults.set(lastUpdateCheck, forKey: "lastUpdateCheck") } }
     /// Words removed by the learned-words toast's Undo. Never learned again.
     var undoneWords: [String] { didSet { defaults.set(undoneWords, forKey: "undoneWords") } }
 
@@ -59,9 +57,7 @@ final class Settings {
         autoSubmitKey = AutoSubmitKey(rawValue: d.string(forKey: "autoSubmitKey") ?? "") ?? .enter
         historyLimit = d.object(forKey: "historyLimit") == nil ? 500 : d.integer(forKey: "historyLimit")
         launchAtLogin = bool("launchAtLogin", false)
-        checkForUpdates = bool("checkForUpdates", true)
         onboardingComplete = bool("onboardingComplete", false)
-        lastUpdateCheck = d.object(forKey: "lastUpdateCheck") as? Date
         undoneWords = d.stringArray(forKey: "undoneWords") ?? []
     }
 
@@ -77,6 +73,12 @@ final class Settings {
 }
 
 /// Values that are built in and have no UI.
+enum AppVersion {
+    static var current: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+    }
+}
+
 enum Fixed {
     static let holdThresholdMs = 300
     static let wordCorrectionThreshold = 0.18
@@ -92,6 +94,4 @@ enum Fixed {
         "com.lastpass.LastPass", "com.apple.keychainaccess", "com.apple.Terminal",
         "com.googlecode.iterm2", "dev.warp.Warp-Stable", "com.mitchellh.ghostty",
     ]
-    static let updatesOwner = "maxisme"
-    static let updatesRepo = "typeme"
 }

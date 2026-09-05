@@ -3,10 +3,10 @@ import SwiftUI
 struct SettingsView: View {
     var body: some View {
         TabView {
+            InsightsTab().tabItem { Label("Insights", image: "akar-statistic-up") }
             GeneralTab().tabItem { Label("General", image: "akar-microphone") }
             TextTab().tabItem { Label("Text", image: "akar-text-align-left") }
             HistoryTab().tabItem { Label("History", image: "akar-clock") }
-            InsightsTab().tabItem { Label("Insights", image: "akar-statistic-up") }
             AppTab().tabItem { Label("App", image: "akar-gear") }
         }
         .frame(width: 640)
@@ -213,6 +213,7 @@ struct FlowLayout: Layout {
 
 struct AppTab: View {
     @State private var settings = Settings.shared
+    @State private var updates = Updates.shared
 
     var body: some View {
         ScrollView {
@@ -221,12 +222,19 @@ struct AppTab: View {
                     SettingsRow(label: "Open at login") {
                         Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; (NSApp.delegate as? AppDelegate)?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "Check for updates automatically", last: true) {
-                        Toggle("", isOn: $settings.checkForUpdates).toggleStyle(.switch).labelsHidden()
+                    SettingsRow(label: "Check for updates automatically") {
+                        Toggle("", isOn: Binding(get: { Updates.shared.automaticallyChecks }, set: { Updates.shared.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "Check for updates now") {
+                        Button("Check Now") { Updates.shared.checkForUpdates() }
+                            .disabled(!updates.canCheck)
+                    }
+                    SettingsRow(label: "Website", last: true) {
+                        Link("typeme.it", destination: URL(string: "https://typeme.it")!)
                     }
                 }
                 VStack(spacing: 2) {
-                    Text("Type Me It \(Updates.currentVersion) · Parakeet 0.6B on device")
+                    Text("Type Me It \(AppVersion.current) · Parakeet 0.6B on device")
                     Text("Apple Intelligence available")
                 }
                 .font(.system(size: 11)).foregroundStyle(.tertiary)

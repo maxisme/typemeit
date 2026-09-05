@@ -13,10 +13,24 @@
     white-space: pre-wrap; max-width: calc(100% - 56px);
   }
   #err:empty { display: none; }
+
+  /* A real anchor over the puff rather than a hit test on the canvas: it gets
+     keyboard focus, a hover cursor, and right-click "copy link address" for
+     free. Circular so the corners of its box do not swallow clicks that miss
+     the cloud. The puff is drawn into a VIEW px square but only fills the
+     middle ~100px of it at rest, so this is sized for the cloud once the
+     pointer has expanded it, not for the whole square. */
+  #download {
+    position: fixed; left: 50%; top: 50%; width: 180px; height: 180px;
+    margin: -90px 0 0 -90px; border-radius: 50%;
+    text-indent: -9999px; overflow: hidden;
+  }
+  #download:focus-visible { outline: 2px solid #f0f0f0; outline-offset: 8px; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<a id="download" href="https://github.com/maxisme/typemeit/releases/latest/download/TypeMeIt.dmg">Download Type Me It for macOS</a>
 <pre id="err"></pre>
 
 <!-- Generated from TypeMeIt/Overlay/Puff.metal by web/generate.py. -->

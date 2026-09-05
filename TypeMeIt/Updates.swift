@@ -1,65 +1,46 @@
 import AppKit
 import Foundation
 import Observation
+import Sparkle
 
-/// Checks the GitHub releases feed. Opens the release page; never installs.
+/// Sparkle's updater, wrapped so the rest of the app never imports Sparkle.
+///
+/// The feed is the appcast attached to the latest GitHub release, signed with the
+/// EdDSA key whose public half is `SUPublicEDKey` in the Info.plist. Sparkle
+/// downloads the same notarized DMG the website hands out, so an update installs
+/// the artifact that was actually tested.
 @MainActor
 @Observable
-final class Updates {
+final class Updates: NSObject {
     static let shared = Updates()
 
-    struct Available: Equatable, Sendable {
-        var version: String
-        var url: URL
-    }
+    /// `startingUpdater: true` schedules the background check itself, on Sparkle's
+    /// own timer and defaults key. That replaces the hand-rolled 24-hour check.
+    private let controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
 
-    private(set) var available: Available?
-    private(set) var checking = false
+    @ObservationIgnored private var observation: NSKeyValueObservation?
 
-    private init() {}
+    /// Mirrors `SPUUpdater.canCheckForUpdates` so the menu item can disable itself
+    /// while a check is already in flight.
+    private(set) var canCheck = true
 
-    static var currentVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
-    }
-
-    func checkIfDue() {
-        let settings = Settings.shared
-        guard settings.checkForUpdates else { return }
-        if let last = settings.lastUpdateCheck, Date().timeIntervalSince(last) < 24 * 3600 { return }
-        Task { _ = await check() }
-    }
-
-    /// Returns the newer version if there is one, nil when up to date or on error (logged).
-    func check() async -> Available? {
-        checking = true
-        defer { checking = false }
-        Settings.shared.lastUpdateCheck = Date()
-        var request = URLRequest(url: URL(string: "https://api.github.com/repos/\(Fixed.updatesOwner)/\(Fixed.updatesRepo)/releases/latest")!)
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                Log.updates.notice("Release feed returned \((response as? HTTPURLResponse)?.statusCode ?? 0)")
-                available = nil
-                return nil
-            }
-            struct Release: Decodable { var tag_name: String; var html_url: String }
-            let release = try JSONDecoder().decode(Release.self, from: data)
-            var tag = release.tag_name
-            if tag.hasPrefix("v") { tag.removeFirst() }
-            if tag.compare(Updates.currentVersion, options: .numeric) == .orderedDescending, let url = URL(string: release.html_url) {
-                available = Available(version: tag, url: url)
-            } else {
-                available = nil
-            }
-            return available
-        } catch {
-            Log.updates.error("Update check failed: \(error.localizedDescription)")
-            return nil
+    private override init() {
+        super.init()
+        observation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] updater, _ in
+            Task { @MainActor in self?.canCheck = updater.canCheckForUpdates }
         }
     }
 
-    func open() {
-        if let url = available?.url { NSWorkspace.shared.open(url) }
+    /// The automatic-check preference. Sparkle owns the storage; reading it back
+    /// from the updater keeps the Settings toggle and Sparkle from disagreeing.
+    var automaticallyChecks: Bool {
+        get { controller.updater.automaticallyChecksForUpdates }
+        set { controller.updater.automaticallyChecksForUpdates = newValue }
+    }
+
+    /// Shows Sparkle's own UI, including the "you're up to date" case.
+    func checkForUpdates() {
+        NSApp.activate(ignoringOtherApps: true)
+        controller.checkForUpdates(nil)
     }
 }

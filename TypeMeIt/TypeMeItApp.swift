@@ -43,7 +43,7 @@ struct MenuContent: View {
     @State private var store = Store.shared
 
     var body: some View {
-        Text("Type Me It \(Updates.currentVersion)")
+        Text("Type Me It \(AppVersion.current)")
         if appState.secureInputOn {
             Text("Secure Input is on in another app. Fn is unavailable.")
         }
@@ -55,10 +55,8 @@ struct MenuContent: View {
             .disabled(store.history.isEmpty)
         Divider()
         SettingsLink { Text("Settings…") }.keyboardShortcut(",", modifiers: .command)
-        if let a = updates.available {
-            Button("Update available: \(a.version)") { updates.open() }
-        }
-        Button("Check for Updates…") { AppDelegate.checkForUpdatesInteractively() }
+        Button("Check for Updates…") { updates.checkForUpdates() }
+            .disabled(!updates.canCheck)
         Divider()
         Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
     }
@@ -100,7 +98,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         secureInputTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AppState.shared.secureInputOn = SecureInput.isEnabled }
         }
-        Updates.shared.checkIfDue()
+        // Touch the updater so Sparkle's scheduled check starts even if the menu
+        // has never been opened.
+        _ = Updates.shared
         reconcileLaunchAtLogin()
     }
 
@@ -161,26 +161,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
     }
 
-    static func checkForUpdatesInteractively() {
-        Task { @MainActor in
-            let result = await Updates.shared.check()
-            let alert = NSAlert()
-            if let result {
-                alert.messageText = "Version \(result.version) is available"
-                alert.informativeText = "You have \(Updates.currentVersion)."
-                alert.addButton(withTitle: "Open Release Page")
-                alert.addButton(withTitle: "Later")
-                NSApp.activate(ignoringOtherApps: true)
-                if alert.runModal() == .alertFirstButtonReturn { Updates.shared.open() }
-            } else {
-                alert.messageText = "You're up to date"
-                alert.informativeText = "Type Me It \(Updates.currentVersion) is the newest version."
-                alert.addButton(withTitle: "OK")
-                NSApp.activate(ignoringOtherApps: true)
-                alert.runModal()
-            }
-        }
-    }
 }
 
 struct GateView: View {
