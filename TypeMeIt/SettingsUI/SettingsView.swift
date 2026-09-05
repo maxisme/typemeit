@@ -8,7 +8,7 @@ enum SettingsTab: String, CaseIterable {
         case .insights: "akar-statistic-up"
         case .settings: "akar-gear"
         case .cleanup: "akar-sparkles"
-        case .history: "akar-clock"
+        case .history: "akar-history"
         }
     }
 }
