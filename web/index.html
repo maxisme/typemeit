@@ -22,9 +22,9 @@
   #err:empty { display: none; }
 
   /* A button over the puff rather than a hit test on the canvas, so it gets
-     keyboard focus. A button rather than an anchor so hovering shows neither
-     a hand cursor nor the DMG URL in the status bar: the puff should look
-     like part of the page until it is clicked. Circular so the corners of
+     keyboard focus. A button rather than an anchor so hovering shows no DMG
+     URL in the status bar. On a desktop with a real pointer, hovering shows
+     the hand and turns the puff green; touch devices get neither. Circular so the corners of
      its box do not swallow clicks that miss the cloud. The puff is drawn
      into a VIEW px square but only fills the middle ~100px of it at rest, so
      this is sized for the cloud once the pointer has expanded it, not for
@@ -34,6 +34,7 @@
     margin: -90px 0 0 -90px; padding: 0; border: 0; border-radius: 50%;
     background: none; cursor: default; text-indent: -9999px; overflow: hidden;
   }
+  @media (hover: hover) and (pointer: fine) { #download { cursor: pointer; } }
   #download:focus-visible { outline: 2px solid var(--ink); outline-offset: 8px; }
 
   /* Design-system note text: DM Mono, lowercase, ink-3 on paper, no surface. */
@@ -217,6 +218,27 @@ const LIGHT = { paper: "#f0f0f0", ink: "#0e0e0e", tint: [0.08, 0.08, 0.08] };
 let blush = -Infinity;
 let inverted = false;
 let shownInverted = null;
+
+// Hovering the puff on a desktop pointer fades it green, in over HOVER_IN
+// seconds and out over HOVER_OUT, so it neither flickers at the edge nor
+// lingers. Touch devices never hover.
+const HOVER_TINT = [0.45, 0.9, 0.5];
+const HOVER_IN = 0.25, HOVER_OUT = 0.45;
+const canHover = matchMedia("(hover: hover) and (pointer: fine)").matches;
+let hovering = false, hover = 0, hoverAt = null;
+{
+  const button = document.getElementById("download");
+  button.addEventListener("pointerenter", () => { hovering = canHover; });
+  button.addEventListener("pointerleave", () => { hovering = false; });
+}
+function hoverAmount(nowMs) {
+  const dt = hoverAt === null ? 0 : Math.min((nowMs - hoverAt) / 1000, 0.1);
+  hoverAt = nowMs;
+  const target = hovering ? 1 : 0;
+  hover += (target - hover) * (1 - Math.exp(-dt / (hovering ? HOVER_IN : HOVER_OUT)));
+  return hover;
+}
+
 function tint(nowMs) {
   if (inverted !== shownInverted) {
     shownInverted = inverted;
@@ -227,7 +249,8 @@ function tint(nowMs) {
   const k = Math.max(0, 1 - (nowMs - blush) / (BLUSH * 1000));
   const amount = k * k * (3 - 2 * k);
   const base = (inverted ? LIGHT : DARK).tint;
-  return base.map((c, i) => c * (1 + (BLUSH_TINT[i] - 1) * amount));
+  const h = hoverAmount(nowMs);
+  return base.map((c, i) => (c + (HOVER_TINT[i] - c) * h) * (1 + (BLUSH_TINT[i] - 1) * amount));
 }
 
 const canvas = document.getElementById("c");
