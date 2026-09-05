@@ -43,7 +43,7 @@ final class OverlayModel {
     /// Pill width per state, from the design.
     var width: CGFloat {
         switch state {
-        case .copyPrompt: 300
+        case .copyPrompt: 352
         default: 286
         }
     }
