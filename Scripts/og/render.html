@@ -12,9 +12,20 @@ const SIZE = num('size', 1700), EXP = num('exp', 0.92), TRAIL = num('trail', 1.0
       CX = num('cx', W / 2), CY = num('cy', H / 2);
 const glc = document.getElementById('gl'); glc.width = W; glc.height = H;
 const gl = glc.getContext('webgl2', {preserveDrawingBuffer: true, alpha: true, premultipliedAlpha: true});
+// The app's noise is scaled to the puff's radius, which is right for a
+// 100 px puff and soft on a 2000 px one. 'detail' adds octaves of fbm and
+// a finer, stronger grain for stills, patched into the shared source here so
+// the app's shader stays as it is.
+const DETAIL = num('detail', 0);
+let GLSL = PUFF_GLSL;
+if (DETAIL > 0) {
+  GLSL = GLSL.replace('for (int i = 0; i < 5; i++)', `for (int i = 0; i < ${5 + Math.round(DETAIL)}; i++)`)
+    .replace('uv * (6.5 / R) * exp2(-fi)', `uv * (${(6.5 * (1 + DETAIL)).toFixed(1)} / R) * exp2(-fi)`)
+    .replace('(0.96 + 0.06 * grain)', `(${(1 - 0.06 * (1 + DETAIL) / 2).toFixed(3)} + ${(0.06 * (1 + DETAIL)).toFixed(3)} * grain)`);
+}
 const FRAG = `#version 300 es
 precision highp float;
-${PUFF_GLSL}
+${GLSL}
 uniform vec2 uCentre; uniform float uSize; uniform float uTime;
 uniform float uExpansion; uniform float uTrail; uniform float uFlow; uniform vec4 uTint;
 out vec4 fragColor;
