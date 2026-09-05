@@ -164,6 +164,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Pipeline.shared.start()
         AppState.shared.ready = true
         observePipeline()
+        previewToastIfAsked()
         secureInputTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AppState.shared.secureInputOn = SecureInput.isEnabled }
         }
@@ -212,6 +213,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// so this is the one place the setting is applied.
     func applyAppearance() {
         NSApp.appearance = Settings.shared.appearance.nsAppearance
+    }
+
+    /// `-previewToast "word,word"` shows the learned-words toast a moment
+    /// after launch, for looking at it without dictating.
+    private func previewToastIfAsked() {
+        guard let words = UserDefaults.standard.string(forKey: "previewToast"), !words.isEmpty else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.5))
+            Pipeline.shared.showLearnedToast(batchId: UUID(), words: words.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) })
+        }
     }
 
     // MARK: Windows

@@ -25,14 +25,19 @@ struct PillView: View {
     var body: some View {
         HStack(spacing: 0) {
             leftSlot.frame(minWidth: 24, alignment: .leading)
-            Spacer(minLength: 0)
+            Spacer(minLength: 12)
             centre
-            Spacer(minLength: 0)
+            Spacer(minLength: 12)
             rightSlot.frame(minWidth: 24, alignment: .trailing)
         }
         .padding(.leading, 16)
         .padding(.trailing, 9)
-        .frame(width: model.width, height: 44)
+        // The design width, stretching for a long learned word up to what
+        // the panel can hold, then truncating the word's middle so both
+        // ends still read.
+        .frame(minWidth: model.width, maxWidth: OverlayPanel.size.width - 40)
+        .fixedSize(horizontal: true, vertical: false)
+        .frame(height: 44)
         .background(Capsule().fill(DesignTokens.Colors.paper))
         .overlay(Capsule().strokeBorder(DesignTokens.Colors.ink, lineWidth: DesignTokens.hairline))
         .shadow(color: .black.opacity(scheme == .dark ? 0.32 : 0.14), radius: 14, y: 10)
@@ -67,7 +72,7 @@ struct PillView: View {
     }
 
     private func label(_ text: String) -> some View {
-        Text(text).font(.system(size: 12, design: .monospaced)).foregroundStyle(DesignTokens.Colors.ink2).lineLimit(1)
+        Text(text).font(.system(size: 12, design: .monospaced)).foregroundStyle(DesignTokens.Colors.ink2).lineLimit(1).truncationMode(.middle)
     }
 
     @ViewBuilder private var rightSlot: some View {
