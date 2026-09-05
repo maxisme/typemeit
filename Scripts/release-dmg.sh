@@ -20,7 +20,7 @@ IDENTITY="Developer ID Application: Max Mitchell (Z28DW76Y3W)"
 BUILD="$PWD/build"
 DERIVED="$BUILD/DerivedData"
 ARCHIVE="$BUILD/TypeMeIt.xcarchive"
-APP="$BUILD/export/TypeMeIt.app"
+APP="$BUILD/export/Type Me It.app"
 
 # Always moves forward, so it outranks every earlier build with no shared-state
 # lookup. A commit count does not survive re-running the same commit.
@@ -113,7 +113,7 @@ rm -f "$BUILD/TypeMeIt.zip"
 STAGE="$BUILD/dmg-stage"
 rm -rf "$STAGE" "$DMG"
 mkdir -p "$STAGE"
-cp -R "$APP" "$STAGE/TypeMeIt.app"
+cp -R "$APP" "$STAGE/Type Me It.app"
 ln -s /Applications "$STAGE/Applications"
 # Finder errors on a background picture that is not staged, so the layout script
 # is told which case this is rather than left to guess.
@@ -158,7 +158,7 @@ xcrun stapler validate "$DMG"
 VERIFY="$BUILD/verify-mnt"
 rm -rf "$VERIFY"
 hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$VERIFY"
-result="$(syspolicy_check distribution "$VERIFY/TypeMeIt.app" 2>&1 || true)"
+result="$(syspolicy_check distribution "$VERIFY/Type Me It.app" 2>&1 || true)"
 hdiutil detach "$VERIFY"
 echo "$result"
 if grep -q "failed one or more" <<<"$result"; then

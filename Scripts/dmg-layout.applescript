@@ -36,7 +36,7 @@ on run argv
 				set background picture of opts to file ".background:background.png"
 			end if
 
-			set position of item "TypeMeIt.app" to {170, 214}
+			set position of item "Type Me It.app" to {170, 214}
 			set position of item "Applications" to {490, 214}
 
 			-- Finder only flushes .DS_Store when it decides to. Closing and

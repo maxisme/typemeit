@@ -13,7 +13,7 @@ brew install xcodegen
 DEVELOPMENT_TEAM=Z28DW76Y3W xcodegen generate
 ```
 
-Debug builds are a separate app, `TypeMeIt Dev` with bundle id
+Debug builds are a separate app, `Type Me It Dev` with bundle id
 `it.typeme.typemeit.dev`, signed with the Developer ID certificate. It runs
 beside the installed release with its own settings, and because the signature
 is stable across rebuilds, macOS keeps its Input Monitoring and Microphone
