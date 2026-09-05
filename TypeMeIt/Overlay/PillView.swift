@@ -83,9 +83,9 @@ struct PillView: View {
             HStack(spacing: 8) {
                 pillButton("undo") { model.onUndo?() }
                 chip(size: 22, action: { model.onKeep?() }) {
-                    Image("akar-check").resizable().frame(width: 11, height: 11)
+                    Image("akar-cross").resizable().frame(width: 10, height: 10)
                 }
-                .help("Keep")
+                .help("Dismiss")
             }
         default:
             Color.clear.frame(width: 22, height: 22)
