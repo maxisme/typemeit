@@ -78,12 +78,14 @@ xcodebuild -exportArchive \
 
 VERSION="${MARKETING_VERSION:-$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")}"
 
-# Unversioned on purpose: the website links to
-# /releases/latest/download/TypeMeIt.dmg, which only resolves if the asset name
-# is the same every release. The version is in the appcast entry and in the
-# app's Info.plist, and each release's asset URL carries its own tag, so Sparkle
-# still sees a distinct URL per update.
+# The DMG is published under two names. The unversioned one is what
+# /releases/latest/download/TypeMeIt.dmg resolves to, which only works if the
+# asset name is the same every release; the appcast and the site's fallback link
+# depend on it. The versioned copy is what the site sends visitors to once it
+# has asked the GitHub API which release is latest, so the file they save says
+# which version it is.
 DMG="$BUILD/TypeMeIt.dmg"
+VERSIONED_DMG="$BUILD/Type Me It $VERSION.dmg"
 
 # Notarization round-trips to Apple and takes minutes, so a binary that can never
 # pass fails here instead -- locally, in a second, naming the reason.
@@ -197,5 +199,8 @@ fi
 
 [ -f "$UPDATES/appcast.xml" ] || { echo "generate_appcast produced no appcast.xml"; exit 1; }
 
+cp "$DMG" "$VERSIONED_DMG"
+
 echo "==> $DMG"
+echo "==> $VERSIONED_DMG"
 echo "==> $UPDATES/appcast.xml"
