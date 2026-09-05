@@ -105,7 +105,7 @@ struct MenuContent: View {
                 appState.settingsTab = .history
                 openWindow(id: "settings")
                 NSApp.activate(ignoringOtherApps: true)
-            } label: { Label("View All…", image: "akar-history") }
+            } label: { Label { Text("**View All…**") } icon: { Image("akar-history") } }
         }
         Divider()
         Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
