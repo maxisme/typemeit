@@ -245,10 +245,10 @@ enum Insights {
 
         let totalApps = byApp.count
         var topApps = byApp.values.map { AppUsage(name: $0.name, dictations: $0.dictations, words: $0.words) }
+        // Most used first, by the words the list shows; then by dictations, then name.
         topApps.sort { a, b in
-            if a.dictations != b.dictations {
-                return a.dictations > b.dictations
-            }
+            if a.words != b.words { return a.words > b.words }
+            if a.dictations != b.dictations { return a.dictations > b.dictations }
             return a.name.unicodeScalars.lexicographicallyPrecedes(b.name.unicodeScalars)
         }
         if topApps.count > Self.topApps {

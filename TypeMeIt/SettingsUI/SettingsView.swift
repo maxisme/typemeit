@@ -208,6 +208,21 @@ struct MainSettingsTab: View {
                         Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
                     }
                 }
+                SettingsGroup(title: "paste") {
+                    SettingsRow(label: "space after paste") {
+                        Toggle("", isOn: $settings.appendTrailingSpace).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "key after paste", last: !settings.autoSubmit) {
+                        Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
+                    }
+                    if settings.autoSubmit {
+                        SettingsRow(label: "key", last: true) {
+                            Picker("", selection: $settings.autoSubmitKey) {
+                                ForEach(AutoSubmitKey.allCases, id: \.self) { Text($0.label).tag($0) }
+                            }.labelsHidden().fixedSize()
+                        }
+                    }
+                }
                 SettingsGroup(title: "app") {
                     SettingsRow(label: "open at login") {
                         Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
@@ -279,21 +294,6 @@ struct CleanupTab: View {
                             .textFieldStyle(.roundedBorder)
                             .onSubmit { settings.addCustomWord(newWord); newWord = "" }
                         .padding(.horizontal, 12).padding(.vertical, 8)
-                    }
-                }
-                SettingsGroup(title: "paste") {
-                    SettingsRow(label: "space after paste") {
-                        Toggle("", isOn: $settings.appendTrailingSpace).toggleStyle(.switch).labelsHidden()
-                    }
-                    SettingsRow(label: "key after paste", last: !settings.autoSubmit) {
-                        Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
-                    }
-                    if settings.autoSubmit {
-                        SettingsRow(label: "key", last: true) {
-                            Picker("", selection: $settings.autoSubmitKey) {
-                                ForEach(AutoSubmitKey.allCases, id: \.self) { Text($0.label).tag($0) }
-                            }.labelsHidden().fixedSize()
-                        }
                     }
                 }
             }
