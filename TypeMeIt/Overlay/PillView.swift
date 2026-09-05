@@ -74,7 +74,9 @@ struct PillView: View {
         switch model.state {
         case .copyPrompt:
             HStack(spacing: 6) {
-                Button(model.copied ? "copied" : "copy") { model.onCopy?() }
+                // Sized for "copied" from the start, so the button does not
+                // grow when the word changes.
+                Button { model.onCopy?() } label: { Text(model.copied ? "copied" : "copy").frame(minWidth: 46) }
                     .buttonStyle(InkButtonStyle(primary: true)).disabled(model.copied)
                 cross(help: "Cancel") { model.onCancel?() }
             }
