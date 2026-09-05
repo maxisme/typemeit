@@ -1,5 +1,7 @@
 # Type Me It
 
+<img src="web/og.png" alt="the puff growing, in four steps" width="100%">
+
 Hold the fn key, speak, let go. The speech is transcribed on this Mac by Parakeet through transcribe.cpp, tidied up by Apple Intelligence, and pasted wherever the cursor is. It learns your vocabulary from the corrections you make afterwards, keeps a text-only history, and shows usage insights. Nothing leaves the computer.
 
 macOS 26 or newer, Apple silicon.
