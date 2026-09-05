@@ -23,9 +23,10 @@ struct InsightsTab: View {
 
     var body: some View {
         let s = stats
-        // Not a scroll view: the page fits, and an outer scroll fought the
-        // apps list's own.
-        VStack(alignment: .leading, spacing: 18) {
+        // The page fits, and an outer scroll fought the apps list's own, so
+        // the scroll view only sizes the content and never moves.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
                 HStack(alignment: .top, spacing: 12) {
                     statCard("words dictated", s.totalWords.formatted(), monthCaption(s))
                     wpmCard(s)
@@ -44,9 +45,10 @@ struct InsightsTab: View {
                 SettingsGroup(title: s.currentStreak > 0 ? "\(s.currentStreak) day streak · longest \(s.longestStreak)" : "streak · longest \(s.longestStreak)") {
                     calendar(s)
                 }
+            }
+            .padding(20)
         }
-        .padding(20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .scrollDisabled(true)
     }
 
     private func monthCaption(_ s: InsightsStats) -> String {
