@@ -62,8 +62,14 @@ struct PillView: View {
         switch model.state {
         case .copyPrompt:
             label("nothing to paste into")
-        case .learned(_, let text):
-            label(text.lowercased())
+        case .learned(_, let words):
+            if words.count == 1 {
+                // The word itself in bold, kept as the user spelt it, since
+                // that spelling is what was added.
+                label(Text("added ") + Text(words[0]).bold())
+            } else {
+                label("learned \(words.count) words")
+            }
         case .undone:
             label("undone")
         default:
@@ -72,7 +78,11 @@ struct PillView: View {
     }
 
     private func label(_ text: String) -> some View {
-        Text(text).font(.system(size: 12, design: .monospaced)).foregroundStyle(DesignTokens.Colors.ink2).lineLimit(1).truncationMode(.middle)
+        label(Text(text))
+    }
+
+    private func label(_ text: Text) -> some View {
+        text.font(.system(size: 12, design: .monospaced)).foregroundStyle(DesignTokens.Colors.ink2).lineLimit(1).truncationMode(.middle)
     }
 
     @ViewBuilder private var rightSlot: some View {
