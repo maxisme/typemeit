@@ -277,6 +277,24 @@ final class InsightsTests: XCTestCase {
         XCTAssertEqual(stats.topApps.first, AppUsage(name: "Orion", dictations: 2, words: 3))
     }
 
+    func testTopAppsOrderByWordsBeforeDictations() {
+        var one = row(day(2026, 9, 3), "a b c d e")
+        one.appId = "app.long"
+        one.appName = "Long"
+        var short1 = row(day(2026, 9, 3), "a")
+        short1.appId = "app.short"
+        short1.appName = "Short"
+        var short2 = row(day(2026, 9, 3), "b")
+        short2.appId = "app.short"
+        short2.appName = "Short"
+
+        let stats = compute([one, short1, short2], today: day(2026, 9, 3))
+        XCTAssertEqual(stats.topApps, [
+            AppUsage(name: "Long", dictations: 1, words: 5),
+            AppUsage(name: "Short", dictations: 2, words: 2),
+        ])
+    }
+
     func testAppsAreKeyedByLowercasedIdAndFallBackToName() {
         var upper = row(day(2026, 9, 3), "a")
         upper.appId = "com.google.Chrome"

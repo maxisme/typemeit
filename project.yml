@@ -21,6 +21,15 @@ settings:
     # release looks like the same build and no update is ever offered.
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
+  configs:
+    # macOS keys Input Monitoring and Microphone grants on the code signature,
+    # and a Developer ID leaf is a different signature from an Apple
+    # Development one. Signing Debug builds with Developer ID too means a
+    # build keeps its grants from one build to the next, instead of needing
+    # them again after every rebuild.
+    Debug:
+      CODE_SIGN_STYLE: Manual
+      CODE_SIGN_IDENTITY: "Developer ID Application"
 packages:
   TranscribeCpp:
     path: Packages/TranscribeCpp
@@ -35,8 +44,11 @@ targets:
       - path: TypeMeIt
         excludes:
           - "Resources/AppIcon.icns"
+          - "Resources/AppIcon-Dev.icns"
           - "Support/Icon/**"
       - path: TypeMeIt/Resources/AppIcon.icns
+        buildPhase: resources
+      - path: TypeMeIt/Resources/AppIcon-Dev.icns
         buildPhase: resources
     dependencies:
       - package: TranscribeCpp
@@ -46,11 +58,11 @@ targets:
     info:
       path: TypeMeIt/Support/Info.plist
       properties:
-        CFBundleDisplayName: TypeMeIt
-        CFBundleName: TypeMeIt
+        CFBundleDisplayName: "$(PRODUCT_NAME)"
+        CFBundleName: "$(PRODUCT_NAME)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        CFBundleIconFile: AppIcon
+        CFBundleIconFile: "$(APP_ICON_FILE)"
         LSMinimumSystemVersion: "26.0"
         NSMicrophoneUsageDescription: "Type Me It records your voice while you hold the Fn key so it can transcribe it."
         NSHumanReadableCopyright: ""
@@ -67,9 +79,19 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit
         PRODUCT_NAME: TypeMeIt
+        PRODUCT_MODULE_NAME: TypeMeIt
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_OBJC_BRIDGING_HEADER: ""
         OTHER_LDFLAGS: "-lc++ -lz"
+        APP_ICON_FILE: AppIcon
+      configs:
+        # A separate app, so it runs beside the installed release with its
+        # own grants and settings rather than replacing it. Its icon is the
+        # release icon inverted and its menu bar puff is dashed.
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit.dev
+          PRODUCT_NAME: TypeMeIt Dev
+          APP_ICON_FILE: AppIcon-Dev
   TypeMeItTests:
     type: bundle.unit-test
     platform: macOS
@@ -80,6 +102,11 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit.tests
         GENERATE_INFOPLIST_FILE: YES
+      configs:
+        # The host app has a different product name in Debug.
+        Debug:
+          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TypeMeIt Dev.app/Contents/MacOS/TypeMeIt Dev"
+          BUNDLE_LOADER: "$(TEST_HOST)"
 schemes:
   TypeMeIt:
     build:

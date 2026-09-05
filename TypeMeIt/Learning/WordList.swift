@@ -47,24 +47,48 @@ final class WordList: Sendable {
     /// common inflection: a name or term the user coined rather than a
     /// misspelling of, or substitute for, an ordinary word.
     func isCoined(_ term: String) -> Bool {
-        if isEmpty {
+        guard let word = alphabeticWord(term) else {
             return false
+        }
+        return !knowsInAnyForm(word)
+    }
+
+    /// True for a single lowercase alphabetic token that the list knows in
+    /// some common inflection: an everyday word the speech model can already
+    /// spell, whatever kind the model assigned it. Capitalised words are not
+    /// ordinary here, so a proper noun that happens to share its spelling
+    /// with a listed word is left to the proper-noun rule.
+    func isOrdinary(_ term: String) -> Bool {
+        guard let word = alphabeticWord(term), term.trimmingCharacters(in: .whitespacesAndNewlines) == word else {
+            return false
+        }
+        return knowsInAnyForm(word)
+    }
+
+    /// `term` lowercased when it is one alphabetic token of at least
+    /// `minChars` and the list is loaded; nil otherwise.
+    private func alphabeticWord(_ term: String) -> String? {
+        if isEmpty {
+            return nil
         }
         let word = term.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if word.unicodeScalars.count < Self.minChars
             || !word.unicodeScalars.allSatisfy({ $0.properties.isAlphabetic }) {
-            return false
+            return nil
         }
+        return word
+    }
+
+    private func knowsInAnyForm(_ word: String) -> Bool {
         if contains(word) {
-            return false
+            return true
         }
-        let stemKnown = Self.suffixes.contains { suffix in
+        return Self.suffixes.contains { suffix in
             guard word.hasSuffix(suffix) else { return false }
             let stem = String(word.dropLast(suffix.count))
             return contains(stem)
                 || (suffix == "ies" && contains(stem + "y"))
                 || ((suffix == "ed" || suffix == "ing") && contains(stem + "e"))
         }
-        return !stemKnown
     }
 }

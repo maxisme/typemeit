@@ -16,16 +16,21 @@ final class Updates: NSObject {
 
     /// `startingUpdater: true` schedules the background check itself, on Sparkle's
     /// own timer and defaults key. That replaces the hand-rolled 24-hour check.
-    private let controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+    private let controller = SPUStandardUpdaterController(startingUpdater: !Updates.isDevBuild, updaterDelegate: nil, userDriverDelegate: nil)
+
+    /// The dev build is not in the appcast, and an update would replace it
+    /// with the release, so it never checks.
+    static let isDevBuild = Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true
 
     @ObservationIgnored private var observation: NSKeyValueObservation?
 
     /// Mirrors `SPUUpdater.canCheckForUpdates` so the menu item can disable itself
     /// while a check is already in flight.
-    private(set) var canCheck = true
+    private(set) var canCheck = !Updates.isDevBuild
 
     private override init() {
         super.init()
+        guard !Updates.isDevBuild else { return }
         observation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] updater, _ in
             Task { @MainActor in self?.canCheck = updater.canCheckForUpdates }
         }

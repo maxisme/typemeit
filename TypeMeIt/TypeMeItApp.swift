@@ -12,7 +12,7 @@ struct TypeMeItApp: App {
         MenuBarExtra {
             MenuContent()
         } label: {
-            Image(nsImage: appState.menuBarImage)
+            MenuBarLabel()
         }
         .menuBarExtraStyle(.menu)
 
@@ -33,9 +33,30 @@ final class AppState {
     var recording = false
     var transcribing = false
     var ready = false
+    /// The tab the settings window should show when next opened from the
+    /// menu, if any. Cleared once the window has moved there.
+    var settingsTab: SettingsTab?
 
     var menuBarImage: NSImage {
         MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, secureInput: secureInputOn)
+    }
+}
+
+/// The menu bar image. It is always on screen, so it also holds the window
+/// opener for callers outside SwiftUI: the app delegate asks for the settings
+/// window through it when the app is reopened from the Dock or Finder.
+struct MenuBarLabel: View {
+    @Environment(\.openWindow) private var openWindow
+    @State private var appState = AppState.shared
+
+    static let openSettings = Notification.Name("it.typeme.openSettings")
+
+    var body: some View {
+        Image(nsImage: appState.menuBarImage)
+            .onReceive(NotificationCenter.default.publisher(for: MenuBarLabel.openSettings)) { _ in
+                openWindow(id: "settings")
+                NSApp.activate(ignoringOtherApps: true)
+            }
     }
 }
 
@@ -44,19 +65,31 @@ struct MenuContent: View {
     @State private var appState = AppState.shared
     @State private var store = Store.shared
 
-    private var recentTranscripts: [HistoryEntry] { Array(store.history.suffix(5).reversed()) }
+    /// The newest five with any text; a dictation that came out empty has
+    /// nothing to copy.
+    private var recentTranscripts: [HistoryEntry] {
+        Array(store.history.filter { !$0.displayText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.suffix(5).reversed())
+    }
+
+    /// The user's copy-last shortcut when one is set and the menu can show
+    /// it, otherwise ⌘C.
+    private var copyLastKeyboardShortcut: KeyboardShortcut? {
+        guard let combo = Settings.shared.copyLastShortcut else { return KeyboardShortcut("c", modifiers: .command) }
+        return combo.keyboardShortcut
+    }
 
     var body: some View {
         if appState.secureInputOn {
             Text("Secure Input is on in another app. Fn is unavailable.")
             Divider()
         }
-        Button("Type Me It") { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) }.keyboardShortcut(",", modifiers: .command)
+        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(AttributedString("Open ") + MenuContent.bold("Type Me It")) }
+            .keyboardShortcut(",", modifiers: .command)
         Divider()
         if Pipeline.shared.phase == .recording {
             Button("Stop Recording") { Pipeline.shared.shortcuts.stopFromMenu() }
         } else {
-            Button("Start Recording") { Pipeline.shared.shortcuts.startFromMenu() }
+            Button("Start Recording (fn)") { Pipeline.shared.shortcuts.startFromMenu() }
                 .disabled(Pipeline.shared.isBusy || !appState.ready)
         }
         if Pipeline.shared.isBusy {
@@ -67,11 +100,39 @@ struct MenuContent: View {
         if recentTranscripts.isEmpty {
             Text("No transcripts yet").disabled(true)
         }
-        ForEach(recentTranscripts) { entry in
-            Button(MenuContent.title(for: entry.displayText)) { Output.copyToClipboard(entry.displayText) }
+        ForEach(Array(recentTranscripts.enumerated()), id: \.element.id) { i, entry in
+            let button = Button { Output.copyToClipboard(entry.displayText) } label: { Text(MenuContent.italic(MenuContent.title(for: entry.displayText))) }
+            if i == 0 {
+                button.keyboardShortcut(copyLastKeyboardShortcut)
+            } else {
+                button
+            }
+        }
+        if !recentTranscripts.isEmpty {
+            Button {
+                appState.settingsTab = .history
+                openWindow(id: "settings")
+                NSApp.activate(ignoringOtherApps: true)
+            } label: { Text("View All…") }
         }
         Divider()
         Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
+    }
+
+    /// Bold through an attributed string: the menu turns a font modifier
+    /// into nothing, but carries an attributed title across.
+    static func bold(_ text: String) -> AttributedString {
+        var title = AttributedString(text)
+        title.font = .body.bold()
+        title.inlinePresentationIntent = .stronglyEmphasized
+        return title
+    }
+
+    static func italic(_ text: String) -> AttributedString {
+        var title = AttributedString(text)
+        title.font = .body.italic()
+        title.inlinePresentationIntent = .emphasized
+        return title
     }
 
     /// One line of the transcript, cut so the menu stays narrow.
@@ -118,8 +179,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// `exit()` runs CTranscribe's C++ static destructors, which free the
+    /// Metal device while ggml may still be setting up residency sets on a
+    /// background thread, and ggml aborts when it finds them half-built. So
+    /// quitting crashed. Everything the app persists is written as it
+    /// changes, so the process can leave without running those destructors.
+    func applicationWillTerminate(_ notification: Notification) {
+        _exit(0)
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if onboardingWindow?.isVisible == true { onboardingWindow?.makeKeyAndOrderFront(nil) }
+        if onboardingWindow?.isVisible == true {
+            onboardingWindow?.makeKeyAndOrderFront(nil)
+        } else if gateWindow?.isVisible != true {
+            NotificationCenter.default.post(name: MenuBarLabel.openSettings, object: nil)
+        }
         return false
     }
 
@@ -128,6 +202,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Pipeline.shared.start()
         AppState.shared.ready = true
         observePipeline()
+        previewToastIfAsked()
         secureInputTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AppState.shared.secureInputOn = SecureInput.isEnabled }
         }
@@ -164,12 +239,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// here so the setting can flip it without a relaunch.
     func applyDockIcon() {
         NSApp.setActivationPolicy(Settings.shared.showDockIcon ? .regular : .accessory)
+        // The Dock caches an icon per bundle path, so a rebuilt dev app can
+        // keep showing the release icon it had before; setting the running
+        // app's own icon sidesteps the cache.
+        if Updates.isDevBuild, let url = Bundle.main.url(forResource: "AppIcon-Dev", withExtension: "icns"), let icon = NSImage(contentsOf: url) {
+            NSApp.applicationIconImage = icon
+        }
     }
 
     /// Every window, the overlay panel included, takes the app's appearance,
     /// so this is the one place the setting is applied.
     func applyAppearance() {
         NSApp.appearance = Settings.shared.appearance.nsAppearance
+    }
+
+    /// `-previewToast "word,word"` shows the learned-words toast a moment
+    /// after launch, for looking at it without dictating.
+    private func previewToastIfAsked() {
+        guard let words = UserDefaults.standard.string(forKey: "previewToast"), !words.isEmpty else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.5))
+            Pipeline.shared.showLearnedToast(batchId: UUID(), words: words.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) })
+        }
     }
 
     // MARK: Windows

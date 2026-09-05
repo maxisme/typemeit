@@ -23,6 +23,8 @@ struct InsightsTab: View {
 
     var body: some View {
         let s = stats
+        // The page fits, and an outer scroll fought the apps list's own, so
+        // the scroll view only sizes the content and never moves.
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(alignment: .top, spacing: 12) {
@@ -46,6 +48,7 @@ struct InsightsTab: View {
             }
             .padding(20)
         }
+        .scrollDisabled(true)
     }
 
     private func monthCaption(_ s: InsightsStats) -> String {
@@ -142,7 +145,7 @@ struct InsightsTab: View {
                     .padding(.vertical, 5)
                 }
             }
-            .padding(.horizontal, 14).padding(.vertical, 8)
+            .padding(.horizontal, 14).padding(.top, 3).padding(.bottom, 8)
         }
         .scrollIndicators(.never)
         .frame(maxHeight: .infinity, alignment: .top)

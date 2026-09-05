@@ -10,6 +10,8 @@ enum ShortcutEvent: Sendable {
     case cancelled
     /// Esc while post-processing: skip it and paste what we have.
     case skipRequested
+    /// The user's copy-last-transcript shortcut, while idle.
+    case copyLastRequested
 }
 
 /// One listen-only CGEvent tap. Fn is keycode 63 on flagsChanged. Space (49)
@@ -135,6 +137,10 @@ final class Shortcuts {
             return true
         case .keyDown, .keyUp:
             let keycode = event.getIntegerValueField(.keyboardEventKeycode)
+            if phase == .idle, let combo = Settings.shared.copyLastShortcut, combo.matches(keyCode: keycode, flags: event.flags) {
+                if type == .keyDown { onEvent?(.copyLastRequested) }
+                return false  // swallow both so the key does not also reach the app underneath
+            }
             if keycode == Shortcuts.spaceKeycode, fnIsDown || phase == .pinned, phase == .recording || phase == .pinned {
                 if type == .keyDown, phase == .recording {
                     phase = .pinned

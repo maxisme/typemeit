@@ -75,7 +75,15 @@ final class Pipeline {
         case .recordingEnded: endRecording()
         case .cancelled: cancel()
         case .skipRequested: skipPostProcessing()
+        case .copyLastRequested: copyLast()
         }
+    }
+
+    /// The newest transcript with any text goes to the clipboard.
+    private func copyLast() {
+        guard let entry = Store.shared.history.last(where: { !$0.displayText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else { return }
+        Output.copyToClipboard(entry.displayText)
+        Log.app.info("Copied the newest transcript by shortcut")
     }
 
     /// The output device is muted while recording, so a cue played then has
@@ -111,7 +119,7 @@ final class Pipeline {
             OutputMute.restore()
             return
         }
-        if settings.overlayEnabled { overlay.show(.arming) }
+        overlay.show(.arming)
         if settings.postProcessingEnabled { Task { await PostProcessor.shared.prewarm() } }
         Task { await Transcriber.shared.preload() }
     }
@@ -153,7 +161,7 @@ final class Pipeline {
         let target = Frontmost.capture()
         phase = .transcribing
         shortcuts.setPhase(.transcribing)
-        if settings.overlayEnabled { overlay.show(.transcribing) }
+        overlay.show(.transcribing)
 
         Task { [weak self] in
             guard let self else { return }
@@ -198,7 +206,7 @@ final class Pipeline {
         if requested {
             phase = .cleaningUp
             shortcuts.setPhase(.cleaningUp)
-            if settings.overlayEnabled { overlay.show(.cleaningUp) }
+            overlay.show(.cleaningUp)
             let start = ContinuousClock.now
             postProcessed = await PostProcessor.shared.run(cleaned.text, customWords: customWords)
             let ms = Pipeline.elapsedMs(since: start)
@@ -244,7 +252,6 @@ final class Pipeline {
 
     private func showCopyPrompt(_ text: String) {
         copyPromptText = text
-        guard settings.overlayEnabled else { return }
         overlay.show(.copyPrompt)
         copyPromptTask?.cancel()
         copyPromptTask = Task { [weak self] in
@@ -279,10 +286,9 @@ final class Pipeline {
     private var toastBatch: UUID?
 
     func showLearnedToast(batchId: UUID, words: [String]) {
-        guard settings.overlayEnabled, !words.isEmpty else { return }
+        guard !words.isEmpty else { return }
         toastBatch = batchId
-        let label = words.count == 1 ? "Added \(words[0])" : "Learned \(words.count) words"
-        overlay.show(.learned(batchId: batchId, label: label))
+        overlay.show(.learned(batchId: batchId, words: words))
         toastTask?.cancel()
         toastTask = Task { [weak self] in
             var remaining = ToastTiming.timeout

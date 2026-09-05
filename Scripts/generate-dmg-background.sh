@@ -8,7 +8,10 @@
 # drawn here at coordinates the layout script does not share streams at nothing.
 # Change both together.
 #
-# No mark and no words on it: the app's own icon is already the largest thing in
+# One line of words along the top, set in DM Mono Light, the design system's display
+# face, at 22pt with the display tracking of -0.02em in ink-3, lowercase like
+# everything else the app says. display-3 is 30pt, but a monospace line at
+# that size run wider than the window. No mark and no arrow: the app's own icon is already the largest thing in
 # the window, and the folder beside it says where the app goes. The direction of
 # the drag is carried by the smoke instead of by an arrow -- puffs growing and
 # darkening from the app toward the folder, rising slightly as they go, each
@@ -25,6 +28,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT="Scripts/dmg-background.png"
 PUFFS="Scripts/puff"
+FONT="Scripts/fonts/DMMono-Light.ttf"     # display face from design/tokens.json
+TITLE="minimal transcription app"
+TITLE_Y=72       # baseline of the line, in window points
 
 W=660
 H=410
@@ -32,9 +38,11 @@ ICON_Y=214       # centre of both Finder icons, in window points
 APP_X=170
 FOLDER_X=490
 
-python3 - "$PUFFS" "$OUT" "$W" "$H" <<'PY'
+python3 - "$PUFFS" "$OUT" "$W" "$H" "$FONT" "$TITLE" "$TITLE_Y" <<'PY'
 import subprocess, sys, tempfile, shutil, os
-puffs, out, W, H = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
+puffs, out, W, H, font, title, title_y = (sys.argv[1], sys.argv[2], int(sys.argv[3]),
+                                          int(sys.argv[4]), sys.argv[5], sys.argv[6],
+                                          int(sys.argv[7]))
 T = tempfile.mkdtemp()
 run = lambda *a: subprocess.run([str(x) for x in a], check=True)
 ident = lambda f, fmt: int(subprocess.run(["magick","identify","-format",fmt,f],
@@ -64,6 +72,13 @@ for name, cx, cy, sz, op, mb in [("p4", 500, 428, 360, 0.95,  6),
     run("magick", f"{T}/acc.png", s, "-geometry", f"+{int(cx-w/2)}+{int(cy-h/2)}",
         "-compose","Over","-composite", f"{T}/n.png")
     shutil.move(f"{T}/n.png", f"{T}/acc.png")
+
+# The title: 22pt with -0.02em tracking is 44px and -0.88px between glyphs at
+# 2x. -kerning takes the per-glyph figure. ink-3 is #6e6e6e.
+run("magick", f"{T}/acc.png", "-font", font, "-pointsize", "44", "-kerning", "-0.88",
+    "-fill", "#6e6e6e", "-gravity", "North",
+    "-annotate", f"+0+{title_y*2-44}", title, f"{T}/n.png")
+shutil.move(f"{T}/n.png", f"{T}/acc.png")
 
 # Grain, laid on after compositing rather than as a filter, to break up the
 # banding a near-flat ramp rings into on an 8-bit panel. Very light: on a white

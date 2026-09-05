@@ -73,3 +73,12 @@ for px in 16 32 128 256 512; do
 done
 iconutil --convert icns --output "$OUT" "$ICONSET"
 echo "Wrote $(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")"
+
+# The dev build's icon is the same tile with its colours inverted.
+DEV_OUT="../../Resources/AppIcon-Dev.icns"
+if [ -z "${PREVIEW:-}" ]; then
+  iconutil -c iconset "$OUT" -o "$TMP/dev.iconset"
+  for png in "$TMP/dev.iconset"/*.png; do magick "$png" -channel RGB -negate "PNG32:$png"; done
+  iconutil -c icns "$TMP/dev.iconset" -o "$DEV_OUT"
+  echo "Wrote $(cd "$(dirname "$DEV_OUT")" && pwd)/$(basename "$DEV_OUT")"
+fi

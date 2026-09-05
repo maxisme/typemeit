@@ -14,7 +14,7 @@ final class OverlayModel {
         case transcribing
         case cleaningUp
         case copyPrompt
-        case learned(batchId: UUID, label: String)
+        case learned(batchId: UUID, words: [String])
         case undone
     }
 
@@ -43,8 +43,8 @@ final class OverlayModel {
     /// Pill width per state, from the design.
     var width: CGFloat {
         switch state {
-        case .copyPrompt: 300
-        default: 286
+        case .copyPrompt: 368
+        default: 320
         }
     }
 

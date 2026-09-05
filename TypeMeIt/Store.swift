@@ -90,14 +90,17 @@ final class Store {
 
     // MARK: History
 
+    /// A limit below 0 keeps no history at all; 0 keeps everything.
     func append(_ entry: HistoryEntry, limit: Int) {
+        guard limit >= 0 else { return }
         history.append(entry)
         prune(limit: limit)
         save(history, to: historyURL)
     }
 
+    /// A limit of 0 keeps everything.
     func prune(limit: Int) {
-        guard history.count > limit else { return }
+        guard limit > 0, history.count > limit else { return }
         var excess = history.count - limit
         var kept: [HistoryEntry] = []
         for e in history {
@@ -157,6 +160,23 @@ final class Store {
         }
         save(learned, to: learnedURL)
         return undone
+    }
+
+    /// The record behind a custom word that learning added, or nil when the
+    /// user typed it in themselves.
+    func learnedRecord(for word: String) -> LearnedWord? {
+        learned.last { !$0.undone && $0.meant.caseInsensitiveCompare(word) == .orderedSame }
+    }
+
+    /// Marks every record for `word` undone, so that if the user adds the
+    /// same word back by hand it reads as their own.
+    func forgetLearned(word: String) {
+        var changed = false
+        for i in learned.indices where !learned[i].undone && learned[i].meant.caseInsensitiveCompare(word) == .orderedSame {
+            learned[i].undone = true
+            changed = true
+        }
+        if changed { save(learned, to: learnedURL) }
     }
 
     /// (heard, meant) pairs still in force, for the fuzzy matcher.
