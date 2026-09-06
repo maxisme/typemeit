@@ -1,0 +1,457 @@
+<title>Type Me It Typewriter Studies</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+/* Tokens from design/tokens.json, verbatim. */
+:root {
+  --paper: #ffffff; --paper-sunk: #f7f7f7;
+  --ink: #0a0a0a; --ink-2: #4a4a4a; --ink-3: #6e6e6e;
+  --rule: #e4e4e4; --rule-control: #949494;
+  --slab: #0a0a0a; --on-slab: #ffffff;
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, "Segoe UI", sans-serif;
+  --r-sm: 5px; --r-md: 7px; --r-lg: 10px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b0b0b; --paper-sunk: #060606;
+    --ink: #fafafa; --ink-2: #b4b4b4; --ink-3: #8a8a8a;
+    --rule: #262626; --rule-control: #6e6e6e;
+    --slab: #fafafa; --on-slab: #0b0b0b;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b0b0b; --paper-sunk: #060606;
+  --ink: #fafafa; --ink-2: #b4b4b4; --ink-3: #8a8a8a;
+  --rule: #262626; --rule-control: #6e6e6e;
+  --slab: #fafafa; --on-slab: #0b0b0b;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--ui); font-size: 15px; -webkit-font-smoothing: antialiased;
+}
+.sheet { max-width: 1080px; margin: 0 auto; padding: 40px 18px 72px; }
+@media (min-width: 600px) { .sheet { padding: 56px 24px 96px; } }
+@media (min-width: 768px) { .sheet { padding-left: 40px; padding-right: 40px; } }
+
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+h1 {
+  font-family: var(--mono); font-weight: 400;
+  font-size: clamp(1.75rem, 3.5vw, 2.25rem); line-height: 1.1; letter-spacing: -0.02em;
+  margin: 0; text-wrap: balance;
+}
+h1 .dim { color: var(--ink-3); }
+.lede {
+  font-family: var(--mono); font-size: 0.8125rem; line-height: 1.6; color: var(--ink-2);
+  max-width: 58ch; margin: 20px 0 0;
+}
+.lede b { font-weight: 500; color: var(--ink); }
+.rule { height: 1px; background: var(--rule); border: 0; margin: 0; }
+.top-rule { margin-top: 40px; }
+
+button#theme {
+  font: 600 0.6875rem/1.3 var(--ui); letter-spacing: 0.085em;
+  color: var(--ink-2); background: transparent;
+  border: 1px solid var(--rule-control); border-radius: var(--r-md);
+  padding: 6px 10px; cursor: pointer; white-space: nowrap; flex: none;
+  transition: color 120ms var(--ease-out), border-color 120ms var(--ease-out);
+}
+button#theme:hover { color: var(--ink); border-color: var(--ink); }
+button#theme:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* -------------------------------------------------------------- sections */
+.band { padding-top: 44px; }
+.band-head { display: grid; gap: 8px; padding-bottom: 8px; }
+.band-head h2 {
+  font-family: var(--mono); font-weight: 400; font-size: 1.375rem;
+  letter-spacing: -0.018em; margin: 0;
+}
+.band-head p {
+  font-family: var(--mono); font-size: 0.75rem; line-height: 1.6;
+  color: var(--ink-3); margin: 0; max-width: 62ch;
+}
+
+.plates { display: grid; grid-template-columns: 1fr; }
+@media (min-width: 860px) {
+  .plates { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 40px; }
+  .plate:nth-child(5) { grid-column: 1 / -1; }
+  .plate:nth-child(5) .why { max-width: 62ch; }
+}
+
+.plate { border-top: 1px solid var(--rule); padding: 24px 0 30px; display: grid; gap: 18px; min-width: 0; }
+.head { display: grid; grid-template-columns: 2.6em 1fr; gap: 0 12px; align-items: baseline; }
+.num {
+  font-family: var(--mono); font-size: 0.6875rem; font-weight: 500;
+  color: var(--ink-3); font-variant-numeric: tabular-nums; letter-spacing: 0.06em;
+}
+.name { font-family: var(--ui); font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.085em; margin: 0; }
+.why {
+  grid-column: 2; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6;
+  color: var(--ink-3); margin: 6px 0 0; max-width: 46ch;
+}
+
+.stage {
+  background: var(--paper-sunk); border-radius: var(--r-lg);
+  min-height: 148px; padding: 26px 24px;
+  display: flex; align-items: center; justify-content: flex-start; overflow-x: auto;
+}
+.stage > * { margin: auto; }
+
+.strip { display: flex; align-items: stretch; gap: 12px; flex-wrap: wrap; }
+.chip { display: flex; align-items: center; gap: 10px; border-radius: var(--r-md); padding: 10px 14px; min-height: 44px; }
+.chip--paper { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
+.chip--slab { background: var(--slab); color: var(--on-slab); }
+.chip-tag { font: 600 0.625rem/1.3 var(--ui); letter-spacing: 0.085em; color: var(--ink-3); align-self: center; }
+
+/* --------------------------------------------------------- the lockup 01 */
+/* Every plate on this sheet is lockup 01: mark, one lobe of air, name.
+   Only the setting of the name changes. */
+.lk {
+  --s: clamp(20px, 5.2vw, 30px);
+  display: flex; align-items: center; gap: 0.42em;
+  font-family: var(--mono); font-weight: 400; font-size: var(--s); color: inherit;
+}
+.puff { display: block; height: 1.5em; width: auto; aspect-ratio: 47 / 49; flex: none; }
+.puff--h { height: 1.62em; aspect-ratio: 1; }
+.word { font-size: 1em; line-height: 1; letter-spacing: -0.025em; white-space: nowrap; }
+
+/* 1a strike — the typebar bounced and hit the paper twice. */
+.w-strike { position: relative; }
+.w-strike .ghost {
+  position: absolute; left: 0; top: 0;
+  transform: translate(0.028em, 0.022em); opacity: 0.26;
+}
+
+/* 1b platen — the sheet in the machine, ruled under the line. */
+.w-platen { padding-bottom: 0.24em; border-bottom: 0.055em solid currentColor; }
+
+/* 1c pitch — opened out to the ten-per-inch of a pica typewriter. */
+.w-pitch { letter-spacing: 0.19em; margin-right: -0.19em; }
+
+/* 1d caps — the title page: struck in capitals, tracked wide. */
+.w-caps { text-transform: uppercase; letter-spacing: 0.17em; margin-right: -0.17em; font-weight: 300; }
+
+/* 1e crooked — the sheet fed in a degree off. */
+.w-crooked { display: inline-block; transform: rotate(-1.6deg); transform-origin: left center; }
+
+/* 1f caret — the block cursor, where the app pastes. */
+.caret {
+  display: inline-block; width: 0.56em; height: 1.02em;
+  background: currentColor; vertical-align: -0.16em; margin-left: 0.18em;
+  animation: blink 1.1s steps(1, end) infinite;
+}
+@keyframes blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+
+/* 1g underscore — the older cursor, still the one everyone reads as one. */
+.w-under .us { color: currentColor; }
+
+/* 1h prompt — the name is the command. */
+.prompt { opacity: 0.5; margin-right: 0.34em; }
+
+/* 1i selection — inverted tight to the glyphs, the way a terminal selects. */
+.w-select {
+  background: var(--ink); color: var(--paper);
+  padding: 0.1em 0.12em; border-radius: 2px;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.chip--slab .w-select { background: var(--on-slab); color: var(--slab); }
+
+/* 1j typed — rests complete; retypes on hover, and never on reduced motion. */
+.w-typed { display: inline-flex; align-items: baseline; }
+.w-typed .chars { display: inline-block; overflow: hidden; white-space: nowrap; vertical-align: bottom; }
+.lk-typed:hover .w-typed .chars, .lk-typed:focus-visible .w-typed .chars {
+  animation: type 1.1s steps(10, end) 1;
+}
+@keyframes type { from { width: 0; } to { width: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .lk-typed:hover .w-typed .chars, .lk-typed:focus-visible .w-typed .chars { animation: none; }
+}
+.lk-typed { cursor: default; }
+.lk-typed:focus-visible { outline: 2px solid currentColor; outline-offset: 6px; border-radius: var(--r-sm); }
+
+.colophon {
+  border-top: 1px solid var(--rule); margin-top: 8px; padding-top: 28px;
+  font-family: var(--mono); font-size: 0.75rem; line-height: 1.7; color: var(--ink-3);
+  max-width: 62ch;
+}
+.colophon code { color: var(--ink-2); }
+</style>
+
+<svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="puff" viewBox="9 7 47 49" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/>
+    <path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/>
+    <path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/>
+    <path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/>
+    <path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/>
+  </symbol>
+  <symbol id="puff-h" viewBox="6.4 5.4 52 52" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/>
+    <path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/>
+    <path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/>
+    <path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/>
+    <path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/>
+  </symbol>
+</svg>
+
+<main class="sheet">
+
+  <div class="top">
+    <div><h1>typewriter studies <span class="dim">· round 2</span></h1></div>
+    <button type="button" id="theme" aria-live="polite">theme: auto</button>
+  </div>
+
+  <p class="lede">
+    every plate here is <b>lockup 01</b> — mark, one lobe of air, name on one line.
+    the structure does not move. only the setting of the name changes, and only by
+    the smallest amount that reads.
+  </p>
+  <p class="lede">
+    two halves. <b>the machine</b> plays the typewriter that the name already implies:
+    typebar, platen, pica pitch, paper. <b>the terminal</b> plays the cursor the app
+    actually types into. still one ink, one paper, dm mono, and the two emphasis moves.
+  </p>
+
+  <hr class="rule top-rule">
+
+  <!-- ================================================================ -->
+  <section class="band">
+    <div class="band-head">
+      <h2>the machine</h2>
+      <p>a typewriter leaves evidence: the bar strikes twice, the platen rules the line,
+        the pitch is fixed at ten to the inch, the sheet goes in crooked. each of these
+        is one piece of that evidence and nothing else.</p>
+    </div>
+
+    <div class="plates">
+
+      <section class="plate">
+        <div class="head">
+          <span class="num">1a</span><h2 class="name">STRIKE</h2>
+          <p class="why">the typebar bounced and hit the paper twice, a quarter-point off.
+            the word doubles rather than blurs — the impression, not a drop shadow. dies at
+            13 px, so it is a hero-only move with 01 underneath it everywhere else.</p>
+        </div>
+        <div class="stage">
+          <div class="lk"><svg class="puff"><use href="#puff"/></svg><span class="word w-strike"><span class="ghost" aria-hidden="true">type me it</span>type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-strike"><span class="ghost" aria-hidden="true">type me it</span>type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-strike"><span class="ghost" aria-hidden="true">type me it</span>type me it</span></div></div>
+          <span class="chip-tag">13 PX · INVERTED</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <span class="num">1b</span><h2 class="name">PLATEN</h2>
+          <p class="why">one hairline under the name and nothing else — the sheet in the
+            machine, the line you are typing on. the system already rules everything with
+            hairlines, so this is the cheapest play on the sheet and the most durable.</p>
+        </div>
+        <div class="stage">
+          <div class="lk"><svg class="puff"><use href="#puff"/></svg><span class="word w-platen">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-platen">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-platen">type me it</span></div></div>
+          <span class="chip-tag">13 PX · INVERTED</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <span class="num">1c</span><h2 class="name">PICA</h2>
+          <p class="why">opened out to the ten characters per inch a pica typewriter is
+            built around. dm mono is already fixed pitch; this just makes the fact visible,
+            and gives the puff a name wide enough to stand next to.</p>
+        </div>
+        <div class="stage">
+          <div class="lk"><svg class="puff"><use href="#puff"/></svg><span class="word w-pitch">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-pitch">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-pitch">type me it</span></div></div>
+          <span class="chip-tag">13 PX · INVERTED</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <span class="num">1d</span><h2 class="name">TITLE PAGE</h2>
+          <p class="why">capitals, tracked wide, set light — a manuscript title page, which
+            is the one place a typewriter was ever asked to be formal. the only plate that
+            spells the name the way you write it: TYPE ME IT.</p>
+        </div>
+        <div class="stage">
+          <div class="lk"><svg class="puff"><use href="#puff"/></svg><span class="word w-caps">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-caps">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-caps">type me it</span></div></div>
+          <span class="chip-tag">13 PX · INVERTED</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <span class="num">1e</span><h2 class="name">CROOKED</h2>
+          <p class="why">the sheet went in a degree off and nobody rethreaded it. one
+            rotation on the name, the mark left level, so the tilt reads as paper rather than
+            as a logo trying to be jaunty. the riskiest of the ten — it either charms or it
+            looks like a bug.</p>
+        </div>
+        <div class="stage">
+          <div class="lk"><svg class="puff"><use href="#puff"/></svg><span class="word"><span class="w-crooked">type me it</span></span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word"><span class="w-crooked">type me it</span></span></div></div>
+          <div class="chip chip--slab"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word"><span class="w-crooked">type me it</span></span></div></div>
+          <span class="chip-tag">13 PX · INVERTED</span>
+        </div>
+      </section>
+
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section class="band">
+    <div class="band-head">
+      <h2>the terminal</h2>
+      <p>the app pastes where the cursor is. these five put that cursor in the lockup —
+        block, underscore, prompt, selection — so the mark says what the app does with one
+        extra glyph and no new vocabulary.</p>
+    </div>
+
+    <div class="plates">
+
+      <section class="plate">
+        <div class="head">
+          <span class="num">1f</span><h2 class="name">CARET</h2>
+          <p class="why">a solid block cursor after the name, blinking. this is literally
+            what the app types into, and the block is the same ink slab the system already
+            uses for emphasis — nothing new is introduced. holds at 13 px.</p>
+        </div>
+        <div class="stage">
+          <div class="lk"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it<span class="caret" aria-hidden="true"></span></span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it<span class="caret" aria-hidden="true"></span></span></div></div>
+          <div class="chip chip--slab"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it<span class="caret" aria-hidden="true"></span></span></div></div>
+          <span class="chip-tag">13 PX · INVERTED</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <span class="num">1g</span><h2 class="name">UNDERSCORE</h2>
+          <p class="why">the older cursor, and still the one everyone reads as one. it is a
+            real glyph rather than a drawn box, so it survives being copied, pasted into a
+            readme, or set in any monospace face at any size. the safest of the five.</p>
+        </div>
+        <div class="stage">
+          <div class="lk"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it<span class="us" aria-hidden="true">_</span></span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it<span class="us" aria-hidden="true">_</span></span></div></div>
+          <div class="chip chip--slab"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it<span class="us" aria-hidden="true">_</span></span></div></div>
+          <span class="chip-tag">13 PX · INVERTED</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <span class="num">1h</span><h2 class="name">PROMPT</h2>
+          <p class="why">a chevron before the name in ink-3, so the name still leads and the
+            prompt sits back a step. reads as a command being given, which is what holding fn
+            and speaking is. the one risk: every developer tool on earth has done it.</p>
+        </div>
+        <div class="stage">
+          <div class="lk"><svg class="puff"><use href="#puff"/></svg><span class="word"><span class="prompt" aria-hidden="true">&gt;</span>type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word"><span class="prompt" aria-hidden="true">&gt;</span>type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word"><span class="prompt" aria-hidden="true">&gt;</span>type me it</span></div></div>
+          <span class="chip-tag">13 PX · INVERTED</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <span class="num">1i</span><h2 class="name">SELECTION</h2>
+          <p class="why">inverted tight to the glyphs, the way a terminal selects text —
+            not the padded slab a button gets. carries its own inversion, so it needs no
+            second file on a dark hero, and it is the boldest thing on the sheet.</p>
+        </div>
+        <div class="stage">
+          <div class="lk"><svg class="puff"><use href="#puff"/></svg><span class="word w-select">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-select">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-select">type me it</span></div></div>
+          <span class="chip-tag">13 PX · INVERTED</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <span class="num">1j</span><h2 class="name">TYPED</h2>
+          <p class="why">caret and platen together, and the name types itself in. it rests
+            complete — hover or focus it to replay, and reduced motion never plays it at all.
+            for the site header and the onboarding screen; everywhere else it is 1f standing
+            still.</p>
+        </div>
+        <div class="stage">
+          <div class="lk lk-typed" tabindex="0"><svg class="puff"><use href="#puff"/></svg><span class="word w-platen w-typed"><span class="chars">type me it</span><span class="caret" aria-hidden="true"></span></span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk lk-typed" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-platen w-typed"><span class="chars">type me it</span><span class="caret" aria-hidden="true"></span></span></div></div>
+          <div class="chip chip--slab"><div class="lk lk-typed" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word w-platen w-typed"><span class="chars">type me it</span><span class="caret" aria-hidden="true"></span></span></div></div>
+          <span class="chip-tag">13 PX · INVERTED · HOVER TO REPLAY</span>
+        </div>
+      </section>
+
+    </div>
+  </section>
+
+  <p class="colophon">
+    the mark, the gap and the baseline are lockup 01 from round 1, unchanged — see
+    <code>design/logos.html</code>. display sizes use the stroke-3 puff from
+    <code>TypeMeIt/Support/Icon/puff.svg</code>; 13 px uses the stroke-5 favicon cut.
+    everything else comes from <code>design/tokens.json</code>.
+    my pick of the ten is <b>1b platen</b> for the everyday mark and <b>1f caret</b> for
+    the site — they are the two that still work at 13 px, and they stack: 1j is just both
+    of them moving. say which and i will cut the svgs.
+  </p>
+
+</main>
+
+<script>
+(function () {
+  var order = ['auto', 'light', 'dark'];
+  var btn = document.getElementById('theme');
+  var i = 0;
+  try {
+    var stored = localStorage.getItem('tmi-theme');
+    if (stored === 'light' || stored === 'dark') i = order.indexOf(stored);
+  } catch (e) {}
+  function apply() {
+    var t = order[i];
+    if (t === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    btn.textContent = 'theme: ' + t;
+    try {
+      if (t === 'auto') localStorage.removeItem('tmi-theme');
+      else localStorage.setItem('tmi-theme', t);
+    } catch (e) {}
+  }
+  btn.addEventListener('click', function () { i = (i + 1) % order.length; apply(); });
+  apply();
+})();
+</script>
