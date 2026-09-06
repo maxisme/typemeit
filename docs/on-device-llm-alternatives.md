@@ -135,8 +135,8 @@ times slower and should not ship.
 
 ## Measured, September 2026
 
-`Scripts/llm-bench/run.sh` runs the nine cases in `Scripts/cleanup-eval/cases.json`
-and three long dictations of 58 to 91 words through each engine in-process: Apple
+`Scripts/llm-bench/run.sh` runs the eleven cases in `Scripts/cleanup-eval/cases.json`
+and five long dictations of 58 to 256 words through each engine in-process: Apple
 Intelligence through Foundation Models exactly as the app does, and each GGUF
 through libllama with Metal, greedy sampling and a JSON grammar pinning the output
 to one field, which is the closest equivalent of guided generation. Machine: M4
