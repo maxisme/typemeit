@@ -117,9 +117,9 @@ float shape(vec2 uv, float time, float e, float disperse) {
         float stray = snoise(vec3(k * 3.7 + 11.0, k * 1.9 + 5.0, time * 0.06));
         float strayed = smoothstep(0.35, 0.8, stray);
         float reach = R * (0.55 + 0.38 * strayed + 0.06 * sin(time * 0.43 + k * 2.3));
-        reach *= 1.0 + 1.4 * disperse;
+        reach *= 1.0 + 0.6 * disperse;
         vec2 c = reach * vec2(cos(ang), sin(ang));
-        float r = R * (0.42 - 0.14 * strayed + 0.06 * sin(time * 0.37 + k * 0.9)) * (1.0 + 0.6 * disperse);
+        float r = R * (0.42 - 0.14 * strayed + 0.06 * sin(time * 0.37 + k * 0.9)) * (1.0 + 0.35 * disperse);
         vec2 q = uv - c;
         mass += w * exp(-dot(q, q) / (r * r * 0.40));
     }
@@ -298,7 +298,7 @@ vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, 
 
     // Beyond 1.6 radii the density floor has removed everything, so skip the
     // noise there; most of the view is this cheap.
-    float reach = 1.6 * (1.0 + 1.4 * disperse);
+    float reach = 1.6 * (1.0 + 0.6 * disperse);
     if (dot(uv, uv) > reach * reach * radius(tr) * radius(tr)) { return vec4(0.0); }
 
     // The noise is scaled by a fixed mid radius, not the current one, so a

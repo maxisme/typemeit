@@ -67,10 +67,17 @@ struct CloudView: View {
     /// by this much expansion, and this much thicker.
     static let processingSettle = 0.2
     static let processingDensity = 1.9
+    /// It lets go again as it departs, so a thin cloud drifts apart rather
+    /// than a dense ball bursting.
     private func settled(at now: Date) -> Double {
         guard isProcessing, let struck = model.struckAt else { return 0 }
         let p = min(max(now.timeIntervalSince(struck) / 0.5, 0), 1)
-        return p * p * (3 - 2 * p)
+        var s = p * p * (3 - 2 * p)
+        if let departed = model.departedAt {
+            let q = min(max(now.timeIntervalSince(departed) / PuffView.departureDuration, 0), 1)
+            s *= 1 - q * q * (3 - 2 * q)
+        }
+        return s
     }
 
     /// Lightning strikes as the dictation ends, then once a second for as
