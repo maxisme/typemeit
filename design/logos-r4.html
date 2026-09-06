@@ -1,0 +1,497 @@
+<title>Type Me It Face Trials</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Mono:wght@400&family=IBM+Plex+Mono:wght@400&family=Martian+Mono:wght@300&family=Quicksand:wght@500&family=Varela+Round&family=Nunito:wght@500&family=Poppins:wght@400&family=Outfit:wght@400&family=Space+Grotesk:wght@400&family=Inter:wght@400&family=Bricolage+Grotesque:wght@400&family=Schibsted+Grotesk:wght@400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #ffffff; --paper-sunk: #f7f7f7;
+  --ink: #0a0a0a; --ink-2: #4a4a4a; --ink-3: #6e6e6e;
+  --rule: #e4e4e4; --rule-control: #949494;
+  --slab: #0a0a0a; --on-slab: #ffffff;
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, "Segoe UI", sans-serif;
+  --r-sm: 5px; --r-md: 7px; --r-lg: 10px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b0b0b; --paper-sunk: #060606;
+    --ink: #fafafa; --ink-2: #b4b4b4; --ink-3: #8a8a8a;
+    --rule: #262626; --rule-control: #6e6e6e;
+    --slab: #fafafa; --on-slab: #0b0b0b;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b0b0b; --paper-sunk: #060606;
+  --ink: #fafafa; --ink-2: #b4b4b4; --ink-3: #8a8a8a;
+  --rule: #262626; --rule-control: #6e6e6e;
+  --slab: #fafafa; --on-slab: #0b0b0b;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--ui); font-size: 15px; -webkit-font-smoothing: antialiased; }
+.sheet { max-width: 1080px; margin: 0 auto; padding: 40px 18px 72px; }
+@media (min-width: 600px) { .sheet { padding: 56px 24px 96px; } }
+@media (min-width: 768px) { .sheet { padding-left: 40px; padding-right: 40px; } }
+
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+h1 { font-family: var(--mono); font-weight: 400; font-size: clamp(1.75rem, 3.5vw, 2.25rem); line-height: 1.1; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h1 .dim { color: var(--ink-3); }
+.lede { font-family: var(--mono); font-size: 0.8125rem; line-height: 1.6; color: var(--ink-2); max-width: 58ch; margin: 20px 0 0; }
+.lede b { font-weight: 500; color: var(--ink); }
+.rule { height: 1px; background: var(--rule); border: 0; margin: 0; }
+.top-rule { margin-top: 40px; }
+
+button#theme {
+  font: 600 0.6875rem/1.3 var(--ui); letter-spacing: 0.085em;
+  color: var(--ink-2); background: transparent;
+  border: 1px solid var(--rule-control); border-radius: var(--r-md);
+  padding: 6px 10px; cursor: pointer; white-space: nowrap; flex: none;
+  transition: color 120ms var(--ease-out), border-color 120ms var(--ease-out);
+}
+button#theme:hover { color: var(--ink); border-color: var(--ink); }
+button#theme:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.band { padding-top: 44px; }
+.band-head { display: grid; gap: 8px; padding-bottom: 8px; }
+.band-head h2 { font-family: var(--mono); font-weight: 400; font-size: 1.375rem; letter-spacing: -0.018em; margin: 0; }
+.band-head p { font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--ink-3); margin: 0; max-width: 66ch; }
+
+.plates { display: grid; grid-template-columns: 1fr; }
+@media (min-width: 1000px) { .plates { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 32px; } }
+.plates--one { grid-template-columns: 1fr; }
+
+.plate { border-top: 1px solid var(--rule); padding: 22px 0 28px; display: grid; gap: 16px; min-width: 0; }
+.head { display: grid; gap: 5px; }
+.face-name { font-family: var(--ui); font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.085em; margin: 0; }
+.spec {
+  font-family: var(--mono); font-size: 0.625rem; color: var(--ink-3);
+  font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+}
+.why { font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--ink-3); margin: 2px 0 0; max-width: 46ch; }
+
+.stage {
+  background: var(--paper-sunk); border-radius: var(--r-lg);
+  min-height: 132px; padding: 22px 18px;
+  display: flex; align-items: center; justify-content: flex-start; overflow-x: auto;
+}
+.stage > * { margin: auto; }
+
+.strip { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+.chip { display: flex; align-items: center; gap: 10px; border-radius: var(--r-md); padding: 9px 12px; min-height: 42px; }
+.chip--paper { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
+.chip--slab { background: var(--slab); color: var(--on-slab); }
+.chip-tag { font: 600 0.625rem/1.3 var(--ui); letter-spacing: 0.085em; color: var(--ink-3); align-self: center; }
+
+/* --------------------------------------------------------------- lockup */
+/* 01, untouched: mark, one lobe of air, name. The only variable on this
+   sheet is --face. --fs corrects each face to a common x-height so the
+   comparison is of the drawing, not of how big the face happens to set. */
+.lk {
+  --s: clamp(19px, 4.6vw, 26px);
+  --face: var(--mono); --fs: 1; --fw: 400; --tr: -0.025em;
+  display: flex; align-items: center; gap: 0.42em;
+  font-size: var(--s); color: inherit;
+}
+.puff { display: block; height: 1.5em; width: auto; aspect-ratio: 47 / 49; flex: none; }
+.puff--h { height: 1.62em; aspect-ratio: 1; }
+.word {
+  font-family: var(--face); font-size: calc(1em * var(--fs));
+  font-weight: var(--fw); letter-spacing: var(--tr);
+  line-height: 1; white-space: nowrap;
+}
+
+/* Each face, set the way it wants to be set. */
+.f-dmmono   { --face: "DM Mono", monospace;            --fs: 1;    --fw: 400; --tr: -0.025em; }
+.f-space    { --face: "Space Mono", monospace;         --fs: 1.04; --fw: 400; --tr: -0.02em; }
+.f-plex     { --face: "IBM Plex Mono", monospace;      --fs: 1;    --fw: 400; --tr: -0.02em; }
+.f-martian  { --face: "Martian Mono", monospace;       --fs: 0.95; --fw: 300; --tr: -0.02em; }
+.f-quick    { --face: "Quicksand", sans-serif;         --fs: 1.02; --fw: 500; --tr: -0.01em; }
+.f-varela   { --face: "Varela Round", sans-serif;      --fs: 0.98; --fw: 400; --tr: -0.012em; }
+.f-nunito   { --face: "Nunito", sans-serif;            --fs: 1.06; --fw: 500; --tr: -0.018em; }
+.f-poppins  { --face: "Poppins", sans-serif;           --fs: 0.95; --fw: 400; --tr: -0.022em; }
+.f-outfit   { --face: "Outfit", sans-serif;            --fs: 1.04; --fw: 400; --tr: -0.022em; }
+.f-grotesk  { --face: "Space Grotesk", sans-serif;     --fs: 0.98; --fw: 400; --tr: -0.024em; }
+.f-inter    { --face: "Inter", sans-serif;             --fs: 0.82; --fw: 400; --tr: -0.022em; }
+.f-bricolage{ --face: "Bricolage Grotesque", sans-serif;--fs: 1;   --fw: 400; --tr: -0.022em; }
+.f-schibsted{ --face: "Schibsted Grotesk", sans-serif; --fs: 0.98; --fw: 400; --tr: -0.024em; }
+
+.colophon {
+  border-top: 1px solid var(--rule); margin-top: 8px; padding-top: 28px;
+  font-family: var(--mono); font-size: 0.75rem; line-height: 1.7; color: var(--ink-3);
+  max-width: 64ch;
+}
+.colophon code { color: var(--ink-2); }
+.colophon b { color: var(--ink); font-weight: 500; }
+</style>
+
+<svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="puff" viewBox="9 7 47 49" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/>
+    <path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/>
+    <path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/>
+    <path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/>
+    <path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/>
+  </symbol>
+  <symbol id="puff-h" viewBox="6.4 5.4 52 52" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/>
+    <path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/>
+    <path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/>
+    <path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/>
+    <path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/>
+  </symbol>
+</svg>
+
+<main class="sheet">
+
+  <div class="top">
+    <div><h1>face trials <span class="dim">· round 4</span></h1></div>
+    <button type="button" id="theme" aria-live="polite">theme: auto</button>
+  </div>
+
+  <p class="lede">
+    lockup 01 exactly as it is — mark, one lobe of air, name. nothing added, nothing
+    moved. <b>the only variable on this sheet is the typeface.</b>
+  </p>
+  <p class="lede">
+    each name is set to the same x-height rather than the same point size, so what you
+    are comparing is the drawing and not how large a face happens to set. the wordmark
+    ships as outlined svg, so <b>none of these costs a webfont at runtime</b> — the site
+    keeps dm mono for everything else either way.
+  </p>
+
+  <hr class="rule top-rule">
+
+  <!-- =============================================================== -->
+  <section class="band">
+    <div class="band-head">
+      <h2>the incumbent</h2>
+      <p>what 01 is set in today, and the thing every plate below has to beat.</p>
+    </div>
+    <div class="plates plates--one">
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">DM MONO</h3>
+          <p class="spec">400 · −0.025em · the system face</p>
+          <p class="why">even, quiet, and already everywhere in the app. its weakness as a
+            wordmark is that it is a <em>text</em> face doing a display job — nothing in the
+            drawing answers the puff's round caps, and the monospacing pushes "type me it"
+            wider than the mark wants.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-dmmono"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-dmmono" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-dmmono" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">13 PX</span>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="band">
+    <div class="band-head">
+      <h2>round terminals</h2>
+      <p>the puff is drawn with round caps on every stroke. these three faces end their
+        strokes the same way, so the name and the mark are made by the same hand. formally
+        this is the closest match on the sheet, and where i would look first.</p>
+    </div>
+    <div class="plates">
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">QUICKSAND</h3>
+          <p class="spec">500 · −0.01em · geometric, round caps</p>
+          <p class="why">circles and round ends, which is the puff's exact construction.
+            set at 500 so it holds its own against the stroke weight — at 400 it goes
+            wispy. warm without going soft.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-quick"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-quick" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-quick" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">13 PX</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">VARELA ROUND</h3>
+          <p class="spec">400 · −0.012em · one weight only</p>
+          <p class="why">rounder and more compact than quicksand, with a shorter reach on
+            the ascenders, so "type me it" sits as a tighter block beside the mark. ships in
+            a single weight — fine for a logo, useless for anything else.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-varela"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-varela" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-varela" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">13 PX</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">NUNITO</h3>
+          <p class="spec">500 · −0.018em · rounded, humanist</p>
+          <p class="why">rounded terminals on a humanist skeleton rather than a geometric
+            one, so it reads friendlier and less engineered than the other two. the risk is
+            that friendly tips into generic — it is a very widely used face.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-nunito"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-nunito" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-nunito" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">13 PX</span>
+        </div>
+      </section>
+
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="band">
+    <div class="band-head">
+      <h2>other monos</h2>
+      <p>if the app's voice should stay monospaced, these are the three worth considering
+        over dm mono — each has a distinct character where dm mono is deliberately neutral.</p>
+    </div>
+    <div class="plates">
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">SPACE MONO</h3>
+          <p class="spec">400 · −0.02em · pairs with space grotesk</p>
+          <p class="why">the most characterful mono on google fonts — slab-ish, slightly
+            odd, memorable. it also has a sans sibling, so the wordmark and the ui could be
+            one superfamily. the oddness is the whole point and the whole risk.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-space"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-space" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-space" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">13 PX</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">IBM PLEX MONO</h3>
+          <p class="spec">400 · −0.02em · humanist mono</p>
+          <p class="why">warmer than dm mono and with more going on in the letterforms —
+            the tail on the l, the true italic. a safe upgrade rather than a change of
+            direction, which may be exactly what is wanted or may be too small a move.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-plex"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-plex" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-plex" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">13 PX</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">MARTIAN MONO</h3>
+          <p class="spec">300 · −0.02em · extra wide</p>
+          <p class="why">very wide and very deliberate. set light and tracked back in, it
+            gives the name real presence beside the mark — this is the one plate here that
+            looks like a <em>logo</em> rather than a line of text. it needs a wide slot.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-martian"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-martian" style="--s:12px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-martian" style="--s:12px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">12 PX</span>
+        </div>
+      </section>
+
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="band">
+    <div class="band-head">
+      <h2>geometric sans</h2>
+      <p>built from circles, like the mark, but with proportional widths — so the name
+        gets shorter and denser and the puff gets to be the wide element in the lockup.</p>
+    </div>
+    <div class="plates">
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">POPPINS</h3>
+          <p class="spec">400 · −0.022em · true geometric</p>
+          <p class="why">near-perfect circles, single-storey a, tall ascenders. the closest
+            the sheet gets to the puff's compass-drawn geometry. it is also everywhere — you
+            will recognise it from a hundred other products.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-poppins"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-poppins" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-poppins" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">13 PX</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">OUTFIT</h3>
+          <p class="spec">400 · −0.022em · geometric, tighter</p>
+          <p class="why">poppins' shapes with less air and a shorter reach — quieter, more
+            contemporary, less of a personality. the sensible geometric pick if poppins feels
+            too familiar and quicksand too warm.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-outfit"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-outfit" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-outfit" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">13 PX</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">SPACE GROTESK</h3>
+          <p class="spec">400 · −0.024em · space mono's sans sibling</p>
+          <p class="why">odd in the good way: flat-sided bowls, a cut-off t, real character
+            at small sizes. drawn from space mono, so choosing it here and space mono for
+            measurement would make the whole system one family.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-grotesk"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-grotesk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-grotesk" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">13 PX</span>
+        </div>
+      </section>
+
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="band">
+    <div class="band-head">
+      <h2>grotesques</h2>
+      <p>the neutral option and two with more opinion. a grotesque next to a hand-drawn
+        cloud is a deliberate contrast rather than a match — the mark carries all the
+        personality and the name stays out of its way.</p>
+    </div>
+    <div class="plates">
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">INTER</h3>
+          <p class="spec">400 · −0.022em · large x-height</p>
+          <p class="why">the honest baseline: correct, legible, and completely without a
+            point of view. included so the others have something to be measured against. i
+            would not ship it — it is the default that every product already uses.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-inter"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-inter" style="--s:14px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-inter" style="--s:14px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">14 PX</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">SCHIBSTED GROTESK</h3>
+          <p class="spec">400 · −0.024em · editorial grotesque</p>
+          <p class="why">a newspaper grotesque: slightly condensed, confident, with an
+            editorial seriousness that plays well against something as light as a puff of
+            smoke. the most grown-up option on the sheet.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-schibsted"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-schibsted" style="--s:14px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-schibsted" style="--s:14px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">14 PX</span>
+        </div>
+      </section>
+
+      <section class="plate">
+        <div class="head">
+          <h3 class="face-name">BRICOLAGE GROTESQUE</h3>
+          <p class="spec">400 · −0.022em · irregular by design</p>
+          <p class="why">deliberately uneven — the letters are not trying to match each
+            other, which is the same quality the puff's seven mismatched lobes have. the
+            most interesting face here and the one most likely to date.</p>
+        </div>
+        <div class="stage">
+          <div class="lk f-bricolage"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+        </div>
+        <div class="strip">
+          <div class="chip chip--paper"><div class="lk f-bricolage" style="--s:14px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <div class="chip chip--slab"><div class="lk f-bricolage" style="--s:14px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+          <span class="chip-tag">14 PX</span>
+        </div>
+      </section>
+
+    </div>
+  </section>
+
+  <p class="colophon">
+    all thirteen are lockup 01 with the puff from <code>TypeMeIt/Support/Icon/puff.svg</code>
+    at its own stroke weight; only <code>font-family</code>, weight and tracking change.
+    x-heights are matched by eye rather than by metrics, so treat the sizes as close
+    rather than exact.
+    <br><br>
+    my three: <b>varela round</b> and <b>quicksand</b> because round terminals are the
+    one thing on this sheet that actually answers the mark's construction, and
+    <b>space grotesk</b> because it is the only choice that would also reorganise the
+    rest of the system into one family. if none of these land either, the next move is
+    to stop shopping and draw the letters from the puff's own arcs.
+  </p>
+
+</main>
+
+<script>
+(function () {
+  var order = ['auto', 'light', 'dark'];
+  var btn = document.getElementById('theme');
+  var i = 0;
+  try {
+    var stored = localStorage.getItem('tmi-theme');
+    if (stored === 'light' || stored === 'dark') i = order.indexOf(stored);
+  } catch (e) {}
+  function apply() {
+    var t = order[i];
+    if (t === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    btn.textContent = 'theme: ' + t;
+    try {
+      if (t === 'auto') localStorage.removeItem('tmi-theme');
+      else localStorage.setItem('tmi-theme', t);
+    } catch (e) {}
+  }
+  btn.addEventListener('click', function () { i = (i + 1) % order.length; apply(); });
+  apply();
+})();
+</script>
