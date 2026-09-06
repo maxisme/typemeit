@@ -145,15 +145,24 @@ from `PostProcessor.swift`, so these are the app's live instructions.
 
 | Engine | File | Load | Resident with weights | Short cases | Long layouts | Mean short case | Mean long dictation | Generation tok/s |
 |---|---|---|---|---|---|---|---|---|
-| Apple Intelligence | none | 0 | none in our process | 6/9 | 0/3 | 0.6 s | 1.7 s | ~18 (estimated) |
-| Qwen3.5 2B | 1.3 GB | 0.9 s | 1.7 GB | 8/9 | 0/3 | 1.5 s | 5.3 s | 24 |
-| Qwen3.5 4B | 2.7 GB | 1.9 s | 3.2 GB | 8/9 | 1/3 | 3.0 s | 9.8 s | 15 |
-| Gemma 4 E2B | 3.1 GB | 2.4 s | 3.3 GB | 8/9 | 0/3 | 1.7 s | 6.6 s | 21 |
-| Gemma 4 E4B | 5.0 GB | 3.5 s | 5.3 GB | 8/9 | 1/3 | 2.8 s | 10.5 s | 15 |
+| Apple Intelligence | none | 0 | none in our process | 11/11 | 1/5 | 0.8 s | 2.8 s | ~18 (estimated) |
+| Qwen3.5 2B | 1.3 GB | 0.9 s | 1.7 GB | 10/11 | 1/5 | 1.9 s | 9.4 s | 24 |
+| Qwen3.5 4B | 2.7 GB | 1.9 s | 3.2 GB | 11/11 | 4/5 | 3.3 s | 14.5 s | 15 |
+| Gemma 4 E2B | 3.1 GB | 2.4 s | 3.3 GB | 11/11 | 1/5 | 1.8 s | 10.9 s | 21 |
+| Gemma 4 E4B | 5.0 GB | 3.5 s | 5.3 GB | 11/11 | 2/5 | 3.3 s | 15.2 s | 15 |
 
-The GGUF rows and the Apple row here run the raw model with the prompt of the
-day, without the app's local cleanup or output guards, so they compare models;
-the shipped Apple path with those in place is scored by `Scripts/cleanup-eval`.
+Every row runs the shipped set-up: the rules as session instructions, the tagged
+transcript as the prompt, spoken money converted by `TextCleanup` first, and the
+rewrite and opening guards with the local text as the fallback. Which models
+accept that set-up:
+
+- Pass all 11 short cases: Apple Intelligence, Qwen3.5 4B, Gemma 4 E2B, Gemma 4 E4B.
+- Fail one: Qwen3.5 2B leaves "were meeting at there house" as heard; the guards
+  then keep the local text, so nothing is lost but nothing is fixed.
+- Lay out long dictations when asked: Qwen3.5 4B on 4 of 5, Gemma 4 E4B on 2 of 5.
+- Never lay them out: Apple Intelligence, Qwen3.5 2B, Gemma 4 E2B. Their single
+  pass is the one dictation whose accepted layouts include a single block.
+
 A case passes when the output matches any of its accepted wordings with case and
 punctuation ignored, so "cafe" for "café" and "and third" for "third" both count.
 The long layouts are compared line by line with blank lines dropped, so the list
