@@ -284,7 +284,7 @@ static float lightning(float2 uv, float R, float seed, float age) {
     d = min(d, db + 0.05 * R);
 
     // A bright core of light around the channel, blurred wide by the smoke.
-    float glow = 0.6 * exp(-(d * d) / (0.06 * R * R)) + 0.5 * exp(-d / (0.35 * R));
+    float glow = 0.7 * exp(-(d * d) / (0.05 * R * R)) + 0.35 * exp(-d / (0.22 * R));
     return env * saturate(glow);
 }
 
@@ -358,7 +358,9 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
     float3 electric = float3(0.84, 0.9, 1.0);
     float backlit = bolt * mix(1.0, 0.25, saturate(f));
     rgb = mix(rgb, electric, 0.75 * backlit);
-    a += (1.0 - a) * 0.45 * backlit;
+    // Only smoke that is already there brightens; the density floor's edge
+    // must not show as a cut-out.
+    a += (1.0 - a) * 0.5 * backlit * saturate(alpha * 4.0);
 
     return half4(half3(rgb * a), half(a));
 }
