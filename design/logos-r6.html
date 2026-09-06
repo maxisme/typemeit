@@ -1,0 +1,292 @@
+<title>Subordinate Cut Tuning</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #ffffff; --paper-sunk: #f7f7f7;
+  --ink: #0a0a0a; --ink-2: #4a4a4a; --ink-3: #6e6e6e;
+  --rule: #e4e4e4; --rule-control: #949494;
+  --slab: #0a0a0a; --on-slab: #ffffff;
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, "Segoe UI", sans-serif;
+  --r-sm: 5px; --r-md: 7px; --r-lg: 10px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b0b0b; --paper-sunk: #060606;
+    --ink: #fafafa; --ink-2: #b4b4b4; --ink-3: #8a8a8a;
+    --rule: #262626; --rule-control: #6e6e6e;
+    --slab: #fafafa; --on-slab: #0b0b0b;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b0b0b; --paper-sunk: #060606;
+  --ink: #fafafa; --ink-2: #b4b4b4; --ink-3: #8a8a8a;
+  --rule: #262626; --rule-control: #6e6e6e;
+  --slab: #fafafa; --on-slab: #0b0b0b;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--ui); font-size: 15px; -webkit-font-smoothing: antialiased; }
+.sheet { max-width: 1080px; margin: 0 auto; padding: 40px 18px 72px; }
+@media (min-width: 600px) { .sheet { padding: 56px 24px 96px; } }
+@media (min-width: 768px) { .sheet { padding-left: 40px; padding-right: 40px; } }
+
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+h1 { font-family: var(--mono); font-weight: 400; font-size: clamp(1.75rem, 3.5vw, 2.25rem); line-height: 1.1; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h1 .dim { color: var(--ink-3); }
+.lede { font-family: var(--mono); font-size: 0.8125rem; line-height: 1.6; color: var(--ink-2); max-width: 60ch; margin: 20px 0 0; }
+.lede b { font-weight: 500; color: var(--ink); }
+.rule { height: 1px; background: var(--rule); border: 0; margin: 0; }
+.top-rule { margin-top: 40px; }
+
+button#theme {
+  font: 600 0.6875rem/1.3 var(--ui); letter-spacing: 0.085em;
+  color: var(--ink-2); background: transparent;
+  border: 1px solid var(--rule-control); border-radius: var(--r-md);
+  padding: 6px 10px; cursor: pointer; white-space: nowrap; flex: none;
+  transition: color 120ms var(--ease-out), border-color 120ms var(--ease-out);
+}
+button#theme:hover { color: var(--ink); border-color: var(--ink); }
+button#theme:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.band { padding-top: 48px; border-top: 1px solid var(--rule); margin-top: 40px; }
+.band:first-of-type { border-top: 0; margin-top: 0; }
+.band-head { display: grid; gap: 8px; padding-bottom: 24px; }
+.band-head h2 { font-family: var(--mono); font-weight: 400; font-size: 1.375rem; letter-spacing: -0.018em; margin: 0; }
+.band-head p { font-family: var(--mono); font-size: 0.75rem; line-height: 1.65; color: var(--ink-3); margin: 0; max-width: 66ch; }
+.band-head p b { color: var(--ink); font-weight: 500; }
+
+/* A ladder reads down a single column so the only thing changing between
+   adjacent rows is the one value in the label. Six separate tiles cannot
+   be compared; six stacked rows can. */
+.ladder { background: var(--paper-sunk); border-radius: var(--r-lg); padding: 26px 22px; display: grid; gap: 20px; overflow-x: auto; }
+.lrow { display: flex; align-items: center; gap: 20px; }
+.lbl {
+  font-family: var(--mono); font-size: 0.6875rem; color: var(--ink-3);
+  font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+  width: 5.4em; flex: none; text-align: right; white-space: nowrap;
+}
+.lrow--pick .lbl { color: var(--ink); font-weight: 500; }
+.lrow--pick { position: relative; }
+.lrow--pick::before {
+  content: ""; position: absolute; left: -22px; top: -7px; bottom: -7px; width: 2px;
+  background: var(--ink); border-radius: 1px;
+}
+.note { font-family: var(--mono); font-size: 0.6875rem; line-height: 1.6; color: var(--ink-3); margin: 14px 0 0; max-width: 62ch; }
+.note b { color: var(--ink); font-weight: 500; }
+
+.sizes { background: var(--paper-sunk); border-radius: var(--r-lg); padding: 26px 22px; display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 28px; overflow-x: auto; }
+.szcell { flex: none; }
+.sizes--slab { background: var(--slab); color: var(--on-slab); }
+.szcell { display: grid; gap: 10px; justify-items: start; }
+.szlbl { font: 600 0.5625rem/1 var(--ui); letter-spacing: 0.085em; color: var(--ink-3); }
+.sizes--slab .szlbl { color: inherit; opacity: 0.55; }
+
+/* ------------------------------------------------------------- lockup */
+.lk {
+  --s: 30px; --gap: 0.42em; --sub: 0.82; --fw: 400;
+  display: flex; align-items: center; gap: var(--gap);
+  font-family: var(--mono); font-size: var(--s); color: inherit;
+}
+.puff { display: block; height: 1.5em; width: auto; aspect-ratio: 47 / 49; flex: none; }
+.puff--h { height: 1.62em; aspect-ratio: 1; }
+.word {
+  font-size: calc(1em * var(--sub)); font-weight: var(--fw); line-height: 1;
+  letter-spacing: -0.025em; white-space: nowrap;
+}
+/* Fitting and the optical drop, carried over from round 5. */
+.fit .ch-t { margin-inline: -0.035em; }
+.fit .ch-i { margin-inline: -0.055em; }
+.fit .ch-y { margin-inline: -0.014em; }
+.lift .word { transform: translateY(0.03em); }
+
+.colophon {
+  border-top: 1px solid var(--rule); margin-top: 44px; padding-top: 28px;
+  font-family: var(--mono); font-size: 0.75rem; line-height: 1.7; color: var(--ink-3);
+  max-width: 64ch;
+}
+.colophon code { color: var(--ink-2); }
+.colophon b { color: var(--ink); font-weight: 500; }
+</style>
+
+<svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="puff" viewBox="9 7 47 49" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/>
+    <path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/>
+    <path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/>
+    <path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/>
+    <path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/>
+  </symbol>
+  <symbol id="puff-h" viewBox="6.4 5.4 52 52" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/>
+    <path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/>
+    <path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/>
+    <path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/>
+    <path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/>
+  </symbol>
+</svg>
+
+<main class="sheet">
+
+  <div class="top">
+    <div><h1>the subordinate cut <span class="dim">· round 6</span></h1></div>
+    <button type="button" id="theme" aria-live="polite">theme: auto</button>
+  </div>
+
+  <p class="lede">
+    subordinate, tuned. 0.82&times; was my first guess, not a considered number — these
+    ladders are for picking the real one. <b>read each ladder down; only the labelled
+    value changes between rows.</b> the marked row is my pick.
+  </p>
+  <p class="lede">
+    shrinking the name has one consequence worth knowing up front: <b>the gap is measured
+    off the mark, not the name</b>, so as the name gets smaller the gap silently gets
+    wider relative to it. that is why there is a gap ladder below the ratio one.
+  </p>
+
+  <hr class="rule top-rule">
+
+  <!-- =============================================================== -->
+  <section class="band">
+    <div class="band-head">
+      <h2>1 · the ratio</h2>
+      <p>how much smaller the name is than the mark's own scale. below about 0.76 the name
+        stops being a wordmark and starts being a caption; above about 0.90 the effect
+        disappears and you are back at 01.</p>
+    </div>
+    <div class="ladder">
+      <div class="lrow"><span class="lbl">1.00 · 01</span><div class="lk" style="--sub:1"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow"><span class="lbl">0.92</span><div class="lk" style="--sub:0.92"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow"><span class="lbl">0.88</span><div class="lk" style="--sub:0.88"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow lrow--pick"><span class="lbl">0.84</span><div class="lk" style="--sub:0.84"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow"><span class="lbl">0.82 · r5</span><div class="lk" style="--sub:0.82"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow"><span class="lbl">0.78</span><div class="lk" style="--sub:0.78"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow"><span class="lbl">0.72</span><div class="lk" style="--sub:0.72"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+    </div>
+    <p class="note">my pick is <b>0.84</b>. it is the largest value where the puff still
+      clearly leads — at 0.88 the two are close enough that the eye reads them as equals
+      and the effect is wasted, and by 0.78 the name has gone quiet enough that the lockup
+      needs the puff to be recognised on its own.</p>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="band">
+    <div class="band-head">
+      <h2>2 · the gap</h2>
+      <p>at 0.84 the old 0.42em gap is now about half the name's own height, which reads as
+        a gulf. these are measured off the mark, as they must be for the lockup to scale as
+        one object.</p>
+    </div>
+    <div class="ladder">
+      <div class="lrow"><span class="lbl">0.48em</span><div class="lk" style="--sub:0.84;--gap:0.48em"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow"><span class="lbl">0.42em · 01</span><div class="lk" style="--sub:0.84;--gap:0.42em"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow lrow--pick"><span class="lbl">0.34em</span><div class="lk" style="--sub:0.84;--gap:0.34em"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow"><span class="lbl">0.28em</span><div class="lk" style="--sub:0.84;--gap:0.28em"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow"><span class="lbl">0.20em</span><div class="lk" style="--sub:0.84;--gap:0.2em"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+    </div>
+    <p class="note"><b>0.34em</b>. the puff's outline is not a straight edge — the lobe
+      nearest the name curves away from it, so a gap that measures correctly still looks
+      too wide. 0.34 measures tight and looks right, which is the only test that matters.</p>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="band">
+    <div class="band-head">
+      <h2>3 · the weight</h2>
+      <p>a smaller name is also a lighter one — the same weight set smaller puts less ink on
+        the page, so the name can end up quieter than intended rather than merely smaller.
+        this is the one place subordinate might want a weight it did not before.</p>
+    </div>
+    <div class="ladder">
+      <div class="lrow"><span class="lbl">300</span><div class="lk" style="--sub:0.84;--gap:0.34em;--fw:300"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow lrow--pick"><span class="lbl">400</span><div class="lk" style="--sub:0.84;--gap:0.34em;--fw:400"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow"><span class="lbl">500</span><div class="lk" style="--sub:0.84;--gap:0.34em;--fw:500"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+    </div>
+    <p class="note"><b>400</b> at display sizes — 500 undoes the subordination by giving the
+      name back its weight, and 300 makes the name recede twice over. but see the size
+      test below: the answer changes at the small end.</p>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="band">
+    <div class="band-head">
+      <h2>4 · fitting</h2>
+      <p>the one thing worth carrying over from round 5. dm mono's uniform 0.6em slot
+        strands the i and the t, and the smaller you set the name the more that shows —
+        subordinate makes fitting matter more, not less.</p>
+    </div>
+    <div class="ladder">
+      <div class="lrow"><span class="lbl">as set</span><div class="lk" style="--sub:0.84;--gap:0.34em"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div></div>
+      <div class="lrow lrow--pick"><span class="lbl">fitted</span><div class="lk fit lift" style="--sub:0.84;--gap:0.34em"><svg class="puff"><use href="#puff"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+    </div>
+    <p class="note">fitted, plus the optical drop of +0.03em so the x-height band centres on
+      the mark rather than the name's box. both survive being outlined into svg.</p>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="band">
+    <div class="band-head">
+      <h2>5 · the cut at real sizes</h2>
+      <p><b>0.84&times; · gap 0.34em · dm mono 400 · fitted · dropped 0.03em.</b> the sizes
+        the lockup actually has to survive: the menu bar, a readme badge, the site header,
+        the dmg. small sizes use the stroke-5 puff.</p>
+    </div>
+    <div class="sizes">
+      <div class="szcell"><span class="szlbl">11 PX · MENU BAR</span><div class="lk fit lift" style="--s:11px;--sub:0.84;--gap:0.34em;--fw:500"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+      <div class="szcell"><span class="szlbl">13 PX</span><div class="lk fit lift" style="--s:13px;--sub:0.84;--gap:0.34em;--fw:500"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+      <div class="szcell"><span class="szlbl">18 PX</span><div class="lk fit lift" style="--s:18px;--sub:0.84;--gap:0.34em"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+      <div class="szcell"><span class="szlbl">28 PX</span><div class="lk fit lift" style="--s:28px;--sub:0.84;--gap:0.34em"><svg class="puff"><use href="#puff"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+      <div class="szcell"><span class="szlbl">56 PX · DMG</span><div class="lk fit lift" style="--s:56px;--sub:0.84;--gap:0.34em"><svg class="puff"><use href="#puff"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+    </div>
+    <div class="sizes sizes--slab" style="margin-top:14px">
+      <div class="szcell"><span class="szlbl">11 PX</span><div class="lk fit lift" style="--s:11px;--sub:0.84;--gap:0.34em;--fw:500"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+      <div class="szcell"><span class="szlbl">13 PX</span><div class="lk fit lift" style="--s:13px;--sub:0.84;--gap:0.34em;--fw:500"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+      <div class="szcell"><span class="szlbl">18 PX</span><div class="lk fit lift" style="--s:18px;--sub:0.84;--gap:0.34em"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+      <div class="szcell"><span class="szlbl">28 PX</span><div class="lk fit lift" style="--s:28px;--sub:0.84;--gap:0.34em"><svg class="puff"><use href="#puff"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+      <div class="szcell"><span class="szlbl">56 PX</span><div class="lk fit lift" style="--s:56px;--sub:0.84;--gap:0.34em"><svg class="puff"><use href="#puff"/></svg><span class="word"><span class="ch-t">t</span><span class="ch-y">y</span>pe <span class="ch-m">m</span>e <span class="ch-i">i</span><span class="ch-t">t</span></span></div></div>
+    </div>
+    <p class="note">the honest finding: at 11 and 13 px the name is only about 9 and 11 px
+      tall, and dm mono 400 goes thin there. those two use <b>500</b>, which is the one
+      exception the cut needs — a small-size variant, the way the puff already has a
+      stroke-5 cut for the same reason. everything at 18 px and up is 400.</p>
+  </section>
+
+  <p class="colophon">
+    the cut, in full: <b>puff at its own stroke weight; name dm mono 400 at 0.84&times; the
+    mark's scale, gap 0.34em, fitted (t −0.07em, i −0.11em, y −0.03em), dropped 0.03em;
+    weight 500 and the stroke-5 puff below 18 px.</b>
+    <br><br>
+    say the word and i will cut this as production svg — a wide lockup and the small-size
+    variant, both light and dark, plus updated <code>web/</code> favicons and the dmg
+    background — or change any number above first.
+  </p>
+
+</main>
+
+<script>
+(function () {
+  var order = ['auto', 'light', 'dark'];
+  var btn = document.getElementById('theme');
+  var i = 0;
+  try {
+    var stored = localStorage.getItem('tmi-theme');
+    if (stored === 'light' || stored === 'dark') i = order.indexOf(stored);
+  } catch (e) {}
+  function apply() {
+    var t = order[i];
+    if (t === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    btn.textContent = 'theme: ' + t;
+    try {
+      if (t === 'auto') localStorage.removeItem('tmi-theme');
+      else localStorage.setItem('tmi-theme', t);
+    } catch (e) {}
+  }
+  btn.addEventListener('click', function () { i = (i + 1) % order.length; apply(); });
+  apply();
+})();
+</script>
