@@ -115,11 +115,11 @@ float shape(vec2 uv, float time, float e, float disperse) {
         // Driven by noise rather than a sine so the excursions are irregular
         // and rare: most of the time every lobe hugs the core.
         float stray = snoise(vec3(k * 3.7 + 11.0, k * 1.9 + 5.0, time * 0.06));
-        float out = smoothstep(0.35, 0.8, stray);
-        float reach = R * (0.55 + 0.38 * out + 0.06 * sin(time * 0.43 + k * 2.3));
+        float strayed = smoothstep(0.35, 0.8, stray);
+        float reach = R * (0.55 + 0.38 * strayed + 0.06 * sin(time * 0.43 + k * 2.3));
         reach *= 1.0 + 1.4 * disperse;
         vec2 c = reach * vec2(cos(ang), sin(ang));
-        float r = R * (0.42 - 0.14 * out + 0.06 * sin(time * 0.37 + k * 0.9)) * (1.0 + 0.6 * disperse);
+        float r = R * (0.42 - 0.14 * strayed + 0.06 * sin(time * 0.37 + k * 0.9)) * (1.0 + 0.6 * disperse);
         vec2 q = uv - c;
         mass += w * exp(-dot(q, q) / (r * r * 0.40));
     }
