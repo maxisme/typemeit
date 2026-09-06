@@ -39,6 +39,10 @@ struct PuffView: View {
     /// with `level`.
     var departure: Date? = nil
     static let departureDuration = 0.22
+    /// When set, lightning strikes through the puff at this instant: a flash
+    /// that lights the smoke from inside and a filament across it, over in
+    /// about a second. Set it again for another strike.
+    var strike: Date? = nil
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     @State private var dynamics = Dynamics()
@@ -49,6 +53,8 @@ struct PuffView: View {
             let now = (frozenTime ?? ctx.date.timeIntervalSinceReferenceDate) + timeOffset
             let t = reduceMotion ? 0 : now.truncatingRemainder(dividingBy: 3600)
             let s = state(at: now)
+            // The shader's clock wraps hourly; the strike is given in it.
+            let struck = reduceMotion ? -1.0 : strike.map { ($0.timeIntervalSinceReferenceDate + timeOffset).truncatingRemainder(dividingBy: 3600) } ?? -1
             Color.white
                 .visualEffect { content, proxy in
                     content.colorEffect(ShaderLibrary.puff(
@@ -57,6 +63,7 @@ struct PuffView: View {
                         .float(Float(s.expansion)),
                         .float(Float(s.trail)),
                         .float(Float(s.flow)),
+                        .float(Float(struck)),
                         .color(tint)))
                 }
         }
@@ -65,7 +72,7 @@ struct PuffView: View {
     /// Compiles the shader ahead of its first frame, which otherwise stalls
     /// for a moment.
     static func compileShader() async throws {
-        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .color(.white))
+        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .float(-1), .color(.white))
             .compile(as: .colorEffect)
     }
 

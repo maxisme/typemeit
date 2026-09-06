@@ -4,7 +4,8 @@ import SwiftUI
 /// The recording indicator: a puff of smoke that grows from nothing at the
 /// bottom of the screen and swells with each syllable. It stays, pulsing
 /// slowly, while the dictation is transcribed and cleaned up, turning a
-/// little blue for the clean-up, then shrinks away.
+/// little blue for the clean-up, then shrinks away. Lightning cracks through
+/// it as the dictation ends.
 /// While pinned, a click on it finishes.
 struct CloudView: View {
     @Bindable var model: OverlayModel
@@ -26,7 +27,7 @@ struct CloudView: View {
         let departing = model.departedAt != nil
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || !isProcessing)) { ctx in
             PuffView(level: level(at: ctx.date.timeIntervalSinceReferenceDate), tint: tint,
-                     arrival: model.shownAt, departure: model.departedAt)
+                     arrival: model.shownAt, departure: model.departedAt, strike: model.struckAt)
         }
         .animation(.easeInOut(duration: 0.2), value: model.backdrop)
         .frame(width: CloudView.size, height: CloudView.size)

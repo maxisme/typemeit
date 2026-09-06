@@ -64,8 +64,10 @@ final class OverlayPanel {
             model.level = 0
             model.shownAt = Date()
             model.departedAt = nil
+            model.struckAt = nil
             model.backdrop = nil
         }
+        if state == .transcribing, model.isRecording { model.struckAt = Date() }
         model.state = state
         resample()
         model.copied = false

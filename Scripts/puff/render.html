@@ -7,17 +7,17 @@
 const P = new URLSearchParams(location.search);
 const num = (k, d) => P.has(k) ? parseFloat(P.get(k)) : d;
 const SIZE = num('size', 1000), EXP = num('exp', 0.9), TRAIL = num('trail', 1.0),
-      FLOW = num('flow', 0.6), TIME = num('time', 120),
+      FLOW = num('flow', 0.6), TIME = num('time', 120), STRIKE = num('strike', -1),
       CX = num('cx', 660), CY = num('cy', 410);
 const gl = document.getElementById('c').getContext('webgl2', {preserveDrawingBuffer:true, alpha:true});
 const FRAG = `#version 300 es
 precision highp float;
 ${PUFF_GLSL}
 uniform vec2 uCentre; uniform float uSize; uniform float uTime;
-uniform float uExpansion; uniform float uTrail; uniform float uFlow; uniform vec4 uTint;
+uniform float uExpansion; uniform float uTrail; uniform float uFlow; uniform float uStrike; uniform vec4 uTint;
 out vec4 fragColor;
 void main(){ vec2 p = gl_FragCoord.xy - uCentre; p.y = -p.y;
-  fragColor = render(p + 0.5*vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, uTint); }`;
+  fragColor = render(p + 0.5*vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, uStrike, uTint); }`;
 const VERT = `#version 300 es
 in vec2 aPos; void main(){ gl_Position = vec4(aPos,0.0,1.0); }`;
 function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
@@ -33,7 +33,7 @@ const U=n=>gl.getUniformLocation(pr,n);
 gl.viewport(0,0,1320,820);
 gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
 gl.uniform2f(U('uCentre'),CX,CY); gl.uniform1f(U('uSize'),SIZE); gl.uniform1f(U('uTime'),TIME);
-gl.uniform1f(U('uExpansion'),EXP); gl.uniform1f(U('uTrail'),TRAIL); gl.uniform1f(U('uFlow'),FLOW);
+gl.uniform1f(U('uExpansion'),EXP); gl.uniform1f(U('uTrail'),TRAIL); gl.uniform1f(U('uFlow'),FLOW); gl.uniform1f(U('uStrike'),STRIKE);
 gl.uniform4f(U('uTint'),1,1,1,1);
 gl.drawArrays(gl.TRIANGLES,0,3);
 document.getElementById('c').toBlob(b=>{

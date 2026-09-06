@@ -31,6 +31,9 @@ final class OverlayModel {
     var shownAt: Date?
     /// When the cloud started to puff out, or nil while it is still wanted.
     var departedAt: Date?
+    /// When lightning last struck the cloud: as the dictation ended and
+    /// transcription began.
+    var struckAt: Date?
     /// What is under the cloud, when the screen has been sampled. Nil falls
     /// back to the appearance.
     var backdrop: ScreenSampler.Backdrop?
