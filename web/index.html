@@ -176,7 +176,7 @@ out vec4 fragColor;
 void main() {
   vec2 p = gl_FragCoord.xy - uCentre;
   p.y = -p.y;
-  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, uTint);
+  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uTint);
 }
 `;
 
