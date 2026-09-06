@@ -3,21 +3,24 @@ import FoundationModels
 
 /// Runs the cases in cases.json through the on-device model with the prompt
 /// template pulled from PostProcessor.swift, and prints each result against
-/// the expected text. `expected` is one string or a list of acceptable ones, for
-/// wordings that are all fine. The comparison ignores case and punctuation so a
-/// comma for a full stop does not fail a case; word changes do. An optional
-/// argument names another PostProcessor.swift to read the template from.
+/// the expected text, or any entry in `alsoAccepted`, each of which says why it
+/// is fine too. The comparison ignores case and punctuation so a comma for a
+/// full stop does not fail a case; word changes do. An optional argument names
+/// another PostProcessor.swift to read the template from.
 @Generable struct CleanedTranscript: Sendable { let cleanedText: String }
 
 struct Case: Decodable {
     let input: String
+    /// The cleaned text wanted; `alsoAccepted` lists other outputs that count, each with why.
     let expected: [String]
+    struct Variant: Decodable { let why: String; let text: String }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         input = try c.decode(String.self, forKey: .input)
-        if let list = try? c.decode([String].self, forKey: .expected) { expected = list } else { expected = [try c.decode(String.self, forKey: .expected)] }
+        let also = try c.decodeIfPresent([Variant].self, forKey: .alsoAccepted) ?? []
+        expected = [try c.decode(String.self, forKey: .expected)] + also.map(\.text)
     }
-    enum CodingKeys: CodingKey { case input, expected }
+    enum CodingKeys: CodingKey { case input, expected, alsoAccepted }
 }
 
 @main struct Eval {

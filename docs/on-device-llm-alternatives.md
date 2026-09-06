@@ -173,8 +173,10 @@ Formatting. The long dictations ran with an added rule asking for a lead-in
 ending in a colon, counted items as a numbered list, and a blank line between
 topics. Two of the five are 243 and 256 words with four and six topic changes.
 A layout passes when the paragraph count, the first two words of each paragraph
-and the number of numbered lines match an accepted layout, and at least 90
-percent of the expected words are present; wording inside a paragraph is free.
+(leading fillers such as "and" ignored) and the number of numbered lines match
+an accepted layout, and at least 90 percent of the expected words are present;
+wording inside a paragraph is free. Where a case accepts more than one layout,
+the source says why.
 
 | Engine | Layouts | 58-word list | 243 words, 4 paragraphs | 256 words, 6 paragraphs |
 |---|---|---|---|---|

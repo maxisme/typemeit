@@ -25,9 +25,12 @@
   },
   {
     "input": "bonjour je voudrais un café s'il vous plaît",
-    "expected": [
-      "Bonjour, je voudrais un café s'il vous plaît.",
-      "Bonjour, je voudrais un cafe s'il vous plait."
+    "expected": "Bonjour, je voudrais un café s'il vous plaît.",
+    "alsoAccepted": [
+      {
+        "why": "accents stripped: café → cafe, plaît → plait",
+        "text": "Bonjour, je voudrais un cafe s'il vous plait."
+      }
     ]
   },
   {
@@ -36,9 +39,12 @@
   },
   {
     "input": "okay so three things for tomorrow first we need to finish the landing page second um call the accountant about the vat return and third book the train tickets for friday",
-    "expected": [
-      "Okay so three things for tomorrow. First we need to finish the landing page. Second, call the accountant about the VAT return. Third, book the train tickets for Friday.",
-      "Okay so three things for tomorrow. First we need to finish the landing page. Second, call the accountant about the VAT return. And third, book the train tickets for Friday."
+    "expected": "Okay so three things for tomorrow. First we need to finish the landing page. Second, call the accountant about the VAT return. Third, book the train tickets for Friday.",
+    "alsoAccepted": [
+      {
+        "why": "keeps the \"and\" the speaker said before the last item",
+        "text": "Okay so three things for tomorrow. First we need to finish the landing page. Second, call the accountant about the VAT return. And third, book the train tickets for Friday."
+      }
     ]
   }
 ]
