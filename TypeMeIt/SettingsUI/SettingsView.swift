@@ -45,7 +45,6 @@ struct SettingsView: View {
             .padding(10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(DesignTokens.Colors.paper)
-            .overlay(alignment: .trailing) { Rectangle().fill(DesignTokens.Colors.ink).frame(width: DesignTokens.hairline) }
             .toolbar(removing: .sidebarToggle)
             .navigationSplitViewColumnWidth(min: 150, ideal: 170, max: 220)
         } detail: {
