@@ -2,10 +2,10 @@ import AppKit
 import SwiftUI
 
 /// The recording indicator: a puff of smoke that grows from nothing at the
-/// bottom of the screen and swells with each syllable. It stays, pulsing
-/// slowly, while the dictation is transcribed and cleaned up, turning a
-/// little blue for the clean-up, then disperses. Lightning flashes behind
-/// it as the dictation ends.
+/// bottom of the screen and swells with each syllable. It stays, small and
+/// still with lightning flickering behind it once a second, while the
+/// dictation is transcribed and cleaned up, turning a little blue for the
+/// clean-up, then disperses.
 /// While pinned, a click on it finishes.
 struct CloudView: View {
     @Bindable var model: OverlayModel
@@ -25,7 +25,8 @@ struct CloudView: View {
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || !isProcessing)) { ctx in
             PuffView(level: level(at: ctx.date.timeIntervalSinceReferenceDate), tint: tint,
-                     arrival: model.shownAt, departure: model.departedAt, strike: model.struckAt)
+                     arrival: model.shownAt, departure: model.departedAt,
+                     strike: strike(at: ctx.date))
         }
         .animation(.easeInOut(duration: 0.2), value: model.backdrop)
         .frame(width: CloudView.size, height: CloudView.size)
@@ -56,11 +57,20 @@ struct CloudView: View {
         }
     }
 
-    /// The microphone level while recording; once it has stopped, a slow
-    /// pulse so the cloud visibly works while there is nothing to hear.
+    /// The microphone level while recording; once it has stopped, silence,
+    /// so the cloud settles to its small resting size.
     private func level(at t: TimeInterval) -> Float {
-        guard isProcessing else { return model.level }
-        return Float(0.3 + 0.3 * sin(t * 2 * .pi / 1.8))
+        isProcessing ? 0 : model.level
+    }
+
+    /// Lightning strikes as the dictation ends, then once a second for as
+    /// long as it is being processed. Each strike is a different one, since
+    /// the shader seeds its route from the time.
+    private func strike(at now: Date) -> Date? {
+        guard let struck = model.struckAt else { return nil }
+        guard isProcessing else { return struck }
+        let elapsed = now.timeIntervalSince(struck)
+        return struck.addingTimeInterval(max(0, floor(elapsed)))
     }
 
     /// The chosen colour, or white or dark grey against what is behind the
