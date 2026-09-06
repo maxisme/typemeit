@@ -20,8 +20,12 @@ struct SettingsView: View {
     var body: some View {
         NavigationSplitView {
             VStack(alignment: .leading, spacing: 2) {
+                // Drawn as a template so it follows the appearance: the mark's
+                // own ink is fixed at the time it is rendered.
                 Image(nsImage: MenuBarIconRenderer.mark(side: 40))
+                    .renderingMode(.template)
                     .resizable()
+                    .foregroundStyle(DesignTokens.Colors.ink)
                     .frame(width: 40, height: 40)
                     .padding(.leading, 6)
                     .padding(.bottom, 8)
