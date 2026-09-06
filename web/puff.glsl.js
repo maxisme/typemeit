@@ -346,9 +346,9 @@ vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, 
     // and thickens, while the dense lobes stay shaded as silhouettes, so
     // the flash reads as being behind a layer of cloud.
     vec3 electric = vec3(0.84, 0.9, 1.0);
-    float lit = bolt * mix(1.0, 0.25, saturate(f));
-    rgb = mix(rgb, electric, 0.75 * lit);
-    a += (1.0 - a) * 0.45 * lit;
+    float backlit = bolt * mix(1.0, 0.25, saturate(f));
+    rgb = mix(rgb, electric, 0.75 * backlit);
+    a += (1.0 - a) * 0.45 * backlit;
 
     return vec4(vec3(rgb * a), float(a));
 }

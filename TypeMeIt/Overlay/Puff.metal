@@ -356,9 +356,9 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
     // and thickens, while the dense lobes stay shaded as silhouettes, so
     // the flash reads as being behind a layer of cloud.
     float3 electric = float3(0.84, 0.9, 1.0);
-    float lit = bolt * mix(1.0, 0.25, saturate(f));
-    rgb = mix(rgb, electric, 0.75 * lit);
-    a += (1.0 - a) * 0.45 * lit;
+    float backlit = bolt * mix(1.0, 0.25, saturate(f));
+    rgb = mix(rgb, electric, 0.75 * backlit);
+    a += (1.0 - a) * 0.45 * backlit;
 
     return half4(half3(rgb * a), half(a));
 }
