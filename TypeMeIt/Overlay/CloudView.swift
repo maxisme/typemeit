@@ -25,7 +25,8 @@ struct CloudView: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || !isProcessing)) { ctx in
             PuffView(level: level(at: ctx.date.timeIntervalSinceReferenceDate), tint: tint,
                      arrival: model.shownAt, departure: model.departedAt,
-                     strike: strike(at: ctx.date), density: density(at: ctx.date))
+                     strike: strike(at: ctx.date), density: 1 + (CloudView.processingDensity - 1) * settled(at: ctx.date),
+                     settle: CloudView.processingSettle * settled(at: ctx.date))
         }
         .animation(.easeInOut(duration: 0.2), value: model.backdrop)
         .frame(width: CloudView.size, height: CloudView.size)
@@ -62,13 +63,14 @@ struct CloudView: View {
         isProcessing ? 0 : model.level
     }
 
-    /// Thickens over the first half second of processing, so the cloud
-    /// visibly sets while it works.
+    /// Over the first half second of processing the cloud settles: smaller
+    /// by this much expansion, and this much thicker.
+    static let processingSettle = 0.2
     static let processingDensity = 1.9
-    private func density(at now: Date) -> Double {
-        guard isProcessing, let struck = model.struckAt else { return 1 }
+    private func settled(at now: Date) -> Double {
+        guard isProcessing, let struck = model.struckAt else { return 0 }
         let p = min(max(now.timeIntervalSince(struck) / 0.5, 0), 1)
-        return 1 + (CloudView.processingDensity - 1) * p * p * (3 - 2 * p)
+        return p * p * (3 - 2 * p)
     }
 
     /// Lightning strikes as the dictation ends, then once a second for as

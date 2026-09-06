@@ -45,6 +45,9 @@ struct PuffView: View {
     var strike: Date? = nil
     /// Multiplies the amount of smoke; 1 is normal, more is thicker.
     var density: Double = 1
+    /// Taken off the expansion the level asks for, so the puff can settle
+    /// smaller than its rest. Only used with `level`.
+    var settle: Double = 0
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     @State private var dynamics = Dynamics()
@@ -97,7 +100,7 @@ struct PuffView: View {
                 let e = Dynamics.restExpansion(forLevel: Double(level))
                 return Frame(expansion: e, trail: e, flow: 0)
             }
-            return dynamics.step(level: Double(level), reaction: reaction, swell: swell(at: now), at: now)
+            return dynamics.step(level: Double(level), reaction: reaction, swell: swell(at: now) - settle, at: now)
         }
         if reduceMotion { return Frame(expansion: 0.7, trail: 0.7, flow: 0) }
         let e = breathFloor + (1 - breathFloor) * PuffView.breath(at: t + breathPhase * breathPeriod, period: breathPeriod)
