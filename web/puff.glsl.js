@@ -288,8 +288,9 @@ float lightning(vec2 uv, float R, float seed, float age) {
 //       and the whole fades. 1 is gone.
 // strike: the 'time' at which lightning last struck, or negative for none.
 //         The flash lasts a second; the value also seeds its route.
+// density: multiplies the amount of smoke; 1 is normal, more is thicker.
 // tint: colour of the smoke; alpha scales overall opacity.
-vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float disperse, float strike, vec4 tint) {
+vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, vec4 tint) {
     float scale = min(size.x, size.y);
     vec2 uv = (position - 0.5 * size) / scale;
     float e = saturate(expansion);
@@ -331,7 +332,7 @@ vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, 
     // Beer-Lambert style opacity: dense centre, soft translucent edges. The
     // body is as thin as its own size demands; the fragments as thin as the
     // size they were shed from.
-    float alpha = 1.0 - exp(-1.9 * (conserve(e) * body + conserve(tr) * left));
+    float alpha = 1.0 - exp(-1.9 * density * (conserve(e) * body + conserve(tr) * left));
     // A white or grey tint takes deep shadows; a coloured one is shaded
     // only lightly, since darkening a hue towards black reads as soot.
     float peak = max(tint.r, max(tint.g, tint.b));

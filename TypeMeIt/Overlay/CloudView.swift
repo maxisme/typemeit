@@ -2,9 +2,9 @@ import AppKit
 import SwiftUI
 
 /// The recording indicator: a puff of smoke that grows from nothing at the
-/// bottom of the screen and swells with each syllable. It stays, small and
-/// still with lightning flickering behind it once a second, while the
-/// dictation is transcribed and cleaned up, then disperses.
+/// bottom of the screen and swells with each syllable. It stays, small,
+/// still and thickened, with lightning flickering behind it once a second,
+/// while the dictation is transcribed and cleaned up, then disperses.
 /// While pinned, a click on it finishes.
 struct CloudView: View {
     @Bindable var model: OverlayModel
@@ -25,7 +25,7 @@ struct CloudView: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || !isProcessing)) { ctx in
             PuffView(level: level(at: ctx.date.timeIntervalSinceReferenceDate), tint: tint,
                      arrival: model.shownAt, departure: model.departedAt,
-                     strike: strike(at: ctx.date))
+                     strike: strike(at: ctx.date), density: density(at: ctx.date))
         }
         .animation(.easeInOut(duration: 0.2), value: model.backdrop)
         .frame(width: CloudView.size, height: CloudView.size)
@@ -60,6 +60,15 @@ struct CloudView: View {
     /// so the cloud settles to its small resting size.
     private func level(at t: TimeInterval) -> Float {
         isProcessing ? 0 : model.level
+    }
+
+    /// Thickens over the first half second of processing, so the cloud
+    /// visibly sets while it works.
+    static let processingDensity = 1.9
+    private func density(at now: Date) -> Double {
+        guard isProcessing, let struck = model.struckAt else { return 1 }
+        let p = min(max(now.timeIntervalSince(struck) / 0.5, 0), 1)
+        return 1 + (CloudView.processingDensity - 1) * p * p * (3 - 2 * p)
     }
 
     /// Lightning strikes as the dictation ends, then once a second for as

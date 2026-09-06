@@ -298,8 +298,9 @@ static float lightning(float2 uv, float R, float seed, float age) {
 //       and the whole fades. 1 is gone.
 // strike: the `time` at which lightning last struck, or negative for none.
 //         The flash lasts a second; the value also seeds its route.
+// density: multiplies the amount of smoke; 1 is normal, more is thicker.
 // tint: colour of the smoke; alpha scales overall opacity.
-static half4 render(float2 position, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, half4 tint) {
+static half4 render(float2 position, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint) {
     float scale = min(size.x, size.y);
     float2 uv = (position - 0.5 * size) / scale;
     float e = saturate(expansion);
@@ -341,7 +342,7 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
     // Beer-Lambert style opacity: dense centre, soft translucent edges. The
     // body is as thin as its own size demands; the fragments as thin as the
     // size they were shed from.
-    float alpha = 1.0 - exp(-1.9 * (conserve(e) * body + conserve(tr) * left));
+    float alpha = 1.0 - exp(-1.9 * density * (conserve(e) * body + conserve(tr) * left));
     // A white or grey tint takes deep shadows; a coloured one is shaded
     // only lightly, since darkening a hue towards black reads as soot.
     float peak = max(tint.r, max(tint.g, tint.b));
@@ -369,6 +370,6 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
 
 /// position, color: supplied by SwiftUI. The remaining arguments are
 /// documented on smoke::render.
-[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, half4 tint) {
-    return smoke::render(position, size, time, expansion, trail, flow, disperse, strike, tint);
+[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint) {
+    return smoke::render(position, size, time, expansion, trail, flow, disperse, strike, density, tint);
 }

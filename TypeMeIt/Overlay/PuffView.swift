@@ -43,6 +43,8 @@ struct PuffView: View {
     /// that lights the smoke from inside and a filament across it, over in
     /// about a second. Set it again for another strike.
     var strike: Date? = nil
+    /// Multiplies the amount of smoke; 1 is normal, more is thicker.
+    var density: Double = 1
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     @State private var dynamics = Dynamics()
@@ -65,6 +67,7 @@ struct PuffView: View {
                         .float(Float(s.flow)),
                         .float(Float(disperse(at: now))),
                         .float(Float(struck)),
+                        .float(Float(density)),
                         .color(tint)))
                 }
         }
@@ -73,7 +76,7 @@ struct PuffView: View {
     /// Compiles the shader ahead of its first frame, which otherwise stalls
     /// for a moment.
     static func compileShader() async throws {
-        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .float(0), .float(-1), .color(.white))
+        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .float(0), .float(-1), .float(1), .color(.white))
             .compile(as: .colorEffect)
     }
 
