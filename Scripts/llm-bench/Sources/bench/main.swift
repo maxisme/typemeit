@@ -14,7 +14,7 @@ func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, Str
     let sampler = Metrics.Sampler()
     let cpu0 = Metrics.processCPUSeconds(), m0 = Metrics.machineTicks()
     var results: [CaseResult] = [], long: [CaseResult] = []
-    for c in cases {
+    for c in cases where ProcessInfo.processInfo.environment["BENCH_LONG_ONLY"] == nil {
         let o = try await run(Cases.instructions, template.replacingOccurrences(of: "${output}", with: c.input))
         let ok = c.expected.contains { Cases.normalise(o.text) == Cases.normalise($0) }
         results.append(CaseResult(input: c.input, expected: c.expected, got: o.text, pass: ok, wallSeconds: o.promptSeconds + o.generateSeconds, promptTokens: o.promptTokens, outputTokens: o.outputTokens,
@@ -25,10 +25,10 @@ func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, Str
     for c in Cases.long {
         let s = c.input
         let o = try await run(Cases.instructions, templateFmt.replacingOccurrences(of: "${output}", with: s))
-        let ok = c.expected.contains { Cases.normaliseLayout(o.text) == Cases.normaliseLayout($0) }
+        let ok = c.expected.contains { Cases.layout(o.text) == Cases.layout($0) && Cases.wordRecall(expected: $0, got: o.text) >= 0.9 }
         long.append(CaseResult(input: s, expected: c.expected, got: o.text, pass: ok, wallSeconds: o.promptSeconds + o.generateSeconds, promptTokens: o.promptTokens, outputTokens: o.outputTokens,
                                promptTokensPerSecond: o.promptSeconds > 0 ? Double(o.promptTokens) / o.promptSeconds : 0, generationTokensPerSecond: o.generateSeconds > 0 ? Double(o.outputTokens) / o.generateSeconds : 0))
-        print("  \(ok ? "PASS" : "FAIL")  \(String(format: "%.2fs", o.promptSeconds + o.generateSeconds))  long: \(s.split(separator: " ").count) words in, \(o.text.split(separator: " ").count) out, \(o.text.contains("\n") ? "has line breaks" : "single block")")
+        print("  \(ok ? "PASS" : "FAIL")  \(String(format: "%.2fs", o.promptSeconds + o.generateSeconds))  long: \(s.split(separator: " ").count) words in, \(o.text.split(separator: " ").count) out, \(Cases.layout(o.text).paragraphStarts.count) paragraphs (want \(Cases.layout(c.expected[0]).paragraphStarts.count)), \(Cases.layout(o.text).numberedLines) numbered lines, recall \(Int(Cases.wordRecall(expected: c.expected[0], got: o.text) * 100))%")
         print("        " + o.text.replacingOccurrences(of: "\n", with: "\n        "))
     }
     let cpu1 = Metrics.processCPUSeconds(), m1 = Metrics.machineTicks()
@@ -42,8 +42,8 @@ func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, Str
         processCPUSeconds: ((cpu1 - cpu0) * 10).rounded() / 10,
         machineCPUBusyPercent: m1.total > m0.total ? (Double(m1.busy - m0.busy) / Double(m1.total - m0.total) * 1000).rounded() / 10 : 0,
         passed: "\(passed)/\(cases.count)", longPassed: "\(longPassed)/\(long.count)",
-        meanWallSeconds: (results.map(\.wallSeconds).reduce(0, +) / Double(results.count) * 100).rounded() / 100,
-        meanGenerationTokensPerSecond: (results.map(\.generationTokensPerSecond).reduce(0, +) / Double(results.count)).rounded(),
+        meanWallSeconds: results.isEmpty ? 0 : (results.map(\.wallSeconds).reduce(0, +) / Double(results.count) * 100).rounded() / 100,
+        meanGenerationTokensPerSecond: results.isEmpty ? 0 : (results.map(\.generationTokensPerSecond).reduce(0, +) / Double(results.count)).rounded(),
         longMeanWallSeconds: (long.map(\.wallSeconds).reduce(0, +) / Double(long.count) * 100).rounded() / 100)
     return Report(summary: summary, cases: results, long: long)
 }

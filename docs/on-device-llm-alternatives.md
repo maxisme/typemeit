@@ -171,25 +171,33 @@ What the failures are:
 
 Formatting. The long dictations ran with an added rule asking for a lead-in
 ending in a colon, counted items as a numbered list, and a blank line between
-topics. The target for the first one is:
+topics. Two of the five are 243 and 256 words with four and six topic changes.
+A layout passes when the paragraph count, the first two words of each paragraph
+and the number of numbered lines match an accepted layout, and at least 90
+percent of the expected words are present; wording inside a paragraph is free.
 
-```
-Okay so three things for tomorrow:
-1. We need to finish the landing page
-2. Call the accountant about the VAT return.
-3. Book the train tickets for Friday.
+| Engine | Layouts | 58-word list | 243 words, 4 paragraphs | 256 words, 6 paragraphs |
+|---|---|---|---|---|
+| Apple Intelligence | 0/5 | one block, 1.5 s | one block, 3.9 s | one block, 5.0 s |
+| Qwen3.5 2B | 0/5 | one block, 4.1 s | one block, 14.9 s | one block, 15.4 s |
+| Qwen3.5 4B | 3/5 | numbered list, 7.1 s | 3 paragraphs, 23.2 s | 5 paragraphs, 25.5 s |
+| Gemma 4 E2B | 0/5 | numbers inline, 4.9 s | one block, 18.2 s | one block, 18.7 s |
+| Gemma 4 E4B | 2/5 | numbered list, 7.6 s | one block, 24.0 s | one block, 25.3 s |
 
-Also separately, I was thinking about the pricing page. ...
-```
-
-Qwen3.5 4B and Gemma 4 E4B produce exactly that shape, and 4B also lays out the
-supplier notes as a numbered list with a separate paragraph for the change of
-contact. Both miss the third case only on wording. Apple Intelligence, Qwen3.5
-2B and Gemma 4 E2B return one block; E2B writes "1. 2. 3." inline in the sentence.
-On the 91-word dictation Apple Intelligence and Qwen3.5 2B return the transcript
+(The 84-word case counts as a pass for every engine because a single paragraph
+is one of its accepted layouts.) Qwen3.5 4B is the only engine that paragraphs a
+long dictation. Its breaks fall where a person would put them; the one miss in
+the 243-word text is joining "on a completely different note" to the paragraph
+before it. Gemma 4 E4B produces the numbered list but never a paragraph break.
+Apple Intelligence, Qwen3.5 2B and Gemma 4 E2B return one block at every
+length; on the 91-word dictation Apple and Qwen 2B return the transcript
 untouched, lower case and all, which looks like the output field being filled
-with the input when the model gives up. The 4B-class models pay for the layout
-with 7 to 11 seconds a dictation against Apple's 1.7.
+with the input when the model gives up.
+
+The price of paragraphs is time. Qwen3.5 4B takes 23 to 25 seconds for a
+250-word dictation on this M4 against Apple's 4 to 5, so it is only usable if
+the cleaned text streams into place or the app pastes the local clean-up first
+and replaces it when the model finishes.
 
 ## Recommendation
 
@@ -198,9 +206,11 @@ anything we could embed and costs no memory in our process, and its failures are
 dropped words in short transcripts that a prompt change may still fix.
 
 The measurements change one thing in the earlier advice: the model to try first
-is Qwen3.5 4B, with Gemma 4 E4B as the alternative. Those two are the only ones
-that lay out a long dictation, and 4B is the smaller file by 2.3 GB. The cost is
-3.3 GB resident while loaded and about ten seconds for a paragraph, so it belongs
+is Qwen3.5 4B, and there is no second choice. It is the only engine that
+paragraphs a long dictation, and Gemma 4 E4B, the only other one that manages a
+list, is 2.3 GB larger and no faster. The cost is
+3.2 GB resident while loaded and ten seconds a paragraph, 25 for a long
+dictation, so it belongs
 behind a setting, loaded on demand and unloaded on the `Fixed.modelUnloadIdle`
 timer, and used only above a length threshold where layout matters. On macOS 27
 run it through `MLXLanguageModel` rather than embedding llama.cpp; on macOS 26

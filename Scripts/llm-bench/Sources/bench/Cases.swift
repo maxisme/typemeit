@@ -64,12 +64,71 @@ enum Cases {
                 Oh and one more thing, the contact there is now Priya not Dan. Dan has moved to the sales team.
                 """,
              ]),
+        Case(input: "so i've been thinking about the onboarding flow and i want to write down where i've got to before i forget the main problem is that people drop off at the permissions step we ask for microphone accessibility and input monitoring all in one go and it's too much at once what i'd like to try is asking for the microphone first because that's the one people understand and then only asking for the other two the first time they actually try to dictate into another app that way the ask comes with a reason attached the second thing is the welcome screen it's got too much text nobody reads it i think we cut it down to one line and a single button and move everything else into the settings window where people can find it later on a completely different note i talked to james about the pricing and he thinks we should drop the monthly plan and just do a one off purchase with a year of updates his argument is that a dictation app isn't a subscription kind of product and i think he's probably right we'd need to change the website and the licence server so that's not a small job but worth doing before the launch and finally can someone check the crash reports from last week there were three from the same machine and i want to know if it's the audio device switching bug again",
+             expected: [
+                """
+                So I've been thinking about the onboarding flow and I want to write down where I've got to before I forget. The main problem is that people drop off at the permissions step. We ask for microphone, accessibility and input monitoring all in one go and it's too much at once. What I'd like to try is asking for the microphone first, because that's the one people understand, and then only asking for the other two the first time they actually try to dictate into another app. That way the ask comes with a reason attached.
+
+                The second thing is the welcome screen. It's got too much text, nobody reads it. I think we cut it down to one line and a single button and move everything else into the settings window where people can find it later.
+
+                On a completely different note, I talked to James about the pricing and he thinks we should drop the monthly plan and just do a one-off purchase with a year of updates. His argument is that a dictation app isn't a subscription kind of product and I think he's probably right. We'd need to change the website and the licence server so that's not a small job, but worth doing before the launch.
+
+                And finally, can someone check the crash reports from last week? There were three from the same machine and I want to know if it's the audio device switching bug again.
+                """,
+             ]),
+        Case(input: "hi everyone quick update from the week so on the transcription side we swapped the speech model over to the new version on tuesday and the word error rate on our test set went from about eight percent down to just under six which is a nice jump the main gain is on names and technical words the old model was terrible at anything it hadn't seen before latency is about the same maybe slightly worse on the older machines so we should keep an eye on that on the clean up side we've been going back and forth on the apple intelligence prompt it now fixes obvious mishearings which was the big complaint but it still drops words sometimes in short sentences and we haven't found a way to make it format longer dictations into paragraphs we tried four different approaches and none of them worked so we're now benchmarking a couple of open models that could run alongside it more on that next week the design side has been quiet the new settings window is in review and the cloud icon is done i think we're about a week away from being able to show it to people outside the team on the business side we had two calls with potential partners neither of them are a fit right now but both said to come back after the launch and lastly a reminder that i'm off thursday and friday so if you need anything from me get it in by wednesday afternoon thanks all",
+             expected: [
+                """
+                Hi everyone, quick update from the week.
+
+                So on the transcription side, we swapped the speech model over to the new version on Tuesday and the word error rate on our test set went from about 8% down to just under 6%, which is a nice jump. The main gain is on names and technical words. The old model was terrible at anything it hadn't seen before. Latency is about the same, maybe slightly worse on the older machines, so we should keep an eye on that.
+
+                On the clean up side, we've been going back and forth on the Apple Intelligence prompt. It now fixes obvious mishearings, which was the big complaint, but it still drops words sometimes in short sentences and we haven't found a way to make it format longer dictations into paragraphs. We tried four different approaches and none of them worked, so we're now benchmarking a couple of open models that could run alongside it. More on that next week.
+
+                The design side has been quiet. The new settings window is in review and the cloud icon is done. I think we're about a week away from being able to show it to people outside the team.
+
+                On the business side, we had two calls with potential partners. Neither of them are a fit right now but both said to come back after the launch.
+
+                And lastly, a reminder that I'm off Thursday and Friday, so if you need anything from me get it in by Wednesday afternoon. Thanks all.
+                """,
+                """
+                Hi everyone, quick update from the week. So on the transcription side, we swapped the speech model over to the new version on Tuesday and the word error rate on our test set went from about 8% down to just under 6%, which is a nice jump. The main gain is on names and technical words. The old model was terrible at anything it hadn't seen before. Latency is about the same, maybe slightly worse on the older machines, so we should keep an eye on that.
+
+                On the clean up side, we've been going back and forth on the Apple Intelligence prompt. It now fixes obvious mishearings, which was the big complaint, but it still drops words sometimes in short sentences and we haven't found a way to make it format longer dictations into paragraphs. We tried four different approaches and none of them worked, so we're now benchmarking a couple of open models that could run alongside it. More on that next week.
+
+                The design side has been quiet. The new settings window is in review and the cloud icon is done. I think we're about a week away from being able to show it to people outside the team.
+
+                On the business side, we had two calls with potential partners. Neither of them are a fit right now but both said to come back after the launch.
+
+                And lastly, a reminder that I'm off Thursday and Friday, so if you need anything from me get it in by Wednesday afternoon. Thanks all.
+                """,
+             ]),
     ]
 
-    /// Non-empty lines compared one by one, each with case and punctuation ignored.
-    /// Blank lines are dropped, so paragraph spacing is free but list lines must match.
-    static func normaliseLayout(_ s: String) -> [String] {
-        s.split(separator: "\n").map { normalise(String($0)) }.filter { !$0.isEmpty }
+    /// The shape of a layout: how many paragraphs, the first two words of each,
+    /// and how many numbered lines. Wording is free to drift; where the breaks
+    /// fall is not. A blank line before a numbered list does not count as a break.
+    struct Layout: Equatable { var paragraphStarts: [String]; var numberedLines: Int }
+
+    static func layout(_ s: String) -> Layout {
+        var starts: [String] = []
+        var numbered = 0
+        var atParagraphStart = true
+        for raw in s.split(separator: "\n", omittingEmptySubsequences: false) {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line.isEmpty { atParagraphStart = true; continue }
+            let isNumbered = line.first?.isNumber == true && (line.contains(". ") || line.hasSuffix("."))
+            if isNumbered { numbered += 1 }
+            if atParagraphStart, !isNumbered { starts.append(normalise(line).split(separator: " ").prefix(2).joined(separator: " ")) }
+            atParagraphStart = false
+        }
+        return Layout(paragraphStarts: starts, numberedLines: numbered)
+    }
+
+    /// Share of the expected words present in the output, to catch dropped content behind a good-looking layout.
+    static func wordRecall(expected: String, got: String) -> Double {
+        let e = Set(normalise(expected).split(separator: " ")), g = Set(normalise(got).split(separator: " "))
+        return e.isEmpty ? 0 : Double(e.intersection(g).count) / Double(e.count)
     }
 
     static func normalise(_ s: String) -> String {
