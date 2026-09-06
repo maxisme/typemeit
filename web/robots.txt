@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://typeme.it/sitemap.xml
