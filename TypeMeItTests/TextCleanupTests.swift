@@ -378,4 +378,24 @@ final class TextCleanupTests: XCTestCase {
         XCTAssertFalse(TextCleanup.soundex("pfister", "bfister"))
         XCTAssertFalse(TextCleanup.soundex("a", "e"))
     }
+
+    func testNormalizeCurrencyNumberWords() {
+        XCTAssertEqual(TextCleanup.normalizeCurrency("it costs about fifteen quid a month"), "it costs about £15 a month")
+        XCTAssertEqual(TextCleanup.normalizeCurrency("that will be twenty five dollars please"), "that will be $25 please")
+        XCTAssertEqual(TextCleanup.normalizeCurrency("twenty-five bucks"), "$25")
+        XCTAssertEqual(TextCleanup.normalizeCurrency("two hundred and fifty euros"), "€250")
+        XCTAssertEqual(TextCleanup.normalizeCurrency("three thousand pounds"), "£3000")
+    }
+
+    func testNormalizeCurrencyDigitsAndMinorUnits() {
+        XCTAssertEqual(TextCleanup.normalizeCurrency("20 bucks each"), "$20 each")
+        XCTAssertEqual(TextCleanup.normalizeCurrency("four pounds fifty a unit"), "£4.50 a unit")
+        XCTAssertEqual(TextCleanup.normalizeCurrency("a dollar fifty"), "a dollar fifty")
+    }
+
+    func testNormalizeCurrencyLeavesOtherText() {
+        XCTAssertEqual(TextCleanup.normalizeCurrency("fifty pounds of potatoes cost fifty pounds."), "£50 of potatoes cost £50.")
+        XCTAssertEqual(TextCleanup.normalizeCurrency("we need five more chairs"), "we need five more chairs")
+        XCTAssertEqual(TextCleanup.normalizeCurrency("pounds and dollars"), "pounds and dollars")
+    }
 }
