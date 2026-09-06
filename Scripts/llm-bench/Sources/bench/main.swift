@@ -6,16 +6,17 @@ let root = URL(fileURLWithPath: args[1])
 let outDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 let cases = try Cases.load(repoRoot: root)
 let template = try Cases.template(repoRoot: root)
+let instructions = try Cases.instructions(repoRoot: root)
 let templateFmt = Cases.withFormatting(template)
 
 func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, String) async throws -> LlamaEngine.Output) async throws -> Report {
-    _ = try await run(Cases.instructions, template.replacingOccurrences(of: "${output}", with: "warm up"))
+    _ = try await run(instructions, template.replacingOccurrences(of: "${output}", with: "warm up"))
     let residentAfterLoad = Metrics.residentSizeBytes()
     let sampler = Metrics.Sampler()
     let cpu0 = Metrics.processCPUSeconds(), m0 = Metrics.machineTicks()
     var results: [CaseResult] = [], long: [CaseResult] = []
     for c in cases where ProcessInfo.processInfo.environment["BENCH_LONG_ONLY"] == nil {
-        let o = try await run(Cases.instructions, template.replacingOccurrences(of: "${output}", with: c.input))
+        let o = try await run(instructions, template.replacingOccurrences(of: "${output}", with: TextCleanup.run(c.input, customWords: [], aliases: []).text))
         let ok = c.expected.contains { Cases.normalise(o.text) == Cases.normalise($0) }
         results.append(CaseResult(input: c.input, expected: c.expected, got: o.text, pass: ok, wallSeconds: o.promptSeconds + o.generateSeconds, promptTokens: o.promptTokens, outputTokens: o.outputTokens,
                                   promptTokensPerSecond: o.promptSeconds > 0 ? Double(o.promptTokens) / o.promptSeconds : 0, generationTokensPerSecond: o.generateSeconds > 0 ? Double(o.outputTokens) / o.generateSeconds : 0))
@@ -24,7 +25,7 @@ func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, Str
     }
     for c in Cases.long {
         let s = c.input
-        let o = try await run(Cases.instructions, templateFmt.replacingOccurrences(of: "${output}", with: s))
+        let o = try await run(instructions, templateFmt.replacingOccurrences(of: "${output}", with: TextCleanup.run(s, customWords: [], aliases: []).text))
         let ok = c.expected.contains { Cases.layout(o.text) == Cases.layout($0) && Cases.wordRecall(expected: $0, got: o.text) >= 0.9 }
         long.append(CaseResult(input: s, expected: c.expected, got: o.text, pass: ok, wallSeconds: o.promptSeconds + o.generateSeconds, promptTokens: o.promptTokens, outputTokens: o.outputTokens,
                                promptTokensPerSecond: o.promptSeconds > 0 ? Double(o.promptTokens) / o.promptSeconds : 0, generationTokensPerSecond: o.generateSeconds > 0 ? Double(o.outputTokens) / o.generateSeconds : 0))

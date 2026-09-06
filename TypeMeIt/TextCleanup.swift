@@ -25,7 +25,7 @@ enum TextCleanup {
         var dictionaryFixes: Int
     }
 
-    /// Full pipeline in TypeMeIt's order: custom words (with aliases) -> filler removal -> normalisation.
+    /// Full pipeline in TypeMeIt's order: custom words (with aliases) -> filler removal -> spoken money -> normalisation.
     static func run(
         _ text: String,
         customWords: [String],
@@ -35,7 +35,7 @@ enum TextCleanup {
         let corrected = applyCustomWords(
             text, customWords: customWords, aliases: aliases, threshold: threshold
         )
-        let filtered = removeFillerWords(corrected.text)
+        let filtered = normalizeCurrency(removeFillerWords(corrected.text))
         return Result(text: normalize(filtered), dictionaryFixes: corrected.fixes)
     }
 

@@ -46,5 +46,27 @@
         "text": "Okay so three things for tomorrow. First we need to finish the landing page. Second, call the accountant about the VAT return. And third, book the train tickets for Friday."
       }
     ]
+  },
+  {
+    "input": "can you send me the uh link to the doc",
+    "expected": "Can you send me the link to the doc?"
+  },
+  {
+    "input": "were meeting at there house at seven",
+    "expected": "We're meeting at their house at 7.",
+    "alsoAccepted": [
+      {
+        "text": "We're meeting at their house at seven.",
+        "why": "a spoken time need not become a digit"
+      },
+      {
+        "text": "We are meeting at their house at 7.",
+        "why": "the contraction may be written out"
+      },
+      {
+        "text": "We are meeting at their house at seven.",
+        "why": "both of the above"
+      }
+    ]
   }
 ]

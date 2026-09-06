@@ -19,7 +19,14 @@ struct Case: Decodable {
 }
 
 enum Cases {
-    static let instructions = "You clean up speech-to-text transcripts. Return only the cleaned transcript text."
+    /// The session instructions out of PostProcessor.swift.
+    static func instructions(repoRoot: URL) throws -> String {
+        let source = try String(contentsOf: repoRoot.appendingPathComponent("TypeMeIt/PostProcessor.swift"), encoding: .utf8)
+        let start = source.range(of: "static let instructions = \"\"\"\n")!.upperBound
+        let end = source.range(of: "\n    \"\"\"", range: start..<source.endIndex)!.lowerBound
+        return source[start..<end].split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.hasPrefix("    ") ? String($0.dropFirst(4)) : String($0) }.joined(separator: "\n")
+    }
 
     /// The formatting rule under test for long dictations. Not in the app's prompt.
     static let formattingRule = """

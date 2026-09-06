@@ -22,10 +22,17 @@ power, and what the current setup gives up. Written September 2026.
   and output. Our template is about 400 tokens, so a transcript above roughly
   1,500 words cannot be cleaned in one call. [Apple Developer Forums][ctx]
 
-With the mishearing rule added in September 2026 the model does turn "Alexa set
-time up for half an hour" into "Alexa set a timer for half an hour". It still
-drops words in some short transcripts and ignores every instruction about layout;
-see the measurements below.
+The shipped path scores 11 of 11 on `Scripts/cleanup-eval` as of September 2026.
+Three things got it there, and the benchmark table below shows the raw model
+without them: the rules live in the session instructions with only the tagged
+transcript in the prompt, which stopped the model dropping the opening words of
+sentences; spoken money is converted to a symbol and digits in `TextCleanup`
+before the model sees it, because no prompt wording made "fifteen pounds" into
+"£15" without breaking another case; and `PostProcessor.lostOpening` rejects an
+output whose first word is gone, falling back to the local text. The eval
+compiles the app's own `TextCleanup` and `PostProcessor`, so a prompt change is
+scored on exactly what ships. The model still ignores every instruction about
+layout; see the measurements below.
 
 ## What changes in macOS 27
 
@@ -144,6 +151,9 @@ from `PostProcessor.swift`, so these are the app's live instructions.
 | Gemma 4 E2B | 3.1 GB | 2.4 s | 3.3 GB | 8/9 | 0/3 | 1.7 s | 6.6 s | 21 |
 | Gemma 4 E4B | 5.0 GB | 3.5 s | 5.3 GB | 8/9 | 1/3 | 2.8 s | 10.5 s | 15 |
 
+The GGUF rows and the Apple row here run the raw model with the prompt of the
+day, without the app's local cleanup or output guards, so they compare models;
+the shipped Apple path with those in place is scored by `Scripts/cleanup-eval`.
 A case passes when the output matches any of its accepted wordings with case and
 punctuation ignored, so "cafe" for "café" and "and third" for "third" both count.
 The long layouts are compared line by line with blank lines dropped, so the list
