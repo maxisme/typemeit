@@ -265,7 +265,7 @@ vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, 
     float floor_ = mix(0.64, 0.86, saturation);
     float shade = mix(floor_, 1.0, lit) * mix(mix(0.88, 0.96, saturation), 1.0, saturate(f)) * (0.96 + 0.06 * grain);
 
-    float a = alpha * (1.0 - disperse) * (1.0 - disperse) * tint.a;
+    float a = float(alpha * (1.0 - disperse) * (1.0 - disperse)) * tint.a;
     return vec4(tint.rgb * float(shade) * a, a);
 }
 `;
