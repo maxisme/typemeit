@@ -28,6 +28,10 @@
 <style>
   :root { --paper: #0e0e0e; --ink: #f0f0f0; }
   html, body { margin: 0; height: 100%; background: var(--paper); overflow: hidden; }
+  /* Nothing on the page is text to copy: the puff is a canvas, the button's
+     label is off-screen, and the note and links are furniture. A drag across
+     them should do nothing rather than paint a selection over the puff. */
+  body { -webkit-user-select: none; user-select: none; }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
   #err {
     position: fixed; left: 16px; top: 16px; margin: 0; padding: 12px;
