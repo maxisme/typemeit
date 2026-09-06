@@ -171,12 +171,13 @@ uniform float uTime;
 uniform float uExpansion;
 uniform float uTrail;
 uniform float uFlow;
+uniform float uStrike;
 uniform vec4 uTint;
 out vec4 fragColor;
 void main() {
   vec2 p = gl_FragCoord.xy - uCentre;
   p.y = -p.y;
-  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uTint);
+  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uStrike, 1.0, uTint);
 }
 `;
 
@@ -208,7 +209,7 @@ class Trail {
  * and it breathes out between them, streaming smoke on each rise.
  */
 class Dynamics {
-  static attack = 0.012; static release = 0.22; static gain = 0.75; static rest = 0.44;
+  static attack = 0.012; static release = 0.22; static gain = 0.35; static rest = 0.44;
   env = 0; flow = 0; last = null; trail = new Trail(0.8);
   static restExpansion(level) { return Dynamics.rest + Dynamics.gain * Math.min(Math.max(level, 0), 1); }
   step(level, now) {
@@ -248,9 +249,12 @@ addEventListener("pointerdown", (ev) => {
   // A click on the puff itself flushes it red; a click on empty page toggles
   // the inversion. The links at the bottom do neither.
   const d = Math.hypot(ev.clientX - innerWidth / 2, ev.clientY - innerHeight / 2);
-  if (d < HOVER_RADIUS) blush = performance.now();
+  if (d < HOVER_RADIUS) { blush = performance.now(); strike = (performance.now() - start) / 1000; }
   else if (ev.target === canvas || ev.target === document.body) inverted = !inverted;
 });
+
+// A click on the puff also sends lightning through it, in the shader's clock.
+let strike = -1;
 
 // A click on the puff flushes it red, easing back over BLUSH seconds. A click
 // on empty page toggles the inversion outright: white paper, black cloud,
@@ -325,7 +329,7 @@ try {
   const aPos = gl.getAttribLocation(program, "aPos");
   gl.enableVertexAttribArray(aPos);
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uTint"]
+  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uStrike", "uTint"]
     .map((n) => [n, gl.getUniformLocation(program, n)]));
 } catch (e) {
   err.textContent = String(e.message || e);
@@ -373,6 +377,7 @@ function frame(nowMs) {
   gl.uniform1f(uniforms.uExpansion, s.expansion);
   gl.uniform1f(uniforms.uTrail, s.trail);
   gl.uniform1f(uniforms.uFlow, s.flow);
+  gl.uniform1f(uniforms.uStrike, reduceMotion ? -1 : strike);
   const [tr, tg, tb] = tint(nowMs);
   gl.uniform4f(uniforms.uTint, tr, tg, tb, 1);
   gl.drawArrays(gl.TRIANGLES, 0, 3);

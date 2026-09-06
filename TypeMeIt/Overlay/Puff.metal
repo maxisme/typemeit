@@ -127,9 +127,9 @@ static float shape(float2 uv, float time, float e, float disperse) {
         float stray = snoise(float3(k * 3.7 + 11.0, k * 1.9 + 5.0, time * 0.06));
         float strayed = smoothstep(0.35, 0.8, stray);
         float reach = R * (0.55 + 0.38 * strayed + 0.06 * sin(time * 0.43 + k * 2.3));
-        reach *= 1.0 + 1.4 * disperse;
+        reach *= 1.0 + 0.3 * disperse;
         float2 c = reach * float2(cos(ang), sin(ang));
-        float r = R * (0.42 - 0.14 * strayed + 0.06 * sin(time * 0.37 + k * 0.9)) * (1.0 + 0.6 * disperse);
+        float r = R * (0.42 - 0.14 * strayed + 0.06 * sin(time * 0.37 + k * 0.9)) * (1.0 + 0.15 * disperse);
         float2 q = uv - c;
         mass += w * exp(-dot(q, q) / (r * r * 0.40));
     }
@@ -189,14 +189,16 @@ static float field(float2 uv, float time, float e, float n, float disperse) {
     float mass = shape(uv, time, e, disperse) + 0.42 * (1.0 - disperse) * exp(-1.1 * d2);
 
     // Noise bites hardest where the mass is thin, so the rim is carved into
-    // wisps while the centre stays solid.
+    // wisps while the centre stays solid. As the puff disperses the noise
+    // bites everywhere, so the body breaks up into wisps and only the
+    // densest threads are left.
     float thin = 1.0 - saturate(mass);
-    float density = mass * (1.0 - (0.38 + 0.55 * thin) * (1.0 - n));
+    float density = mass * (1.0 - (0.38 + 0.55 * thin + 0.7 * disperse) * (1.0 - n));
 
     // Radial falloff: dense middle, thin edge.
-    density *= exp(-1.1 * d2 / (1.0 + 2.0 * disperse));
+    density *= exp(-1.1 * d2 / (1.0 + 1.0 * disperse));
 
-    return max(0.0, density - 0.12);
+    return max(0.0, density - 0.12 - 0.2 * disperse);
 }
 
 // Fragments left behind when the puff retracts: the body's own density as it
@@ -222,6 +224,72 @@ static float conserve(float e) {
     return clamp(pow(radius(0.35) / radius(e), 2.0), 0.12, 3.0);
 }
 
+// MARK: Lightning
+
+static float hash11(float p) { return fract(sin(p * 127.1 + 311.7) * 43758.5453); }
+
+static float segmentDistance(float2 p, float2 a, float2 b) {
+    float2 pa = p - a;
+    float2 ba = b - a;
+    float h = saturate(dot(pa, ba) / dot(ba, ba));
+    return length(pa - ba * h);
+}
+
+// The `k`th of `n` corners of a jagged path from `a` to `b`: the straight
+// line between them, each corner knocked sideways by up to `wander`, most in
+// the middle and not at all at the ends, so the path stays where it was
+// aimed. Seeded by `seed`, so every strike takes a different route.
+static float2 boltCorner(float seed, float2 a, float2 b, float wander, int n, int k) {
+    float t = float(k) / float(n);
+    float2 off = float2(hash11(seed + float(k) * 7.3) - 0.5, 0.5 * (hash11(seed + float(k) * 3.1 + 50.0) - 0.5));
+    return mix(a, b, t) + wander * sin(3.14159 * t) * off;
+}
+
+// Distance from `uv` to that path.
+static float boltDistance(float2 uv, float seed, float2 a, float2 b, float wander, int n) {
+    float d = 1e9;
+    float2 p = boltCorner(seed, a, b, wander, n, 0);
+    for (int i = 1; i <= n; i++) {
+        float2 q = boltCorner(seed, a, b, wander, n, i);
+        d = min(d, segmentDistance(uv, p, q));
+        p = q;
+    }
+    return d;
+}
+
+// Lightning behind the puff, struck `age` seconds ago: the light thrown
+// forward through the smoke by a jagged channel with one branch, 0...1. The
+// channel itself is never drawn; only its broad glow is, so it reads as a
+// flash behind a layer of cloud. Carries the envelope: an instant flash, two
+// dimmer re-strikes down the same channel, then a fade gone within a second.
+static float lightning(float2 uv, float R, float seed, float age) {
+    if (age < 0.0 || age > 1.0) { return 0.0; }
+    float env = 0.0;
+    env += step(0.0, age) * exp(-age * 14.0);
+    env += 0.5 * step(0.1, age) * exp(-(age - 0.1) * 14.0);
+    env += 0.3 * step(0.22, age) * exp(-(age - 0.22) * 12.0);
+    env += 0.08 * exp(-age * 4.0) * (1.0 - age);
+    if (env < 0.003) { return 0.0; }
+
+    // Main channel down through the body of the cloud.
+    float2 a = float2((hash11(seed) - 0.5) * 0.7 * R, -0.72 * R);
+    float2 b = float2((hash11(seed + 1.0) - 0.5) * 0.7 * R, 0.72 * R);
+    float wander = 0.55 * R;
+    float d = boltDistance(uv, seed, a, b, wander, 7);
+
+    // A branch peels off partway down and heads out sideways, not as far.
+    int fork = 2 + int(hash11(seed + 9.0) * 3.0);
+    float2 c = boltCorner(seed, a, b, wander, 7, fork);
+    float side = hash11(seed + 21.0) < 0.5 ? -1.0 : 1.0;
+    float2 e = c + float2(side * 0.42 * R, 0.3 * R);
+    float db = boltDistance(uv, seed + 77.0, c, e, 0.2 * R, 3);
+    d = min(d, db + 0.05 * R);
+
+    // A bright core of light around the channel, blurred wide by the smoke.
+    float glow = 0.7 * exp(-(d * d) / (0.05 * R * R)) + 0.35 * exp(-d / (0.22 * R));
+    return env * saturate(glow);
+}
+
 // Colour of the puff at `position` in a view of `size`, premultiplied.
 // expansion: 0 = fully retracted wisp, 1 = fully expanded cloud.
 // trail: the expansion the puff is retreating from, >= expansion. Fragments
@@ -230,8 +298,11 @@ static float conserve(float e) {
 //       Increase it to stream smoke outwards, hold it to let it hang.
 // disperse: 0...1, the puff blowing apart: lobes ride outwards and thin,
 //       and the whole fades. 1 is gone.
+// strike: the `time` at which lightning last struck, or negative for none.
+//         The flash lasts a second; the value also seeds its route.
+// density: multiplies the amount of smoke; 1 is normal, more is thicker.
 // tint: colour of the smoke; alpha scales overall opacity.
-static half4 render(float2 position, float2 size, float time, float expansion, float trail, float flow, float disperse, half4 tint) {
+static half4 render(float2 position, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint) {
     float scale = min(size.x, size.y);
     float2 uv = (position - 0.5 * size) / scale;
     float e = saturate(expansion);
@@ -239,7 +310,7 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
 
     // Beyond 1.6 radii the density floor has removed everything, so skip the
     // noise there; most of the view is this cheap.
-    float reach = 1.6 * (1.0 + 1.4 * disperse);
+    float reach = 1.6 * (1.0 + 0.3 * disperse);
     if (dot(uv, uv) > reach * reach * radius(tr) * radius(tr)) { return half4(0.0); }
 
     // The noise is scaled by a fixed mid radius, not the current one, so a
@@ -248,7 +319,13 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
     float body = field(uv, time, e, n, disperse);
     float left = orphans(uv, time, e, tr, n);
     float f = body + left;
+
+    // `time` wraps hourly in the app, so a strike just before the wrap is
+    // still young just after it.
+    float age = time - strike;
+    if (age < -1800.0) { age += 3600.0; }
     if (f <= 0.0) { return half4(0.0); }
+    float bolt = strike < 0.0 ? 0.0 : lightning(uv, radius(e), strike, age);
 
     // Light the coarse shape from the upper left: each lobe gets a bright
     // top and a shadowed underside, and the fine carving stays unlit so it
@@ -267,7 +344,7 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
     // Beer-Lambert style opacity: dense centre, soft translucent edges. The
     // body is as thin as its own size demands; the fragments as thin as the
     // size they were shed from.
-    float alpha = 1.0 - exp(-1.9 * (conserve(e) * body + conserve(tr) * left));
+    float alpha = 1.0 - exp(-1.9 * density * (conserve(e) * body + conserve(tr) * left));
     // A white or grey tint takes deep shadows; a coloured one is shaded
     // only lightly, since darkening a hue towards black reads as soot.
     float peak = max(tint.r, max(tint.g, tint.b));
@@ -275,14 +352,26 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
     float floor_ = mix(0.64, 0.86, saturation);
     float shade = mix(floor_, 1.0, lit) * mix(mix(0.88, 0.96, saturation), 1.0, saturate(f)) * (0.96 + 0.06 * grain);
 
-    half a = half(alpha * (1.0 - disperse) * (1.0 - disperse)) * tint.a;
-    return half4(tint.rgb * half(shade) * a, a);
+    float a = alpha * (1.0 - disperse) * tint.a;
+    float3 rgb = float3(tint.rgb) * shade;
+
+    // The light comes from behind: the thin haze in front of it whitens
+    // and thickens, while the dense lobes stay shaded as silhouettes, so
+    // the flash reads as being behind a layer of cloud.
+    float3 electric = float3(0.84, 0.9, 1.0);
+    float backlit = bolt * mix(1.0, 0.25, saturate(f));
+    rgb = mix(rgb, electric, 0.75 * backlit);
+    // Only smoke that is already there brightens; the density floor's edge
+    // must not show as a cut-out.
+    a += (1.0 - a) * 0.5 * backlit * saturate(alpha * 4.0);
+
+    return half4(half3(rgb * a), half(a));
 }
 
 } // namespace smoke
 
 /// position, color: supplied by SwiftUI. The remaining arguments are
 /// documented on smoke::render.
-[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, half4 tint) {
-    return smoke::render(position, size, time, expansion, trail, flow, disperse, tint);
+[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint) {
+    return smoke::render(position, size, time, expansion, trail, flow, disperse, strike, density, tint);
 }

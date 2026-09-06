@@ -64,8 +64,11 @@ final class OverlayPanel {
             model.level = 0
             model.shownAt = Date()
             model.departedAt = nil
+            model.struckAt = nil
             model.backdrop = nil
         }
+        // Lightning on the pin, and again as the dictation ends.
+        if state == .pinned || (state == .transcribing && model.isRecording) { model.struckAt = Date() }
         model.state = state
         resample()
         model.copied = false
@@ -84,12 +87,11 @@ final class OverlayPanel {
         sampling?.cancel()
         sampling = nil
         guard panel.isVisible else { model.state = .hidden; return }
-        // The cloud disperses, fading itself out in the shader; the panel
-        // only follows so it is fully clear by the end. The pill just fades.
-        let dispersing = model.presentation == .cloud
-        if dispersing, model.departedAt == nil { model.departedAt = Date() }
+        // The cloud draws in a little as it fades. The pill just fades.
+        let shrinking = model.presentation == .cloud
+        if shrinking, model.departedAt == nil { model.departedAt = Date() }
         NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = dispersing ? PuffView.departureDuration : 0.24
+            ctx.duration = shrinking ? PuffView.departureDuration : 0.24
             ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
             panel.animator().alphaValue = 0
         }, completionHandler: { [weak self] in

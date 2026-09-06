@@ -20,8 +20,12 @@ struct SettingsView: View {
     var body: some View {
         NavigationSplitView {
             VStack(alignment: .leading, spacing: 2) {
+                // Drawn as a template so it follows the appearance: the mark's
+                // own ink is fixed at the time it is rendered.
                 Image(nsImage: MenuBarIconRenderer.mark(side: 40))
+                    .renderingMode(.template)
                     .resizable()
+                    .foregroundStyle(DesignTokens.Colors.ink)
                     .frame(width: 40, height: 40)
                     .padding(.leading, 6)
                     .padding(.bottom, 8)
@@ -32,10 +36,10 @@ struct SettingsView: View {
                             Image(t.icon).resizable().frame(width: 14, height: 14)
                             Text(t.rawValue).font(DesignTokens.Fonts.ui.monospaced().weight(.semibold))
                         }
-                            .foregroundStyle(on ? DesignTokens.Colors.ink : DesignTokens.Colors.ink2)
+                            .foregroundStyle(on ? DesignTokens.Colors.onSlab : DesignTokens.Colors.ink2)
                             .padding(.horizontal, 10)
                             .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
-                            .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).fill(on ? DesignTokens.Colors.inkA08 : Color.clear))
+                            .background(Rectangle().fill(on ? DesignTokens.Colors.slab : Color.clear))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -43,6 +47,9 @@ struct SettingsView: View {
                 Spacer()
             }
             .padding(10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(DesignTokens.Colors.paper)
+            .toolbar(removing: .sidebarToggle)
             .navigationSplitViewColumnWidth(min: 150, ideal: 170, max: 220)
         } detail: {
             Group {

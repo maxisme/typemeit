@@ -31,7 +31,7 @@ struct HistoryTab: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                LazyVStack(alignment: .leading, spacing: 18) {
                     HStack(spacing: 8) {
                         HStack(spacing: 6) {
                             Image("akar-search").resizable().frame(width: 13, height: 13).foregroundStyle(DesignTokens.Colors.ink3)
@@ -59,8 +59,10 @@ struct HistoryTab: View {
                     }
                     ForEach(groups, id: \.title) { group in
                         SettingsGroup(title: group.title) {
-                            ForEach(Array(group.entries.enumerated()), id: \.element.id) { i, e in
-                                row(e, last: i == group.entries.count - 1)
+                            LazyVStack(spacing: 0) {
+                                ForEach(Array(group.entries.enumerated()), id: \.element.id) { i, e in
+                                    row(e, last: i == group.entries.count - 1)
+                                }
                             }
                         }
                     }
@@ -149,7 +151,6 @@ struct HistoryTab: View {
         .foregroundStyle(DesignTokens.Colors.ink2)
         .padding(.horizontal, 7).padding(.vertical, 3)
         .background(Rectangle().fill(DesignTokens.Colors.inkA04))
-        .textSelection(.enabled)
     }
 
     private func stat(_ key: String, _ value: String) -> some View {

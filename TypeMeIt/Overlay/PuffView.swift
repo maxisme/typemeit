@@ -34,11 +34,20 @@ struct PuffView: View {
     /// for, streaming its smoke outwards. Only used with `level`.
     var arrival: Date? = nil
     static let arrivalDuration = 0.5
-    /// When set, the puff departs: from this instant it disperses over
-    /// `departureDuration` seconds, its lobes blowing outwards and thinning
-    /// to nothing at its resting size. Only used with `level`.
+    /// When set, the puff departs: from this instant it draws in a little
+    /// over `departureDuration` seconds while whatever shows it fades it
+    /// out. Only used with `level`.
     var departure: Date? = nil
-    static let departureDuration = 0.5
+    static let departureDuration = 0.35
+    /// When set, lightning strikes through the puff at this instant: a flash
+    /// that lights the smoke from inside and a filament across it, over in
+    /// about a second. Set it again for another strike.
+    var strike: Date? = nil
+    /// Multiplies the amount of smoke; 1 is normal, more is thicker.
+    var density: Double = 1
+    /// Taken off the expansion the level asks for, so the puff can settle
+    /// smaller than its rest. Only used with `level`.
+    var settle: Double = 0
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     @State private var dynamics = Dynamics()
@@ -49,6 +58,8 @@ struct PuffView: View {
             let now = (frozenTime ?? ctx.date.timeIntervalSinceReferenceDate) + timeOffset
             let t = reduceMotion ? 0 : now.truncatingRemainder(dividingBy: 3600)
             let s = state(at: now)
+            // The shader's clock wraps hourly; the strike is given in it.
+            let struck = reduceMotion ? -1.0 : strike.map { ($0.timeIntervalSinceReferenceDate + timeOffset).truncatingRemainder(dividingBy: 3600) } ?? -1
             Color.white
                 .visualEffect { content, proxy in
                     content.colorEffect(ShaderLibrary.puff(
@@ -58,6 +69,8 @@ struct PuffView: View {
                         .float(Float(s.trail)),
                         .float(Float(s.flow)),
                         .float(Float(disperse(at: now))),
+                        .float(Float(struck)),
+                        .float(Float(density)),
                         .color(tint)))
                 }
         }
@@ -66,7 +79,7 @@ struct PuffView: View {
     /// Compiles the shader ahead of its first frame, which otherwise stalls
     /// for a moment.
     static func compileShader() async throws {
-        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .float(0), .color(.white))
+        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .float(0), .float(-1), .float(1), .color(.white))
             .compile(as: .colorEffect)
     }
 
@@ -87,7 +100,7 @@ struct PuffView: View {
                 let e = Dynamics.restExpansion(forLevel: Double(level))
                 return Frame(expansion: e, trail: e, flow: 0)
             }
-            return dynamics.step(level: Double(level), reaction: reaction, swell: swell(at: now), at: now)
+            return dynamics.step(level: Double(level), reaction: reaction, swell: swell(at: now) - settle, at: now)
         }
         if reduceMotion { return Frame(expansion: 0.7, trail: 0.7, flow: 0) }
         let e = breathFloor + (1 - breathFloor) * PuffView.breath(at: t + breathPhase * breathPeriod, period: breathPeriod)
@@ -97,17 +110,20 @@ struct PuffView: View {
     /// Expansion added for the arrival: negative while the puff grows in
     /// from a wisp.
     private func swell(at now: TimeInterval) -> Double {
-        guard let arrival else { return 0 }
         let rest = Dynamics.restExpansion(forLevel: 0)
-        return -(rest - 0.05) * (1 - PuffView.progress(since: arrival, over: PuffView.arrivalDuration, at: now))
+        var swell = 0.0
+        if let arrival {
+            swell -= (rest - 0.05) * (1 - PuffView.progress(since: arrival, over: PuffView.arrivalDuration, at: now))
+        }
+        if let departure {
+            swell -= 0.12 * PuffView.progress(since: departure, over: PuffView.departureDuration, at: now)
+        }
+        return swell
     }
 
     /// How far the departure has run, 0...1; the shader blows the puff apart
     /// by this much.
-    private func disperse(at now: TimeInterval) -> Double {
-        guard let departure, !reduceMotion else { return 0 }
-        return PuffView.progress(since: departure, over: PuffView.departureDuration, at: now)
-    }
+    private func disperse(at now: TimeInterval) -> Double { 0 }
 
     /// Smoothstepped 0...1 progress of a transition begun at `start`.
     private static func progress(since start: Date, over duration: Double, at now: TimeInterval) -> Double {
@@ -156,7 +172,7 @@ struct PuffView: View {
     final class Dynamics {
         static let attack = 0.012
         static let release = 0.22
-        static let gain = 0.75
+        static let gain = 0.35
         static let rest = 0.44
 
         private var env = 0.0
