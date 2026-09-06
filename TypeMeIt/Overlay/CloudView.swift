@@ -4,8 +4,7 @@ import SwiftUI
 /// The recording indicator: a puff of smoke that grows from nothing at the
 /// bottom of the screen and swells with each syllable. It stays, small and
 /// still with lightning flickering behind it once a second, while the
-/// dictation is transcribed and cleaned up, turning a little blue for the
-/// clean-up, then disperses.
+/// dictation is transcribed and cleaned up, then disperses.
 /// While pinned, a click on it finishes.
 struct CloudView: View {
     @Bindable var model: OverlayModel
@@ -74,8 +73,7 @@ struct CloudView: View {
     }
 
     /// The chosen colour, or white or dark grey against what is behind the
-    /// cloud when that has been sampled, else with the appearance; leaning
-    /// a little towards green while the transcript is being cleaned up.
+    /// cloud when that has been sampled, else with the appearance.
     private var tint: Color {
         let settings = Settings.shared
         let light = switch model.backdrop {
@@ -84,8 +82,6 @@ struct CloudView: View {
         case nil: scheme == .dark
         }
         let base = settings.cloudColorEnabled ? settings.cloudColor.color : (light ? NSColor(white: 1, alpha: 1) : NSColor(white: 0.25, alpha: 1))
-        guard model.state == .cleaningUp else { return Color(nsColor: base) }
-        let green = light ? NSColor(srgbRed: 0.55, green: 0.85, blue: 0.62, alpha: 1) : NSColor(srgbRed: 0.18, green: 0.45, blue: 0.28, alpha: 1)
-        return Color(nsColor: base.blended(withFraction: 0.35, of: green) ?? base)
+        return Color(nsColor: base)
     }
 }

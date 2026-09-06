@@ -209,7 +209,7 @@ class Trail {
  * and it breathes out between them, streaming smoke on each rise.
  */
 class Dynamics {
-  static attack = 0.012; static release = 0.22; static gain = 0.5; static rest = 0.44;
+  static attack = 0.012; static release = 0.22; static gain = 0.35; static rest = 0.44;
   env = 0; flow = 0; last = null; trail = new Trail(0.8);
   static restExpansion(level) { return Dynamics.rest + Dynamics.gain * Math.min(Math.max(level, 0), 1); }
   step(level, now) {
