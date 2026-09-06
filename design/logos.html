@@ -1,0 +1,479 @@
+<title>Type Me It Wordmark Studies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+/* Tokens lifted verbatim from design/tokens.json. One ink, one paper, true
+   inversion for dark. No accent — the system has none, and a wordmark sheet
+   is the last place to invent one. */
+:root {
+  --paper: #ffffff;
+  --paper-sunk: #f7f7f7;
+  --ink: #0a0a0a;
+  --ink-2: #4a4a4a;
+  --ink-3: #6e6e6e;
+  --rule: #e4e4e4;
+  --rule-control: #949494;
+  --slab: #0a0a0a;
+  --on-slab: #ffffff;
+
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, "Segoe UI", sans-serif;
+
+  --r-sm: 5px;
+  --r-md: 7px;
+  --r-lg: 10px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b0b0b;
+    --paper-sunk: #060606;
+    --ink: #fafafa;
+    --ink-2: #b4b4b4;
+    --ink-3: #8a8a8a;
+    --rule: #262626;
+    --rule-control: #6e6e6e;
+    --slab: #fafafa;
+    --on-slab: #0b0b0b;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b0b0b;
+  --paper-sunk: #060606;
+  --ink: #fafafa;
+  --ink-2: #b4b4b4;
+  --ink-3: #8a8a8a;
+  --rule: #262626;
+  --rule-control: #6e6e6e;
+  --slab: #fafafa;
+  --on-slab: #0b0b0b;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+.sheet { max-width: 1080px; margin: 0 auto; padding: 56px 24px 96px; }
+@media (min-width: 768px) { .sheet { padding-left: 40px; padding-right: 40px; } }
+
+/* ---------------------------------------------------------------- masthead */
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+h1 {
+  font-family: var(--mono); font-weight: 400;
+  font-size: clamp(1.75rem, 3.5vw, 2.25rem); line-height: 1.1; letter-spacing: -0.02em;
+  margin: 0; text-wrap: balance;
+}
+h1 .dim { color: var(--ink-3); }
+.lede {
+  font-family: var(--mono); font-size: 0.8125rem; line-height: 1.6; color: var(--ink-2);
+  max-width: 58ch; margin: 20px 0 0;
+}
+.lede b { font-weight: 500; color: var(--ink); }
+.rule { height: 1px; background: var(--rule); border: 0; margin: 0; }
+.top-rule { margin-top: 40px; }
+
+button#theme {
+  font: 400 0.6875rem/1.3 var(--ui); letter-spacing: 0.085em; font-weight: 600;
+  color: var(--ink-2); background: transparent;
+  border: 1px solid var(--rule-control); border-radius: var(--r-md);
+  padding: 6px 10px; cursor: pointer; white-space: nowrap; flex: none;
+  transition: color 120ms var(--ease-out), border-color 120ms var(--ease-out);
+}
+button#theme:hover { color: var(--ink); border-color: var(--ink); }
+button#theme:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* ------------------------------------------------------------------ plates */
+.plates { display: grid; grid-template-columns: 1fr; }
+@media (min-width: 860px) { .plates { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 40px; } }
+
+.plate { border-top: 1px solid var(--rule); padding: 28px 0 32px; display: grid; gap: 20px; min-width: 0; }
+.head { display: grid; grid-template-columns: 2.4em 1fr; gap: 0 12px; align-items: baseline; }
+.num {
+  font-family: var(--mono); font-size: 0.6875rem; font-weight: 500;
+  color: var(--ink-3); font-variant-numeric: tabular-nums; letter-spacing: 0.06em;
+}
+.name {
+  font-family: var(--ui); font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.085em;
+  margin: 0; color: var(--ink);
+}
+.why {
+  grid-column: 2; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6;
+  color: var(--ink-3); margin: 6px 0 0; max-width: 46ch;
+}
+
+/* The stage is where the lockup is judged: plain paper, nothing else on it. */
+.stage {
+  background: var(--paper-sunk); border-radius: var(--r-lg);
+  min-height: 168px; padding: 28px 24px;
+  display: flex; align-items: center; justify-content: center;
+  overflow-x: auto;
+}
+
+/* The strip is the real test: menu-bar size, and inverted. Both at once. */
+.strip { display: flex; align-items: stretch; gap: 12px; flex-wrap: wrap; }
+.chip {
+  display: flex; align-items: center; gap: 10px;
+  border-radius: var(--r-md); padding: 10px 14px; min-height: 44px;
+}
+.chip--paper { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
+.chip--slab { background: var(--slab); color: var(--on-slab); }
+.chip-tag {
+  font: 600 0.625rem/1.3 var(--ui); letter-spacing: 0.085em;
+  color: var(--ink-3); align-self: center; margin-left: 2px;
+}
+
+/* ------------------------------------------------------------ the lockups */
+/* One class, one size knob. --s sets the wordmark; the puff is sized in em
+   off it, so every part of a lockup scales as one object. */
+.lk { --s: 30px; font-family: var(--mono); font-weight: 400; color: inherit; }
+.puff { display: block; height: 1.5em; width: auto; flex: none; }
+.puff--h { height: 1.62em; }
+.word { font-size: var(--s); line-height: 1; letter-spacing: -0.025em; white-space: nowrap; }
+
+/* 01 wisp — mark, one lobe of air, name */
+.lk-wisp { display: flex; align-items: center; gap: 0.42em; font-size: var(--s); }
+.lk-wisp .word { font-size: 1em; }
+
+/* 02 stack */
+.lk-stack { display: flex; align-items: center; gap: 0.5em; font-size: var(--s); }
+.lk-stack .puff { height: 3.1em; }
+.lk-stack .word { font-size: 1em; line-height: 0.98; letter-spacing: -0.035em; }
+.lk-stack .word span { display: block; }
+
+/* 03 slab */
+.lk-slab { display: flex; align-items: center; gap: 0.42em; font-size: var(--s); }
+.lk-slab .slabbox {
+  background: currentColor; border-radius: var(--r-md);
+  padding: 0.22em 0.34em 0.28em;
+}
+.lk-slab .word { font-size: 1em; color: var(--paper); mix-blend-mode: normal; }
+.chip--slab .lk-slab .word { color: var(--slab); }
+
+/* 04 exhale — name first, mark trailing */
+.lk-exhale { display: flex; align-items: center; gap: 0.42em; font-size: var(--s); }
+
+/* 05 full stop — the puff is the period */
+.lk-stop { display: flex; align-items: flex-end; gap: 0.1em; font-size: var(--s); }
+.lk-stop .puff { height: 0.62em; position: relative; top: -0.02em; }
+
+/* 06 plate — mark over a tracked-out name */
+.lk-plate { display: grid; justify-items: center; gap: 0.62em; font-size: var(--s); }
+.lk-plate .puff { height: 2.3em; }
+.lk-plate .word {
+  font-size: 0.42em; letter-spacing: 0.42em; margin-right: -0.42em; font-weight: 500;
+}
+
+/* 07 keycap — the name in the curve the app draws for fn */
+.lk-cap { display: flex; align-items: center; gap: 0.42em; font-size: var(--s); }
+.lk-cap .cap {
+  border: 1px solid var(--rule-control); border-bottom-width: 2px;
+  border-radius: var(--r-sm); padding: 0.2em 0.4em 0.24em; line-height: 1;
+}
+.lk-cap .word { font-size: 0.72em; }
+
+/* 08 trail — a wisp growing into a cloud, then the name */
+.lk-trail { display: flex; align-items: center; gap: 0.2em; font-size: var(--s); }
+.lk-trail .puff { opacity: 1; }
+.lk-trail .p1 { height: 0.52em; }
+.lk-trail .p2 { height: 0.9em; }
+.lk-trail .p3 { height: 1.5em; }
+.lk-trail .word { margin-left: 0.3em; }
+
+/* 09 emphasis — italic on the one word that means it is yours */
+.lk-em { display: flex; align-items: center; gap: 0.42em; font-size: var(--s); }
+.lk-em em { font-style: italic; font-weight: 400; }
+
+/* 10 masthead — hairlines above and below, lockup centred between */
+.lk-mast { display: grid; gap: 0.34em; font-size: var(--s); width: 100%; }
+.lk-mast .hair { height: 1px; background: currentColor; opacity: 0.32; }
+.lk-mast .row { display: flex; align-items: center; justify-content: center; gap: 0.5em; padding: 0.2em 0; }
+.lk-mast .word { font-size: 0.62em; letter-spacing: 0.22em; margin-right: -0.22em; }
+.lk-mast .puff { height: 1.1em; }
+
+/* ------------------------------------------------------------------ notes */
+.colophon {
+  border-top: 1px solid var(--rule); margin-top: 8px; padding-top: 28px;
+  font-family: var(--mono); font-size: 0.75rem; line-height: 1.7; color: var(--ink-3);
+  max-width: 62ch;
+}
+.colophon code { font-family: var(--mono); color: var(--ink-2); }
+</style>
+
+<!-- The mark itself, straight from TypeMeIt/Support/Icon/puff.svg. Two cuts:
+     the stroke-3 drawing for display sizes, and the stroke-5 favicon cut that
+     survives 16 px. Both are the same seven lobes. -->
+<svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="puff" viewBox="9 7 47 49" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/>
+    <path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/>
+    <path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/>
+    <path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/>
+    <path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/>
+  </symbol>
+  <symbol id="puff-h" viewBox="6.4 5.4 52 52" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/>
+    <path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/>
+    <path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/>
+    <path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/>
+    <path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/>
+  </symbol>
+</svg>
+
+<main class="sheet">
+
+  <div class="top">
+    <div>
+      <h1>wordmark studies <span class="dim">· round 1</span></h1>
+    </div>
+    <button type="button" id="theme" aria-live="polite">theme: auto</button>
+  </div>
+
+  <p class="lede">
+    ten ways to set the name beside the puff. every one is built from what the system
+    already owns — <b>one ink, one paper, dm mono set lowercase, hairlines, and the two
+    emphasis moves the system allows (invert, italic)</b>. nothing new is introduced: no
+    second face, no accent, no third weight.
+  </p>
+  <p class="lede">
+    each plate shows the lockup large, then the same lockup at <b>13 px on paper</b> and
+    <b>inverted on an ink slab</b> — menu bar size and dark hero, the two places a mark
+    for this app actually has to hold up.
+  </p>
+
+  <hr class="rule top-rule">
+
+  <div class="plates">
+
+    <!-- 01 ------------------------------------------------------------- -->
+    <section class="plate">
+      <div class="head">
+        <span class="num">01</span>
+        <h2 class="name">WISP</h2>
+        <p class="why">mark, air, name. the gap is one lobe wide, so the puff reads as the
+          first word of the line rather than an icon bolted to the front of it. the workhorse —
+          menu bar, readme, github social preview.</p>
+      </div>
+      <div class="stage">
+        <div class="lk lk-wisp"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+      </div>
+      <div class="strip">
+        <div class="chip chip--paper"><div class="lk lk-wisp" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+        <div class="chip chip--slab"><div class="lk lk-wisp" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+        <span class="chip-tag">13 PX · INVERTED</span>
+      </div>
+    </section>
+
+    <!-- 02 ------------------------------------------------------------- -->
+    <section class="plate">
+      <div class="head">
+        <span class="num">02</span>
+        <h2 class="name">STACK</h2>
+        <p class="why">three words, three lines, one puff sized to the whole block. the mark
+          is a pile of overlapping lobes; the name piles up the same way. squarest of the ten,
+          so it is the one that fits an app store tile or an avatar.</p>
+      </div>
+      <div class="stage">
+        <div class="lk lk-stack"><svg class="puff"><use href="#puff"/></svg><span class="word"><span>type</span><span>me</span><span>it</span></span></div>
+      </div>
+      <div class="strip">
+        <div class="chip chip--paper"><div class="lk lk-stack" style="--s:11px"><svg class="puff puff--h" style="height:3.2em"><use href="#puff-h"/></svg><span class="word"><span>type</span><span>me</span><span>it</span></span></div></div>
+        <div class="chip chip--slab"><div class="lk lk-stack" style="--s:11px"><svg class="puff puff--h" style="height:3.2em"><use href="#puff-h"/></svg><span class="word"><span>type</span><span>me</span><span>it</span></span></div></div>
+        <span class="chip-tag">11 PX · INVERTED</span>
+      </div>
+    </section>
+
+    <!-- 03 ------------------------------------------------------------- -->
+    <section class="plate">
+      <div class="head">
+        <span class="num">03</span>
+        <h2 class="name">SLAB</h2>
+        <p class="why">the system's one emphasis move, spent on the name. the puff stays in
+          ink outside the slab, so the lockup already contains its own inversion — it needs no
+          second file to sit on a dark hero.</p>
+      </div>
+      <div class="stage">
+        <div class="lk lk-slab"><svg class="puff"><use href="#puff"/></svg><span class="slabbox"><span class="word">type me it</span></span></div>
+      </div>
+      <div class="strip">
+        <div class="chip chip--paper"><div class="lk lk-slab" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="slabbox"><span class="word">type me it</span></span></div></div>
+        <div class="chip chip--slab"><div class="lk lk-slab" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="slabbox"><span class="word">type me it</span></span></div></div>
+        <span class="chip-tag">13 PX · INVERTED</span>
+      </div>
+    </section>
+
+    <!-- 04 ------------------------------------------------------------- -->
+    <section class="plate">
+      <div class="head">
+        <span class="num">04</span>
+        <h2 class="name">EXHALE</h2>
+        <p class="why">the name first, the puff trailing it. reads left to right as cause and
+          effect: you say the words, they leave as a cloud. the only ordering that matches what
+          the app actually does to your voice.</p>
+      </div>
+      <div class="stage">
+        <div class="lk lk-exhale"><span class="word">type me it</span><svg class="puff"><use href="#puff"/></svg></div>
+      </div>
+      <div class="strip">
+        <div class="chip chip--paper"><div class="lk lk-exhale" style="--s:13px"><span class="word">type me it</span><svg class="puff puff--h"><use href="#puff-h"/></svg></div></div>
+        <div class="chip chip--slab"><div class="lk lk-exhale" style="--s:13px"><span class="word">type me it</span><svg class="puff puff--h"><use href="#puff-h"/></svg></div></div>
+        <span class="chip-tag">13 PX · INVERTED</span>
+      </div>
+    </section>
+
+    <!-- 05 ------------------------------------------------------------- -->
+    <section class="plate">
+      <div class="head">
+        <span class="num">05</span>
+        <h2 class="name">FULL STOP</h2>
+        <p class="why">the puff is the period. the tightest lockup of the ten — it adds nothing
+          to the line but a terminal, so it can sit inline in running text or in a nav bar at
+          body size without asking for its own row.</p>
+      </div>
+      <div class="stage">
+        <div class="lk lk-stop"><span class="word">type me it</span><svg class="puff"><use href="#puff"/></svg></div>
+      </div>
+      <div class="strip">
+        <div class="chip chip--paper"><div class="lk lk-stop" style="--s:15px"><span class="word">type me it</span><svg class="puff puff--h" style="height:0.68em"><use href="#puff-h"/></svg></div></div>
+        <div class="chip chip--slab"><div class="lk lk-stop" style="--s:15px"><span class="word">type me it</span><svg class="puff puff--h" style="height:0.68em"><use href="#puff-h"/></svg></div></div>
+        <span class="chip-tag">15 PX · INVERTED</span>
+      </div>
+    </section>
+
+    <!-- 06 ------------------------------------------------------------- -->
+    <section class="plate">
+      <div class="head">
+        <span class="num">06</span>
+        <h2 class="name">PLATE</h2>
+        <p class="why">mark over name, the name tracked out to the mark's own width. an
+          engraved instrument plate — the vernacular the design system already speaks. for the
+          dmg background, the about box, the onboarding first screen.</p>
+      </div>
+      <div class="stage">
+        <div class="lk lk-plate"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div>
+      </div>
+      <div class="strip">
+        <div class="chip chip--paper"><div class="lk lk-plate" style="--s:24px"><svg class="puff puff--h" style="height:2.4em"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+        <div class="chip chip--slab"><div class="lk lk-plate" style="--s:24px"><svg class="puff puff--h" style="height:2.4em"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+        <span class="chip-tag">24 PX · INVERTED</span>
+      </div>
+    </section>
+
+    <!-- 07 ------------------------------------------------------------- -->
+    <section class="plate">
+      <div class="head">
+        <span class="num">07</span>
+        <h2 class="name">KEYCAP</h2>
+        <p class="why">the name set in a keycap at radius sm — the exact curve the app draws
+          for the fn key. the lockup states the gesture instead of describing it. a hairline box
+          is the cheapest thing the system owns, so it costs nothing.</p>
+      </div>
+      <div class="stage">
+        <div class="lk lk-cap"><svg class="puff"><use href="#puff"/></svg><span class="cap"><span class="word">type me it</span></span></div>
+      </div>
+      <div class="strip">
+        <div class="chip chip--paper"><div class="lk lk-cap" style="--s:18px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="cap"><span class="word">type me it</span></span></div></div>
+        <div class="chip chip--slab"><div class="lk lk-cap" style="--s:18px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="cap"><span class="word">type me it</span></span></div></div>
+        <span class="chip-tag">18 PX · INVERTED</span>
+      </div>
+    </section>
+
+    <!-- 08 ------------------------------------------------------------- -->
+    <section class="plate">
+      <div class="head">
+        <span class="num">08</span>
+        <h2 class="name">TRAIL</h2>
+        <p class="why">the og image compressed into a lockup: a wisp growing into a cloud,
+          left to right, then the name. the only one of the ten with motion built into the still
+          — and the one that reads as a sentence being spoken.</p>
+      </div>
+      <div class="stage">
+        <div class="lk lk-trail"><svg class="puff p1"><use href="#puff"/></svg><svg class="puff p2"><use href="#puff"/></svg><svg class="puff p3"><use href="#puff"/></svg><span class="word">type me it</span></div>
+      </div>
+      <div class="strip">
+        <div class="chip chip--paper"><div class="lk lk-trail" style="--s:15px"><svg class="puff puff--h p1" style="height:0.66em"><use href="#puff-h"/></svg><svg class="puff puff--h p2" style="height:1.05em"><use href="#puff-h"/></svg><svg class="puff puff--h p3" style="height:1.62em"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+        <div class="chip chip--slab"><div class="lk lk-trail" style="--s:15px"><svg class="puff puff--h p1" style="height:0.66em"><use href="#puff-h"/></svg><svg class="puff puff--h p2" style="height:1.05em"><use href="#puff-h"/></svg><svg class="puff puff--h p3" style="height:1.62em"><use href="#puff-h"/></svg><span class="word">type me it</span></div></div>
+        <span class="chip-tag">15 PX · INVERTED</span>
+      </div>
+    </section>
+
+    <!-- 09 ------------------------------------------------------------- -->
+    <section class="plate">
+      <div class="head">
+        <span class="num">09</span>
+        <h2 class="name">EMPHASIS</h2>
+        <p class="why">italic on <em>me</em> — the system's second emphasis move, and the only
+          word in the name that carries the argument. it is your voice, transcribed on your
+          machine, and the mark says so with one glyph change.</p>
+      </div>
+      <div class="stage">
+        <div class="lk lk-em"><svg class="puff"><use href="#puff"/></svg><span class="word">type <em>me</em> it</span></div>
+      </div>
+      <div class="strip">
+        <div class="chip chip--paper"><div class="lk lk-em" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type <em>me</em> it</span></div></div>
+        <div class="chip chip--slab"><div class="lk lk-em" style="--s:13px"><svg class="puff puff--h"><use href="#puff-h"/></svg><span class="word">type <em>me</em> it</span></div></div>
+        <span class="chip-tag">13 PX · INVERTED</span>
+      </div>
+    </section>
+
+    <!-- 10 ------------------------------------------------------------- -->
+    <section class="plate">
+      <div class="head">
+        <span class="num">10</span>
+        <h2 class="name">MASTHEAD</h2>
+        <p class="why">two hairlines with the lockup centred between them, name tracked out to
+          fill the measure. for slots wider than they are tall — a site header, a letterhead, the
+          top of the release notes. the rules do the work the whitespace can't.</p>
+      </div>
+      <div class="stage">
+        <div class="lk lk-mast" style="--s:40px"><div class="hair"></div><div class="row"><svg class="puff"><use href="#puff"/></svg><span class="word">type me it</span></div><div class="hair"></div></div>
+      </div>
+      <div class="strip">
+        <div class="chip chip--paper" style="flex:1 1 220px"><div class="lk lk-mast" style="--s:20px"><div class="hair"></div><div class="row"><svg class="puff puff--h" style="height:1.2em"><use href="#puff-h"/></svg><span class="word">type me it</span></div><div class="hair"></div></div></div>
+        <div class="chip chip--slab" style="flex:1 1 220px"><div class="lk lk-mast" style="--s:20px"><div class="hair"></div><div class="row"><svg class="puff puff--h" style="height:1.2em"><use href="#puff-h"/></svg><span class="word">type me it</span></div><div class="hair"></div></div></div>
+        <span class="chip-tag">20 PX · INVERTED</span>
+      </div>
+    </section>
+
+  </div>
+
+  <p class="colophon">
+    the mark is the seven-lobe puff from <code>TypeMeIt/Support/Icon/puff.svg</code>, unaltered.
+    display sizes use the stroke-3 drawing; everything at or under 24 px uses the stroke-5 cut
+    from <code>web/generate-favicon.sh</code>, which is what keeps the lobes open at menu bar
+    size. colour, type, radii and the lowercase setting all come from
+    <code>design/tokens.json</code> — nothing on this sheet is off-system.
+    say which numbers to keep and i'll take those to round 2.
+  </p>
+
+</main>
+
+<script>
+// Three states, same as web/design-system.html: auto, light, dark.
+(function () {
+  var order = ['auto', 'light', 'dark'];
+  var btn = document.getElementById('theme');
+  var i = 0;
+  try {
+    var stored = localStorage.getItem('tmi-theme');
+    if (stored === 'light' || stored === 'dark') i = order.indexOf(stored);
+  } catch (e) {}
+  function apply() {
+    var t = order[i];
+    if (t === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    btn.textContent = 'theme: ' + t;
+    try {
+      if (t === 'auto') localStorage.removeItem('tmi-theme');
+      else localStorage.setItem('tmi-theme', t);
+    } catch (e) {}
+  }
+  btn.addEventListener('click', function () { i = (i + 1) % order.length; apply(); });
+  apply();
+})();
+</script>
