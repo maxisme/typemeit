@@ -34,11 +34,11 @@ struct PuffView: View {
     /// for, streaming its smoke outwards. Only used with `level`.
     var arrival: Date? = nil
     static let arrivalDuration = 0.5
-    /// When set, the puff departs: from this instant it disperses over
-    /// `departureDuration` seconds, its lobes blowing outwards and thinning
-    /// to nothing at its resting size. Only used with `level`.
+    /// When set, the puff departs: from this instant it draws in a little
+    /// over `departureDuration` seconds while whatever shows it fades it
+    /// out. Only used with `level`.
     var departure: Date? = nil
-    static let departureDuration = 0.7
+    static let departureDuration = 0.35
     /// When set, lightning strikes through the puff at this instant: a flash
     /// that lights the smoke from inside and a filament across it, over in
     /// about a second. Set it again for another strike.
@@ -110,17 +110,20 @@ struct PuffView: View {
     /// Expansion added for the arrival: negative while the puff grows in
     /// from a wisp.
     private func swell(at now: TimeInterval) -> Double {
-        guard let arrival else { return 0 }
         let rest = Dynamics.restExpansion(forLevel: 0)
-        return -(rest - 0.05) * (1 - PuffView.progress(since: arrival, over: PuffView.arrivalDuration, at: now))
+        var swell = 0.0
+        if let arrival {
+            swell -= (rest - 0.05) * (1 - PuffView.progress(since: arrival, over: PuffView.arrivalDuration, at: now))
+        }
+        if let departure {
+            swell -= 0.12 * PuffView.progress(since: departure, over: PuffView.departureDuration, at: now)
+        }
+        return swell
     }
 
     /// How far the departure has run, 0...1; the shader blows the puff apart
     /// by this much.
-    private func disperse(at now: TimeInterval) -> Double {
-        guard let departure, !reduceMotion else { return 0 }
-        return PuffView.progress(since: departure, over: PuffView.departureDuration, at: now)
-    }
+    private func disperse(at now: TimeInterval) -> Double { 0 }
 
     /// Smoothstepped 0...1 progress of a transition begun at `start`.
     private static func progress(since start: Date, over duration: Double, at now: TimeInterval) -> Double {

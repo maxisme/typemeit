@@ -4,7 +4,7 @@ import SwiftUI
 /// The recording indicator: a puff of smoke that grows from nothing at the
 /// bottom of the screen and swells with each syllable. It stays, small,
 /// still and thickened, with lightning flickering behind it once a second,
-/// while the dictation is transcribed and cleaned up, then disperses.
+/// while the dictation is transcribed and cleaned up, then fades.
 /// While pinned, a click on it finishes.
 struct CloudView: View {
     @Bindable var model: OverlayModel

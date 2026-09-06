@@ -31,8 +31,8 @@ final class OverlayModel {
     var shownAt: Date?
     /// When the cloud started to puff out, or nil while it is still wanted.
     var departedAt: Date?
-    /// When lightning last struck the cloud: as the dictation ended and
-    /// transcription began.
+    /// When lightning last struck the cloud: on the pin, and as the
+    /// dictation ended and transcription began.
     var struckAt: Date?
     /// What is under the cloud, when the screen has been sampled. Nil falls
     /// back to the appearance.
