@@ -86,12 +86,12 @@ final class OverlayPanel {
         sampling?.cancel()
         sampling = nil
         guard panel.isVisible else { model.state = .hidden; return }
-        // The cloud shrinks as it goes; the fade lets it draw in before it is
-        // gone. The pill just fades.
-        let shrinking = model.presentation == .cloud
-        if shrinking, model.departedAt == nil { model.departedAt = Date() }
+        // The cloud disperses, fading itself out in the shader; the panel
+        // only follows so it is fully clear by the end. The pill just fades.
+        let dispersing = model.presentation == .cloud
+        if dispersing, model.departedAt == nil { model.departedAt = Date() }
         NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = shrinking ? PuffView.departureDuration : 0.24
+            ctx.duration = dispersing ? PuffView.departureDuration : 0.24
             ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
             panel.animator().alphaValue = 0
         }, completionHandler: { [weak self] in

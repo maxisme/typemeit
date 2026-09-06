@@ -345,7 +345,7 @@ struct CleanupTab: View {
 }
 
 /// A full-width row of resting puffs, one in each colour, each showing its
-/// own smoke; the chosen one sits in an ink ring.
+/// own smoke; the chosen one is drawn larger.
 struct CloudColorPalette: View {
     @Binding var selection: CloudColor
 
@@ -363,8 +363,8 @@ struct CloudColorPalette: View {
                     PuffView(level: 0, tint: Color(nsColor: c.color), timeOffset: Double(i) * 7.3)
                         .frame(width: CloudColorPalette.drawn, height: CloudColorPalette.drawn)
                         .frame(width: CloudColorPalette.side, height: CloudColorPalette.side)
-                        .clipShape(Circle())
-                        .overlay(Circle().strokeBorder(on ? DesignTokens.Colors.ink : .clear, lineWidth: 1.5).padding(2))
+                        .scaleEffect(on ? 1.5 : 1)
+                        .animation(.easeOut(duration: 0.18), value: on)
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)

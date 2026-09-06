@@ -17,7 +17,7 @@ uniform vec2 uCentre; uniform float uSize; uniform float uTime;
 uniform float uExpansion; uniform float uTrail; uniform float uFlow; uniform float uStrike; uniform vec4 uTint;
 out vec4 fragColor;
 void main(){ vec2 p = gl_FragCoord.xy - uCentre; p.y = -p.y;
-  fragColor = render(p + 0.5*vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, uStrike, uTint); }`;
+  fragColor = render(p + 0.5*vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uStrike, uTint); }`;
 const VERT = `#version 300 es
 in vec2 aPos; void main(){ gl_Position = vec4(aPos,0.0,1.0); }`;
 function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);

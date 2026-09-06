@@ -84,28 +84,44 @@ float fbm(vec3 p) {
     return sum / norm;
 }
 
-// Coarse shape of the puff: a soft core with a ring of six lobes around it,
-// each swelling and drifting on its own slow cycle, plus one low octave of
-// noise so the lobes are not perfect spheres. This is what gets lit. Time is
+// Coarse shape of the puff: a soft core with a ring of up to eight lobes
+// around it, each swelling and drifting on its own slow cycle, plus one low
+// octave of noise so the lobes are not perfect spheres. One lobe is always
+// present; the other seven fade in and out on their own cycles, so between
+// one and eight show at any moment. This is what gets lit. Time is
 // only ever an oscillator phase or the third noise axis, so nothing drifts
 // unbounded. 'uv' is centred and normalised so the view's short side spans
 // -0.5...0.5.
-float shape(vec2 uv, float time, float e) {
+float shape(vec2 uv, float time, float e, float disperse) {
     // The lobed mass sits well inside the puff's overall radius; the thin haze
     // added in 'field' carries the fade out to the full extent.
     float R = radius(e) * 0.68;
 
-    float mass = 0.85 * exp(-dot(uv, uv) / (R * R * 0.32));
+    // Dispersing, the core thins away while the lobes ride outwards and
+    // swell, so the cloud blows apart rather than shrinking.
+    float mass = 0.85 * (1.0 - disperse) * exp(-dot(uv, uv) / (R * R * 0.32));
 
     float spin = time * 0.045;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 8; i++) {
         float k = float(i);
-        float ang = spin + k * 1.0472 + 0.30 * sin(time * 0.31 + k * 1.7);
-        float reach = R * (0.58 + 0.12 * sin(time * 0.43 + k * 2.3));
+        // Lobe 0 stays; the rest come and go, snapping to fully present or
+        // absent through smoothstep so none lingers as a faint smudge.
+        float w = (i == 0) ? 1.0
+            : smoothstep(0.25, 0.75, 0.5 + 0.5 * sin(time * 0.19 + k * 2.1));
+        if (w <= 0.0) continue;
+        float ang = spin + k * 0.7854 + 0.30 * sin(time * 0.31 + k * 1.7);
+        // Now and then a lobe strays out to the edge of the mass, shrinking
+        // as it goes, so it sits clear of its neighbours instead of merging.
+        // Driven by noise rather than a sine so the excursions are irregular
+        // and rare: most of the time every lobe hugs the core.
+        float stray = snoise(vec3(k * 3.7 + 11.0, k * 1.9 + 5.0, time * 0.06));
+        float out = smoothstep(0.35, 0.8, stray);
+        float reach = R * (0.55 + 0.38 * out + 0.06 * sin(time * 0.43 + k * 2.3));
+        reach *= 1.0 + 1.4 * disperse;
         vec2 c = reach * vec2(cos(ang), sin(ang));
-        float r = R * (0.42 + 0.08 * sin(time * 0.37 + k * 0.9));
+        float r = R * (0.42 - 0.14 * out + 0.06 * sin(time * 0.37 + k * 0.9)) * (1.0 + 0.6 * disperse);
         vec2 q = uv - c;
-        mass += exp(-dot(q, q) / (r * r * 0.40));
+        mass += w * exp(-dot(q, q) / (r * r * 0.40));
     }
 
     float low = snoise(vec3(uv * (1.6 / R), time * 0.12));
@@ -156,11 +172,11 @@ float flowGrain(vec2 uv, float flow, float time, float R) {
 // Smoke density of the body, 0...~1.4: the shape carved by the advected
 // noise 'n', then thinned with distance from the centre so the rim is
 // translucent wisps.
-float field(vec2 uv, float time, float e, float n) {
+float field(vec2 uv, float time, float e, float n, float disperse) {
     float R = radius(e);
     float d2 = dot(uv, uv) / (R * R);
     // Dense lobed core plus a wide, thin haze that reaches the full radius.
-    float mass = shape(uv, time, e) + 0.42 * exp(-1.1 * d2);
+    float mass = shape(uv, time, e, disperse) + 0.42 * (1.0 - disperse) * exp(-1.1 * d2);
 
     // Noise bites hardest where the mass is thin, so the rim is carved into
     // wisps while the centre stays solid.
@@ -168,7 +184,7 @@ float field(vec2 uv, float time, float e, float n) {
     float density = mass * (1.0 - (0.38 + 0.55 * thin) * (1.0 - n));
 
     // Radial falloff: dense middle, thin edge.
-    density *= exp(-1.1 * d2);
+    density *= exp(-1.1 * d2 / (1.0 + 2.0 * disperse));
 
     return max(0.0, density - 0.12);
 }
@@ -183,7 +199,7 @@ float orphans(vec2 uv, float time, float e, float trail, float n) {
     if (gap <= 0.005) { return 0.0; }
     float Re = radius(e);
     float d = length(uv);
-    float was = field(uv, time, trail, n);
+    float was = field(uv, time, trail, n, 0.0);
     float outside = smoothstep(Re * 1.05, Re * 1.5, d);
     float mask = smoothstep(0.6, 0.88, 0.5 + 0.5 * snoise(vec3(uv * (1.1 / radius(0.5)) + 7.0, time * 0.06)));
     float clumps = n * n * n;
@@ -268,10 +284,12 @@ float lightning(vec2 uv, float R, float seed, float age) {
 //        are left in the shell between the two; equal means none.
 // flow: outward drift phase; one unit doubles the distance of every feature.
 //       Increase it to stream smoke outwards, hold it to let it hang.
+// disperse: 0...1, the puff blowing apart: lobes ride outwards and thin,
+//       and the whole fades. 1 is gone.
 // strike: the 'time' at which lightning last struck, or negative for none.
-//         The bolt lasts a second; the value also seeds its route.
+//         The flash lasts a second; the value also seeds its route.
 // tint: colour of the smoke; alpha scales overall opacity.
-vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float strike, vec4 tint) {
+vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float disperse, float strike, vec4 tint) {
     float scale = min(size.x, size.y);
     vec2 uv = (position - 0.5 * size) / scale;
     float e = saturate(expansion);
@@ -279,12 +297,13 @@ vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, 
 
     // Beyond 1.6 radii the density floor has removed everything, so skip the
     // noise there; most of the view is this cheap.
-    if (dot(uv, uv) > 2.56 * radius(tr) * radius(tr)) { return vec4(0.0); }
+    float reach = 1.6 * (1.0 + 1.4 * disperse);
+    if (dot(uv, uv) > reach * reach * radius(tr) * radius(tr)) { return vec4(0.0); }
 
     // The noise is scaled by a fixed mid radius, not the current one, so a
     // change of size moves smoke through the field instead of zooming it.
     float n = flowNoise(uv, flow, time, radius(0.5));
-    float body = field(uv, time, e, n);
+    float body = field(uv, time, e, n, disperse);
     float left = orphans(uv, time, e, tr, n);
     float f = body + left;
 
@@ -300,9 +319,9 @@ vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, 
     // reads as vapour rather than rock.
     float R = radius(e) * 0.68;
     float h = R * 0.12;
-    float s0 = shape(uv, time, e);
-    vec2 grad = vec2(shape(uv + vec2(h, 0.0), time, e) - s0,
-                         shape(uv + vec2(0.0, h), time, e) - s0) / h;
+    float s0 = shape(uv, time, e, disperse);
+    vec2 grad = vec2(shape(uv + vec2(h, 0.0), time, e, disperse) - s0,
+                         shape(uv + vec2(0.0, h), time, e, disperse) - s0) / h;
     vec2 light = normalize(vec2(-0.4, -1.0));
     float lit = saturate(0.5 - 0.13 * R * dot(grad, light));
 
@@ -320,7 +339,7 @@ vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, 
     float floor_ = mix(0.64, 0.86, saturation);
     float shade = mix(floor_, 1.0, lit) * mix(mix(0.88, 0.96, saturation), 1.0, saturate(f)) * (0.96 + 0.06 * grain);
 
-    float a = alpha * tint.a;
+    float a = alpha * (1.0 - disperse) * (1.0 - disperse) * tint.a;
     vec3 rgb = vec3(tint.rgb) * shade;
 
     // The light comes from behind: the thin haze in front of it whitens

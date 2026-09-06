@@ -4,7 +4,7 @@ import SwiftUI
 /// The recording indicator: a puff of smoke that grows from nothing at the
 /// bottom of the screen and swells with each syllable. It stays, pulsing
 /// slowly, while the dictation is transcribed and cleaned up, turning a
-/// little blue for the clean-up, then shrinks away. Lightning cracks through
+/// little blue for the clean-up, then disperses. Lightning flashes behind
 /// it as the dictation ends.
 /// While pinned, a click on it finishes.
 struct CloudView: View {
@@ -18,13 +18,11 @@ struct CloudView: View {
     static let size: CGFloat = 300
     /// Height of the cloud's centre above the bottom of the panel.
     static let restHeight: CGFloat = 84
-    /// Drawn this much smaller as it grows in and shrinks out, on top of the
-    /// puff's own change of expansion.
+    /// Drawn this much smaller as it grows in, on top of the puff's own
+    /// change of expansion.
     static let arrivalScale: CGFloat = 0.3
-    static let departureScale: CGFloat = 0.5
 
     var body: some View {
-        let departing = model.departedAt != nil
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || !isProcessing)) { ctx in
             PuffView(level: level(at: ctx.date.timeIntervalSinceReferenceDate), tint: tint,
                      arrival: model.shownAt, departure: model.departedAt, strike: model.struckAt)
@@ -37,9 +35,8 @@ struct CloudView: View {
             if inside, model.state == .pinned { NSCursor.pointingHand.push() } else { NSCursor.pop() }
         }
         .help(model.state == .pinned ? "Finish" : "")
-        .scaleEffect(departing ? CloudView.departureScale : (grown ? 1 : CloudView.arrivalScale))
+        .scaleEffect(grown ? 1 : CloudView.arrivalScale)
         .animation(.spring(duration: PuffView.arrivalDuration, bounce: 0.15), value: grown)
-        .animation(.easeIn(duration: PuffView.departureDuration), value: departing)
         .offset(y: CloudView.size / 2 - CloudView.restHeight)
         .onAppear {
             if reduceMotion {
