@@ -127,9 +127,9 @@ static float shape(float2 uv, float time, float e, float disperse) {
         float stray = snoise(float3(k * 3.7 + 11.0, k * 1.9 + 5.0, time * 0.06));
         float strayed = smoothstep(0.35, 0.8, stray);
         float reach = R * (0.55 + 0.38 * strayed + 0.06 * sin(time * 0.43 + k * 2.3));
-        reach *= 1.0 + 0.6 * disperse;
+        reach *= 1.0 + 0.3 * disperse;
         float2 c = reach * float2(cos(ang), sin(ang));
-        float r = R * (0.42 - 0.14 * strayed + 0.06 * sin(time * 0.37 + k * 0.9)) * (1.0 + 0.35 * disperse);
+        float r = R * (0.42 - 0.14 * strayed + 0.06 * sin(time * 0.37 + k * 0.9)) * (1.0 + 0.15 * disperse);
         float2 q = uv - c;
         mass += w * exp(-dot(q, q) / (r * r * 0.40));
     }
@@ -189,14 +189,16 @@ static float field(float2 uv, float time, float e, float n, float disperse) {
     float mass = shape(uv, time, e, disperse) + 0.42 * (1.0 - disperse) * exp(-1.1 * d2);
 
     // Noise bites hardest where the mass is thin, so the rim is carved into
-    // wisps while the centre stays solid.
+    // wisps while the centre stays solid. As the puff disperses the noise
+    // bites everywhere, so the body breaks up into wisps and only the
+    // densest threads are left.
     float thin = 1.0 - saturate(mass);
-    float density = mass * (1.0 - (0.38 + 0.55 * thin) * (1.0 - n));
+    float density = mass * (1.0 - (0.38 + 0.55 * thin + 0.7 * disperse) * (1.0 - n));
 
     // Radial falloff: dense middle, thin edge.
-    density *= exp(-1.1 * d2 / (1.0 + 2.0 * disperse));
+    density *= exp(-1.1 * d2 / (1.0 + 1.0 * disperse));
 
-    return max(0.0, density - 0.12);
+    return max(0.0, density - 0.12 - 0.2 * disperse);
 }
 
 // Fragments left behind when the puff retracts: the body's own density as it
@@ -308,7 +310,7 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
 
     // Beyond 1.6 radii the density floor has removed everything, so skip the
     // noise there; most of the view is this cheap.
-    float reach = 1.6 * (1.0 + 0.6 * disperse);
+    float reach = 1.6 * (1.0 + 0.3 * disperse);
     if (dot(uv, uv) > reach * reach * radius(tr) * radius(tr)) { return half4(0.0); }
 
     // The noise is scaled by a fixed mid radius, not the current one, so a
@@ -350,7 +352,7 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
     float floor_ = mix(0.64, 0.86, saturation);
     float shade = mix(floor_, 1.0, lit) * mix(mix(0.88, 0.96, saturation), 1.0, saturate(f)) * (0.96 + 0.06 * grain);
 
-    float a = alpha * (1.0 - disperse) * (1.0 - disperse) * tint.a;
+    float a = alpha * (1.0 - disperse) * tint.a;
     float3 rgb = float3(tint.rgb) * shade;
 
     // The light comes from behind: the thin haze in front of it whitens

@@ -32,10 +32,10 @@ struct SettingsView: View {
                             Image(t.icon).resizable().frame(width: 14, height: 14)
                             Text(t.rawValue).font(DesignTokens.Fonts.ui.monospaced().weight(.semibold))
                         }
-                            .foregroundStyle(on ? DesignTokens.Colors.ink : DesignTokens.Colors.ink2)
+                            .foregroundStyle(on ? DesignTokens.Colors.onSlab : DesignTokens.Colors.ink2)
                             .padding(.horizontal, 10)
                             .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
-                            .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).fill(on ? DesignTokens.Colors.inkA08 : Color.clear))
+                            .background(Rectangle().fill(on ? DesignTokens.Colors.slab : Color.clear))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -43,6 +43,10 @@ struct SettingsView: View {
                 Spacer()
             }
             .padding(10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(DesignTokens.Colors.paper)
+            .overlay(alignment: .trailing) { Rectangle().fill(DesignTokens.Colors.ink).frame(width: DesignTokens.hairline) }
+            .toolbar(removing: .sidebarToggle)
             .navigationSplitViewColumnWidth(min: 150, ideal: 170, max: 220)
         } detail: {
             Group {

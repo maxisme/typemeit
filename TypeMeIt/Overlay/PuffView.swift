@@ -38,7 +38,7 @@ struct PuffView: View {
     /// `departureDuration` seconds, its lobes blowing outwards and thinning
     /// to nothing at its resting size. Only used with `level`.
     var departure: Date? = nil
-    static let departureDuration = 0.5
+    static let departureDuration = 0.7
     /// When set, lightning strikes through the puff at this instant: a flash
     /// that lights the smoke from inside and a filament across it, over in
     /// about a second. Set it again for another strike.
