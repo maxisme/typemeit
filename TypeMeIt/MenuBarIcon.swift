@@ -35,7 +35,7 @@ enum MenuBarIconRenderer {
         return image
     }
 
-    static func puff(recording: Bool, transcribing: Bool, secureInput: Bool) -> NSImage {
+    static func puff(recording: Bool, transcribing: Bool, secureInput: Bool, updateReady: Bool = false) -> NSImage {
         let size = NSSize(width: 20, height: 20)
         let image = NSImage(size: size, flipped: false) { rect in
 
@@ -62,6 +62,19 @@ enum MenuBarIconRenderer {
             // strikes wifi.slash. The gap under the stroke is cut first so the
             // line reads as lying across the puff rather than dissolving into
             // it.
+            // A downloaded update waiting to be installed is a dot at the
+            // top right, with the puff cut away underneath so it sits on
+            // the mark rather than merging into it.
+            if updateReady {
+                let dot = NSRect(x: rect.maxX - 6.5, y: rect.maxY - 6.5, width: 5, height: 5)
+                NSGraphicsContext.current?.compositingOperation = .destinationOut
+                NSColor.black.set()
+                NSBezierPath(ovalIn: dot.insetBy(dx: -1.25, dy: -1.25)).fill()
+                NSGraphicsContext.current?.compositingOperation = .sourceOver
+                NSColor.labelColor.set()
+                NSBezierPath(ovalIn: dot).fill()
+            }
+
             if secureInput {
                 let start = NSPoint(x: rect.minX + 3, y: rect.maxY - 3)
                 let end = NSPoint(x: rect.maxX - 3, y: rect.minY + 3)

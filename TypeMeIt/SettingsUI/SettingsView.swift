@@ -265,8 +265,9 @@ struct MainSettingsTab: View {
                     SettingsRow(label: "open at login") {
                         Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "check for updates") {
-                        Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
+                    SettingsRow(label: "update automatically", subtitle: "otherwise updates wait for you below") {
+                        Toggle("", isOn: Binding(get: { updates.installsAutomatically }, set: { updates.installsAutomatically = $0 })).toggleStyle(.switch).labelsHidden()
+                            .disabled(Updates.isDevBuild)
                     }
                     SettingsRow(label: "dock icon") {
                         Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
@@ -279,9 +280,7 @@ struct MainSettingsTab: View {
                 }
                 SettingsGroup(title: "about") {
                     SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
-                        Button("check now") { updates.checkForUpdates() }
-                            .buttonStyle(InkButtonStyle())
-                            .disabled(!updates.canCheck)
+                        updateStatus
                     }
                     SettingsRow(label: "website", last: true) {
                         Link("typeme.it", destination: Fixed.websiteURL)
@@ -292,6 +291,30 @@ struct MainSettingsTab: View {
             .padding(20)
         }
         .onReceive(poll) { _ in screenGranted = CGPreflightScreenCaptureAccess() }
+    }
+
+    /// Where the background update check got to. There is no button to check;
+    /// the only action is installing a version that is already downloaded.
+    @ViewBuilder
+    private var updateStatus: some View {
+        if Updates.isDevBuild {
+            statusText("dev build · never updates")
+        } else {
+            switch updates.state {
+            case .checking: statusText("checking for updates…")
+            case .upToDate: statusText("the latest version")
+            case .downloading(let v): statusText("downloading \(v)…")
+            case .readyToInstall(let v):
+                Button("install \(v)") { updates.install() }.buttonStyle(InkButtonStyle())
+            case .installing: statusText("installing…")
+            case .unreachable: statusText("can't reach the update server")
+            case .downloadFailed(let v): statusText("couldn't download \(v) · trying again later")
+            }
+        }
+    }
+
+    private func statusText(_ text: String) -> some View {
+        Text(text).font(.system(size: 11).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
     }
 }
 

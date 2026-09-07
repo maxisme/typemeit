@@ -33,12 +33,14 @@ final class AppState {
     var recording = false
     var transcribing = false
     var ready = false
+    /// The version downloaded and waiting to be installed, if any.
+    var updateReady: String?
     /// The tab the settings window should show when next opened from the
     /// menu, if any. Cleared once the window has moved there.
     var settingsTab: SettingsTab?
 
     var menuBarImage: NSImage {
-        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, secureInput: secureInputOn)
+        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, secureInput: secureInputOn, updateReady: updateReady != nil)
     }
 }
 
@@ -85,6 +87,9 @@ struct MenuContent: View {
         }
         Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(AttributedString("Open ") + MenuContent.bold("type me it")) }
             .keyboardShortcut(",", modifiers: .command)
+        if let version = appState.updateReady {
+            Button("Install Update \(version)") { Updates.shared.install() }
+        }
         Divider()
         if Pipeline.shared.phase == .recording {
             Button("Stop Recording") { Pipeline.shared.shortcuts.stopFromMenu() }
@@ -206,8 +211,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         secureInputTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AppState.shared.secureInputOn = SecureInput.isEnabled }
         }
-        // Touch the updater so Sparkle's scheduled check starts even if the menu
-        // has never been opened.
+        // Creating the updater checks for an update now and schedules the hourly check.
         _ = Updates.shared
         reconcileLaunchAtLogin()
     }
@@ -256,6 +260,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// `-previewToast "word,word"` shows the learned-words toast a moment
     /// after launch, for looking at it without dictating.
     private func previewToastIfAsked() {
+        // `-previewUpdate 1.2` shows the ready toast, the puff dot and the
+        // menu item as the dev build would never see them.
+        if let version = UserDefaults.standard.string(forKey: "previewUpdate"), !version.isEmpty {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1))
+                AppState.shared.updateReady = version
+                Pipeline.shared.showToast(.updateReady(version: version))
+            }
+        }
         guard let words = UserDefaults.standard.string(forKey: "previewToast"), !words.isEmpty else { return }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(1.5))
