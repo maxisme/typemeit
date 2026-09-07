@@ -16,6 +16,10 @@ final class OverlayModel {
         case copyPrompt
         case learned(batchId: UUID, words: [String])
         case undone
+        /// An update is downloaded and waiting for the install button.
+        case updateReady(version: String)
+        /// An update was found but its download failed; Sparkle retries on the next hourly check.
+        case updateFailed(version: String)
     }
 
     /// Which view a state is shown in: the dictation itself is the cloud,
@@ -45,7 +49,7 @@ final class OverlayModel {
         switch state {
         case .hidden: .none
         case .arming, .recording, .pinned, .transcribing, .cleaningUp: .cloud
-        case .copyPrompt, .learned, .undone: .pill
+        case .copyPrompt, .learned, .undone, .updateReady, .updateFailed: .pill
         }
     }
 
@@ -72,4 +76,6 @@ final class OverlayModel {
     var onCopy: (@MainActor () -> Void)?
     var onKeep: (@MainActor () -> Void)?
     var onUndo: (@MainActor () -> Void)?
+    var onInstall: (@MainActor () -> Void)?
+    var onOpenCleanup: (@MainActor () -> Void)?
 }

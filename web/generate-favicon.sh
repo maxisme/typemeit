@@ -17,10 +17,11 @@ import re, sys
 tmp = sys.argv[1]
 src = open('../TypeMeIt/Support/Icon/puff.svg').read()
 paths = re.findall(r'<path d="([^"]+)"/>', src)
-# The artwork spans 10.6..54.3 x 8.5..54.4 in the 64 viewBox; a 52-unit
-# square centred on it leaves room for the heavier stroke at small sizes.
+# The artwork spans 10.6..54.3 x 8.5..54.4 in the 64 viewBox; a 60-unit
+# square centred on it leaves a margin of about an eighth on every side, so the
+# puff sits clear of the rounded frames Slack, iOS and tab strips draw around it.
 def svg(width, style=''):
-    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="6.4 5.4 52 52" fill="none" stroke="#0a0a0a" '
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="2.45 1.45 60 60" fill="none" stroke="#0a0a0a" '
             f'stroke-width="{width}" stroke-linecap="round" stroke-linejoin="round">\n'
             '  <!-- The menu bar puff from TypeMeIt/Support/Icon/puff.svg. Follows the tab\n'
             '       bar\'s colour scheme in browsers that render SVG favicons; the PNG and\n'

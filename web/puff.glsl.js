@@ -280,21 +280,33 @@ float lightning(vec2 uv, float R, float seed, float age) {
     return env * saturate(glow);
 }
 
-// MARK: Stirring
+// MARK: Repelling
 
-// How far the smoke at 'uv' has been shoved by a gust: a puff of air left
-// behind by something passing through, centred on 'gust.xy' with the shove
-// 'gust.zw', in the same centred units as 'uv' (the view's short side spans
-// -0.5...0.5). The shove falls off as a Gaussian 'reach' wide, so the wake
-// is soft-edged; whoever feeds the gusts fades 'zw' over time so the smoke
-// eases back. Sum this over every live gust and subtract it from 'uv'.
-vec2 gustShift(vec2 uv, vec4 gust, float reach) {
-    vec2 d = uv - gust.xy;
-    return gust.zw * exp(-dot(d, d) / (reach * reach));
+// The smoke keeps clear of a point: 'hole' is where in xy, in the same
+// centred units as 'uv', and the radius kept clear in z. Smoke inside that
+// radius is pushed out to the rim, and the smoke beyond shuffles outwards
+// to make room, less and less with distance. The map is area-preserving
+// (a ring at distance r shows what was at sqrt(r^2 - h^2)), so no smoke is
+// lost or made: the same amount sits around the hole as filled it.
+vec2 repelled(vec2 uv, vec3 hole) {
+    vec2 d = uv - hole.xy;
+    float h = hole.z;
+    if (h <= 0.0) { return uv; }
+    float r2 = dot(d, d);
+    float h2 = h * h;
+    if (r2 <= h2) { return hole.xy; }
+    // Full at the rim, easing off over a few radii so far smoke is still.
+    float reach = 3.0 * h;
+    float push = h2 * exp(-(r2 - h2) / (reach * reach));
+    return hole.xy + d * sqrt(max(r2 - push, 0.0) / r2);
 }
 
-// The reach of every gust: a little under the resting cloud's radius.
-float gustReach() { return radius(0.5) * 0.8; }
+// 0 inside the hole, 1 outside, soft at the rim, so the cleared spot has no
+// hard edge.
+float repelFade(vec2 uv, vec3 hole) {
+    if (hole.z <= 0.0) { return 1.0; }
+    return smoothstep(hole.z * 0.75, hole.z * 1.25, length(uv - hole.xy));
+}
 
 // Colour of the puff at 'position' in a view of 'size', premultiplied.
 // expansion: 0 = fully retracted wisp, 1 = fully expanded cloud.
@@ -308,12 +320,13 @@ float gustReach() { return radius(0.5) * 0.8; }
 //         The flash lasts a second; the value also seeds its route.
 // density: multiplies the amount of smoke; 1 is normal, more is thicker.
 // tint: colour of the smoke; alpha scales overall opacity.
-// stir: how far the smoke at this position has been shoved, in the same
-//       centred units as the view (short side -0.5...0.5): the summed
-//       'gustShift' of the live gusts. Zero for still air.
-vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, vec4 tint, vec2 stir) {
+// hole: where the smoke keeps clear of, in the same centred units as the
+//       view (short side -0.5...0.5), and the radius it keeps clear in z;
+//       0 for nowhere.
+vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, vec4 tint, vec3 hole) {
     float scale = min(size.x, size.y);
-    vec2 uv = (position - 0.5 * size) / scale - stir;
+    vec2 uv = repelled((position - 0.5 * size) / scale, hole);
+    float clear = repelFade((position - 0.5 * size) / scale, hole);
     float e = saturate(expansion);
     float tr = max(e, saturate(trail));
 
@@ -325,8 +338,8 @@ vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, 
     // The noise is scaled by a fixed mid radius, not the current one, so a
     // change of size moves smoke through the field instead of zooming it.
     float n = flowNoise(uv, flow, time, radius(0.5));
-    float body = field(uv, time, e, n, disperse);
-    float left = orphans(uv, time, e, tr, n);
+    float body = field(uv, time, e, n, disperse) * clear;
+    float left = orphans(uv, time, e, tr, n) * clear;
     float f = body + left;
 
     // 'time' wraps hourly in the app, so a strike just before the wrap is

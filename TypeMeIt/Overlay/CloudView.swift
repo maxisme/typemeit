@@ -11,7 +11,7 @@ struct CloudView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var grown = false
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-    @State private var stir = Stir()
+    @State private var repel = Repel()
 
     /// Side of the square the puff is drawn in. The resting cloud is about a
     /// quarter of it across.
@@ -30,12 +30,11 @@ struct CloudView: View {
             let mouse = NSEvent.mouseLocation
             let at = CGPoint(x: (mouse.x - model.cloudCentre.x) / CloudView.size,
                              y: (model.cloudCentre.y - mouse.y) / CloudView.size)
-            let gusts = stir.step(at, at: now)
             PuffView(level: level(at: now), tint: tint,
                      arrival: model.shownAt, departure: model.departedAt,
                      strike: strike(at: ctx.date), density: 1 + (CloudView.processingDensity - 1) * settled(at: ctx.date),
                      settle: CloudView.processingSettle * settled(at: ctx.date),
-                     gusts: gusts)
+                     hole: repel.step(at, at: now))
         }
         .animation(.easeInOut(duration: 0.2), value: model.backdrop)
         .frame(width: CloudView.size, height: CloudView.size)
@@ -99,50 +98,40 @@ struct CloudView: View {
         return struck.addingTimeInterval(max(0, floor(elapsed)))
     }
 
-    /// The mouse stirs the smoke: the cloud stays where it is, and the smoke
-    /// is brushed along by the cursor as it passes through, closing again
-    /// behind it. Every `spacing` of travel leaves a gust where the cursor
-    /// was, shoving the smoke the way it was going by up to `shove` at full
-    /// speed, and each gust fades over `fade` seconds so the smoke eases
-    /// back. A still cursor stirs nothing. Positions are fractions of the
-    /// square the puff is drawn in. Mirrored by `Stir` in web/index.html;
-    /// change the constants together.
+    /// The smoke keeps clear of the mouse: the cloud stays where it is, and
+    /// the smoke within `radius` of the cursor is pushed out to sit around
+    /// it, none of it lost. The hole opens and closes over `open` seconds
+    /// and trails the cursor by `lag`, so it is smoke getting out of the
+    /// way rather than a stencil. Positions are fractions of the square the
+    /// puff is drawn in. Mirrored by `Repel` in web/index.html; change the
+    /// constants together.
     ///
     /// A reference type so the timeline closure can update it without
     /// triggering a view update.
-    final class Stir {
-        static let spacing = 0.035
-        static let shove = 0.028
-        /// Cursor speed, in view widths per second, at which the shove is
-        /// its strongest.
-        static let fullSpeed = 3.0
-        static let fade = 0.5
-        static let capacity = 8
+    final class Repel {
+        static let radius = 0.025
+        static let open = 0.2
+        static let lag = 0.08
 
-        private var gusts: [(x: Double, y: Double, dx: Double, dy: Double)] = []
-        private var lastPoint: CGPoint?
-        private var lastGust: CGPoint?
+        private var hole = SIMD3<Float>.zero
         private var lastTime: TimeInterval?
 
-        /// The live gusts, four floats each as `PuffView.gusts` takes them.
-        func step(_ point: CGPoint, at now: TimeInterval) -> [Float] {
-            defer { lastTime = now; lastPoint = point }
-            guard let lastTime, let lastPoint else { lastGust = point; return [] }
-            let dt = min(max(now - lastTime, 0), 0.1)
-            let decay = exp(-dt / Stir.fade)
-            for i in gusts.indices { gusts[i].dx *= decay; gusts[i].dy *= decay }
-            let from = lastGust ?? lastPoint
-            let dx = point.x - from.x, dy = point.y - from.y
-            let travelled = hypot(dx, dy)
-            if travelled >= Stir.spacing, dt > 0 {
-                let speed = hypot(point.x - lastPoint.x, point.y - lastPoint.y) / dt
-                let strength = Stir.shove * min(1, speed / Stir.fullSpeed)
-                gusts.append((point.x, point.y, dx / travelled * strength, dy / travelled * strength))
-                if gusts.count > Stir.capacity { gusts.removeFirst() }
-                lastGust = point
+        /// `point` is where the cursor is, or nil for no cursor.
+        func step(_ point: CGPoint?, at now: TimeInterval) -> SIMD3<Float> {
+            defer { lastTime = now }
+            guard let lastTime else {
+                if let point { hole = SIMD3(Float(point.x), Float(point.y), 0) }
+                return hole
             }
-            gusts.removeAll { hypot($0.dx, $0.dy) < 0.0005 }
-            return gusts.flatMap { [Float($0.x), Float($0.y), Float($0.dx), Float($0.dy)] }
+            let dt = Float(min(max(now - lastTime, 0), 0.1))
+            if let point {
+                let k = 1 - exp(-dt / Float(Repel.lag))
+                hole.x += (Float(point.x) - hole.x) * k
+                hole.y += (Float(point.y) - hole.y) * k
+            }
+            let target: Float = point == nil ? 0 : Float(Repel.radius)
+            hole.z += (target - hole.z) * (1 - exp(-dt / Float(Repel.open)))
+            return hole
         }
     }
 

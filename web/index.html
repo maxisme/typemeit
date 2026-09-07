@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Type Me It</title>
-<meta property="og:site_name" content="Type Me It">
-<meta property="og:title" content="Type Me It">
-<meta property="og:description" content="Type Me It">
+<title>type me it</title>
+<meta property="og:site_name" content="type me it">
+<meta property="og:title" content="type me it">
+<meta property="og:description" content="type me it">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://typeme.it/">
 <meta property="og:image" content="https://typeme.it/og.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:image" content="https://typeme.it/og.png">
 <link rel="canonical" href="https://typeme.it/">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Type Me It","url":"https://typeme.it/","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 26 or newer, Apple silicon","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"downloadUrl":"https://github.com/maxisme/typemeit/releases/latest/download/TypeMeIt.dmg","description":"Hold fn, speak, let go. Push-to-talk dictation for the Mac, transcribed on the Mac by Parakeet, pasted where the cursor is. Free, no account, nothing leaves the computer.","author":{"@type":"Person","name":"Max"},"sameAs":"https://github.com/maxisme/typemeit"}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"type me it","url":"https://typeme.it/","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 26 or newer, Apple silicon","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"downloadUrl":"https://typeme.it/download","description":"Hold fn, speak, let go. Push-to-talk dictation for the Mac, transcribed on the Mac by Parakeet, pasted where the cursor is. Free, no account, nothing leaves the computer.","author":{"@type":"Person","name":"Max"},"sameAs":"https://github.com/maxisme/typemeit"}
 </script>
 <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -91,7 +91,7 @@
 </head>
 <body>
 <canvas id="c"></canvas>
-<button id="download" type="button">Download Type Me It for macOS</button>
+<button id="download" type="button">download type me it for macos</button>
 <p id="notmac" role="status" aria-live="polite"></p>
 <pre id="err"></pre>
 <ul id="more">
@@ -110,31 +110,22 @@
 // tell that a "Mac" is actually an iPad.
 const isMac = () => /mac/i.test(navigator.userAgentData?.platform ?? navigator.platform)
   && navigator.maxTouchPoints < 2;
-// Every release carries the DMG twice: as TypeMeIt.dmg, the fixed name this
-// fallback URL resolves to, and as "Type Me It <version>.dmg", so the saved
-// file says which version it is. The API tells us the versioned name; if it
-// does not answer in time, the fixed name still downloads the same bytes.
-const DMG = "https://github.com/maxisme/typemeit/releases/latest/download/TypeMeIt.dmg";
-const LATEST = "https://api.github.com/repos/maxisme/typemeit/releases/latest";
-async function versionedDMG() {
-  const res = await fetch(LATEST, { signal: AbortSignal.timeout(2000) });
-  if (!res.ok) throw new Error(res.status);
-  const asset = (await res.json()).assets.find(a => /^Type Me It .*\.dmg$/.test(a.name));
-  if (!asset) throw new Error("no versioned dmg");
-  return asset.browser_download_url;
-}
+// /download is the Worker in worker.js: it streams the latest release's DMG
+// from GitHub under the name "type me it.dmg". GitHub itself cannot hold an
+// asset with spaces in its name, so the name is set on the way through.
+const DMG = "/download";
 // Pressing the button with a pointer must not focus it: the focus ring is a
 // big circle around the puff, and it has no business showing up on a click.
 // Cancelling the default of the mouse press stops the focus without stopping
 // the click, so the keyboard still tabs to it and still gets the ring. Only
 // mousedown: cancelling a touch press can swallow the tap.
 document.getElementById("download").addEventListener("mousedown", (ev) => ev.preventDefault());
-document.getElementById("download").addEventListener("click", async () => {
+document.getElementById("download").addEventListener("click", () => {
   if (!isMac()) {
     document.getElementById("notmac").textContent = "type me it is for macos only";
     return;
   }
-  location.href = await versionedDMG().catch(() => DMG);
+  location.href = DMG;
 });
 
 // Reveal the links on the first attempt to scroll down: a wheel, a downward
@@ -165,8 +156,6 @@ document.getElementById("download").addEventListener("click", async () => {
 // of the page, and the y axis is flipped because gl_FragCoord runs upwards
 // while the shader (like SwiftUI) expects y down: its light comes from the top.
 const VIEW = 440;
-// Most gusts alive at once; see Stir.
-const GUSTS = 8;
 
 const FRAG = `#version 300 es
 precision highp float;
@@ -179,18 +168,12 @@ uniform float uTrail;
 uniform float uFlow;
 uniform float uStrike;
 uniform vec4 uTint;
-uniform vec4 uGusts[${GUSTS}];
-uniform int uGustCount;
+uniform vec3 uHole;
 out vec4 fragColor;
 void main() {
   vec2 p = gl_FragCoord.xy - uCentre;
   p.y = -p.y;
-  vec2 uv = p / uSize;
-  vec2 stir = vec2(0.0);
-  for (int i = 0; i < ${GUSTS}; i++) {
-    if (i < uGustCount) stir += gustShift(uv, uGusts[i], gustReach());
-  }
-  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uStrike, 1.0, uTint, stir);
+  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uStrike, 1.0, uTint, uHole);
 }
 `;
 
@@ -199,8 +182,8 @@ in vec2 aPos;
 void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
 `;
 
-// Ports of PuffView.Trail, PuffView.Dynamics and CloudView.Stir. The constants
-// here mirror the Swift; change them together.
+// Ports of PuffView.Trail, PuffView.Dynamics and CloudView.Repel. The
+// constants here mirror the Swift; change them together.
 
 /** Peak-hold on the expansion with a slow decay, so a retreat leaves a trail. */
 class Trail {
@@ -243,38 +226,27 @@ class Dynamics {
 }
 
 /**
- * The pointer stirs the smoke: the puff stays where it is, and the smoke is
- * brushed along by the cursor as it passes through, closing again behind it.
- * Every `spacing` of travel leaves a gust where the cursor was, shoving the
- * smoke the way it was going by up to `shove` at full speed, and each gust
- * fades over `fade` seconds so the smoke eases back. A still cursor stirs
- * nothing. Positions are fractions of the square the puff is drawn in.
+ * The smoke keeps clear of the pointer: the puff stays where it is, and the
+ * smoke within `radius` of the cursor is pushed out to sit around it, none
+ * of it lost. The hole opens and closes over `open` seconds and trails the
+ * cursor by `lag`, so it is smoke getting out of the way rather than a
+ * stencil. Positions are fractions of the square the puff is drawn in.
  */
-class Stir {
-  static spacing = 0.035; static shove = 0.028; static fullSpeed = 3.0; static fade = 0.5; static capacity = GUSTS;
-  gusts = []; lastPoint = null; lastGust = null; last = null;
-  /** The live gusts, four floats each as the shader takes them. */
+class Repel {
+  static radius = 0.025; static open = 0.2; static lag = 0.08;
+  x = 0; y = 0; r = 0; last = null;
+  /** `point` is where the pointer is, or null for no pointer. */
   step(point, now) {
-    const lastTime = this.last, lastPoint = this.lastPoint;
-    this.last = now; this.lastPoint = point;
-    if (lastTime === null || lastPoint === null || point === null) { this.lastGust = point; return this.flat(); }
-    const dt = Math.min(Math.max(now - lastTime, 0), 0.1);
-    const decay = Math.exp(-dt / Stir.fade);
-    for (const g of this.gusts) { g.dx *= decay; g.dy *= decay; }
-    const from = this.lastGust ?? lastPoint;
-    const dx = point.x - from.x, dy = point.y - from.y;
-    const travelled = Math.hypot(dx, dy);
-    if (travelled >= Stir.spacing && dt > 0) {
-      const speed = Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y) / dt;
-      const strength = Stir.shove * Math.min(1, speed / Stir.fullSpeed);
-      this.gusts.push({ x: point.x, y: point.y, dx: dx / travelled * strength, dy: dy / travelled * strength });
-      if (this.gusts.length > Stir.capacity) this.gusts.shift();
-      this.lastGust = point;
+    if (this.last === null) { this.last = now; if (point) { this.x = point.x; this.y = point.y; } return this; }
+    const dt = Math.min(Math.max(now - this.last, 0), 0.1);
+    this.last = now;
+    if (point) {
+      const k = 1 - Math.exp(-dt / Repel.lag);
+      this.x += (point.x - this.x) * k; this.y += (point.y - this.y) * k;
     }
-    this.gusts = this.gusts.filter((g) => Math.hypot(g.dx, g.dy) >= 0.0005);
-    return this.flat();
+    this.r += ((point ? Repel.radius : 0) - this.r) * (1 - Math.exp(-dt / Repel.open));
+    return this;
   }
-  flat() { return this.gusts.flatMap((g) => [g.x, g.y, g.dx, g.dy]); }
 }
 
 // Pointer: the puff stays in the middle of the page; the pointer's speed is
@@ -377,7 +349,7 @@ try {
   const aPos = gl.getAttribLocation(program, "aPos");
   gl.enableVertexAttribArray(aPos);
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uStrike", "uTint", "uGusts", "uGustCount"]
+  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uStrike", "uTint", "uHole"]
     .map((n) => [n, gl.getUniformLocation(program, n)]));
 } catch (e) {
   err.textContent = String(e.message || e);
@@ -385,7 +357,7 @@ try {
 
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const dynamics = new Dynamics();
-const stir = new Stir();
+const repel = new Repel();
 const start = performance.now();
 let dpr = 1;
 
@@ -429,13 +401,12 @@ function frame(nowMs) {
   gl.uniform1f(uniforms.uStrike, reduceMotion ? -1 : strike);
   const [tr, tg, tb] = tint(nowMs);
   gl.uniform4f(uniforms.uTint, tr, tg, tb, 1);
-  // Only a real pointer stirs the smoke; a touch is under a finger, not near
-  // it. The point is the pointer relative to the puff, as a fraction of the
-  // square it is drawn in, y down like the shader.
-  const stirring = canHover && pointer.seen && !reduceMotion;
-  const gusts = stir.step(stirring ? { x: (pointer.x - innerWidth / 2) / VIEW, y: (pointer.y - innerHeight / 2) / VIEW } : null, now);
-  gl.uniform1i(uniforms.uGustCount, gusts.length / 4);
-  if (gusts.length) gl.uniform4fv(uniforms.uGusts, gusts);
+  // Only a real pointer parts the smoke; a touch is under a finger, not
+  // near it. The point is the pointer relative to the puff, as a fraction
+  // of the square it is drawn in, y down like the shader.
+  const parting = canHover && pointer.seen && !reduceMotion;
+  repel.step(parting ? { x: (pointer.x - innerWidth / 2) / VIEW, y: (pointer.y - innerHeight / 2) / VIEW } : null, now);
+  gl.uniform3f(uniforms.uHole, repel.x, repel.y, repel.r);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   if (!reduceMotion) requestAnimationFrame(frame);
