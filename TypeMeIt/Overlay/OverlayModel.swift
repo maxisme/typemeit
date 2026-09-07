@@ -41,6 +41,9 @@ final class OverlayModel {
     /// What is under the cloud, when the screen has been sampled. Nil falls
     /// back to the appearance.
     var backdrop: ScreenSampler.Backdrop?
+    /// The resting cloud's centre in screen coordinates, so the cloud can
+    /// tell where the mouse is relative to it.
+    var cloudCentre: CGPoint = .zero
 
     var presentation: Presentation {
         switch state {

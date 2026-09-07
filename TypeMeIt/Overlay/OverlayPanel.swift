@@ -59,6 +59,7 @@ final class OverlayPanel {
         case .right: NSPoint(x: visible.maxX - OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
         }
         panel.setFrameOrigin(origin)
+        model.cloudCentre = CGPoint(x: origin.x + half, y: origin.y + CloudView.restHeight)
     }
 
     func show(_ state: OverlayModel.State) {

@@ -290,6 +290,43 @@ static float lightning(float2 uv, float R, float seed, float age) {
     return env * saturate(glow);
 }
 
+// MARK: Repelling
+
+// The smoke keeps clear of a gap: `gap` is where in xy, in the same centred
+// units as `uv`, its radius in z, and how fully it is open in w, 0...1.
+// The patch that gives way is not a disc: its extent is knocked about by
+// noise that drifts with time, so it is a ragged, shifting gap in the
+// smoke rather than a shape stamped on it.
+static float repelRadius(float2 uv, float4 gap, float time) {
+    float n = snoise(float3(uv * (1.3 / gap.z) + 3.0, time * 0.35));
+    return gap.z * (1.0 + 0.45 * n);
+}
+
+// How far the smoke at `uv` has shuffled outwards to make room: most at
+// about the gap's radius and less and less further out, and not at all at
+// the gap's centre, so there is no edge anywhere. The shift is gentle, most
+// of the giving way being the thinning below, so the smoke around it is
+// not visibly stretched.
+static float2 repelShift(float2 uv, float4 gap, float time) {
+    if (gap.w <= 0.0) { return float2(0.0); }
+    float2 d = uv - gap.xy;
+    float h = repelRadius(uv, gap, time);
+    float r2 = dot(d, d);
+    float h2 = h * h;
+    float reach = 3.0 * h;
+    float push = 0.6 * gap.w * h2 * (1.0 - exp(-r2 / h2)) * exp(-r2 / (reach * reach));
+    return uv - (gap.xy + d * sqrt(max(r2 - push, 0.0) / max(r2, 1e-9)));
+}
+
+// How much of the smoke is left: thinnest at the gap's centre, back to full
+// a couple of radii out, with no edge.
+static float repelFade(float2 uv, float4 gap, float time) {
+    if (gap.w <= 0.0) { return 1.0; }
+    float2 d = uv - gap.xy;
+    float h = repelRadius(uv, gap, time);
+    return 1.0 - 0.92 * gap.w * exp(-dot(d, d) / (h * h));
+}
+
 // Colour of the puff at `position` in a view of `size`, premultiplied.
 // expansion: 0 = fully retracted wisp, 1 = fully expanded cloud.
 // trail: the expansion the puff is retreating from, >= expansion. Fragments
@@ -302,9 +339,14 @@ static float lightning(float2 uv, float R, float seed, float age) {
 //         The flash lasts a second; the value also seeds its route.
 // density: multiplies the amount of smoke; 1 is normal, more is thicker.
 // tint: colour of the smoke; alpha scales overall opacity.
-static half4 render(float2 position, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint) {
+// shift: how far the smoke at this position has been moved aside, in the
+//       same centred units as the view (short side -0.5...0.5): the summed
+//       `repelShift` of the gaps. Zero for none.
+// clear: how much of the smoke here is left, 0...1: the product of the
+//       gaps' `repelFade`. 1 for all of it.
+static half4 render(float2 position, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint, float2 shift, float clear) {
     float scale = min(size.x, size.y);
-    float2 uv = (position - 0.5 * size) / scale;
+    float2 uv = (position - 0.5 * size) / scale - shift;
     float e = saturate(expansion);
     float tr = max(e, saturate(trail));
 
@@ -316,8 +358,8 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
     // The noise is scaled by a fixed mid radius, not the current one, so a
     // change of size moves smoke through the field instead of zooming it.
     float n = flowNoise(uv, flow, time, radius(0.5));
-    float body = field(uv, time, e, n, disperse);
-    float left = orphans(uv, time, e, tr, n);
+    float body = field(uv, time, e, n, disperse) * clear;
+    float left = orphans(uv, time, e, tr, n) * clear;
     float f = body + left;
 
     // `time` wraps hourly in the app, so a strike just before the wrap is
@@ -372,6 +414,16 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
 
 /// position, color: supplied by SwiftUI. The remaining arguments are
 /// documented on smoke::render.
-[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint) {
-    return smoke::render(position, size, time, expansion, trail, flow, disperse, strike, density, tint);
+// `gaps` is `gapCount` floats, four per gap, as `smoke::repelShift` takes
+// them.
+[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint, device const float *gaps, int gapCount) {
+    float2 uv = (position - 0.5 * size) / min(size.x, size.y);
+    float2 shift = 0.0;
+    float clear = 1.0;
+    for (int i = 0; i + 3 < gapCount; i += 4) {
+        float4 gap = float4(gaps[i], gaps[i + 1], gaps[i + 2], gaps[i + 3]);
+        shift += smoke::repelShift(uv, gap, time);
+        clear *= smoke::repelFade(uv, gap, time);
+    }
+    return smoke::render(position, size, time, expansion, trail, flow, disperse, strike, density, tint, shift, clear);
 }

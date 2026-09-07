@@ -48,6 +48,11 @@ struct PuffView: View {
     /// Taken off the expansion the level asks for, so the puff can settle
     /// smaller than its rest. Only used with `level`.
     var settle: Double = 0
+    /// Gaps the smoke keeps clear of, four floats each as the shader takes
+    /// them: where, as fractions of the view's short side from its centre,
+    /// y down, then the radius, then how fully open in 0...1. Empty for
+    /// none.
+    var gaps: [Float] = []
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     @State private var dynamics = Dynamics()
@@ -71,7 +76,8 @@ struct PuffView: View {
                         .float(Float(disperse(at: now))),
                         .float(Float(struck)),
                         .float(Float(density)),
-                        .color(tint)))
+                        .color(tint),
+                        .floatArray(reduceMotion ? [] : gaps)))
                 }
         }
     }
@@ -79,7 +85,7 @@ struct PuffView: View {
     /// Compiles the shader ahead of its first frame, which otherwise stalls
     /// for a moment.
     static func compileShader() async throws {
-        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .float(0), .float(-1), .float(1), .color(.white))
+        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .float(0), .float(-1), .float(1), .color(.white), .floatArray([]))
             .compile(as: .colorEffect)
     }
 
