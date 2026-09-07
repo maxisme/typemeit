@@ -83,7 +83,7 @@ struct MenuContent: View {
             Text("Secure Input is on in another app. Fn is unavailable.")
             Divider()
         }
-        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(AttributedString("Open ") + MenuContent.bold("Type Me It")) }
+        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(AttributedString("Open ") + MenuContent.bold("type me it")) }
             .keyboardShortcut(",", modifiers: .command)
         Divider()
         if Pipeline.shared.phase == .recording {
@@ -116,7 +116,7 @@ struct MenuContent: View {
             } label: { Text("View All…") }
         }
         Divider()
-        Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
+        Button("Quit type me it") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
     }
 
     /// Bold through an attributed string: the menu turns a font modifier
@@ -268,7 +268,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showGate(_ reason: SystemLanguageModel.Availability.UnavailableReason) {
         let view = GateView(reason: reason)
         let window = NSWindow(contentViewController: NSHostingController(rootView: view))
-        window.title = "Type Me It needs Apple Intelligence"
+        window.title = "type me it needs Apple Intelligence"
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.center()
@@ -305,7 +305,7 @@ struct GateView: View {
     private var message: String {
         switch reason {
         case .deviceNotEligible: "This Mac cannot run Apple Intelligence."
-        case .appleIntelligenceNotEnabled: "Turn on Apple Intelligence in System Settings, then reopen Type Me It."
+        case .appleIntelligenceNotEnabled: "Turn on Apple Intelligence in System Settings, then reopen type me it."
         case .modelNotReady: "Apple Intelligence is still downloading. Try again in a few minutes."
         @unknown default: "Apple Intelligence is not available right now."
         }
@@ -313,7 +313,7 @@ struct GateView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Type Me It needs Apple Intelligence").font(.title2.weight(.semibold))
+            Text("type me it needs Apple Intelligence").font(.title2.weight(.semibold))
             Text(message).frame(maxWidth: 380, alignment: .leading)
             HStack {
                 if case .appleIntelligenceNotEnabled = reason {
