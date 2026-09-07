@@ -128,7 +128,7 @@ final class Settings {
         autoSubmitKey = AutoSubmitKey(rawValue: d.string(forKey: "autoSubmitKey") ?? "") ?? .enter
         historyLimit = d.object(forKey: "historyLimit") == nil ? 500 : d.integer(forKey: "historyLimit")
         keepRecordings = bool("keepRecordings", Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true)
-        launchAtLogin = bool("launchAtLogin", false)
+        launchAtLogin = bool("launchAtLogin", true)
         showDockIcon = bool("showDockIcon", true)
         appearance = Appearance(rawValue: d.string(forKey: "appearance") ?? "") ?? .system
         cloudColorEnabled = bool("cloudColorEnabled", false)
