@@ -63,7 +63,7 @@ final class ScreenContextTests: XCTestCase {
         let p = PostProcessor.prompt(for: "hi", customWords: ["Kavuu"], screenTerms: ["Zentryx", "GitHub"])
         XCTAssertEqual(p, PostProcessor.template.replacingOccurrences(of: "${output}", with: "hi")
             + "\n\nTerms this user says often, with their exact spelling:\nKavuu\n\nIf a word or phrase in the transcript is a mishearing of one of these terms, replace it with the exact spelling above. Do not change anything else because of this list."
-            + "\n\nNames and terms that were on the user's screen while they spoke, with their exact spelling:\nZentryx, GitHub\n\nIf a word or phrase in the transcript sounds like one of these, it is probably that term: use the exact spelling above. Do not add any of these terms unless the transcript says them, and do not change anything else because of this list.")
+            + "\n\nNames and terms that were on the user's screen while they spoke, with their exact spelling:\nZentryx, GitHub\n\nThe speech-to-text model does not know these terms, so it writes what they sound like, often as several ordinary words (\"cube control\" for kubectl, \"use state\" for useState, \"centrics\" for Zentryx). Where a word or run of words in the transcript sounds like one of these terms, replace it with the exact spelling above. Do not add a term the transcript does not say, and do not change anything else because of this list.")
     }
 
     func testPromptUnchangedWithoutScreenTerms() {
