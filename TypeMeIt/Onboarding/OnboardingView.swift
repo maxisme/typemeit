@@ -85,9 +85,9 @@ struct OnboardingView: View {
     private var body_: String {
         switch step {
         case .model: "hold the fn key, speak, let go. your words are transcribed on this mac by parakeet, about 700 mb downloaded once, tidied up by apple intelligence, and typed where your cursor is. nothing leaves your computer."
-        case .microphone: "type me it needs the microphone to hear you."
-        case .accessibility: "lets type me it type into the app you are using and notice when you correct a word."
-        case .fnKey: "input monitoring lets type me it see fn while other apps are in front. macos uses fn for a shortcut of its own, which is turned off in keyboard settings. fn only works on apple keyboards."
+        case .microphone: "type me it needs the microphone."
+        case .accessibility: "lets type me it type into the app you are using and learn when you correct a word."
+        case .fnKey: "input monitoring lets type me it see fn while other apps are in front. macos uses fn for a shortcut of its own, which is turned off in keyboard settings."
         case .tryIt: "hold fn and say something. let go when you are done."
         }
     }
@@ -106,7 +106,7 @@ struct OnboardingView: View {
                     InkProgress(value: Double(received) / Double(max(total, 1)))
                         .padding(.horizontal, 12).padding(.vertical, 12)
                 case .verifying:
-                    SettingsRow(label: "parakeet 0.6b", last: true) { Status("checking the download…") }
+                    SettingsRow(label: "parakeet 0.6b", last: true) { Status("checking the model…") }
                 case .failed(let message):
                     SettingsRow(label: "parakeet 0.6b", subtitle: message.lowercased(), last: true) {
                         Button("retry") { modelStore.download() }.buttonStyle(InkButtonStyle(primary: true))
@@ -135,7 +135,7 @@ struct OnboardingView: View {
                     listenGranted = CGRequestListenEventAccess()
                     return true
                 }, missing: { !CGPreflightListenEventAccess() }, settings: SecureInput.inputMonitoringSettingsURL, last: false)
-                SettingsRow(label: "press 🌐 key to", subtitle: fnOK ? nil : "set it to “do nothing”", last: true) {
+                SettingsRow(label: "press 🌐 key to", subtitle: fnOK ? nil : "set it to “do nothing” to overwrite the macos defaults.", last: true) {
                     if fnOK {
                         Status("do nothing", done: true)
                     } else {
@@ -147,7 +147,7 @@ struct OnboardingView: View {
         case .tryIt:
             VStack(alignment: .leading, spacing: 12) {
                 if dictated, let last = store.newest {
-                    Status("heard you", done: true)
+                    Status("typed!", done: true)
                     Text(last.displayText)
                         .font(.system(size: 12))
                         .foregroundStyle(DesignTokens.Colors.ink)
@@ -184,7 +184,7 @@ struct OnboardingView: View {
     private func permissionRow(_ label: String, granted: Bool, grant: @escaping () -> Bool, missing: @escaping () -> Bool, settings: URL, last: Bool) -> some View {
         let current = step
         let viaSettings = needsSettings.contains(current)
-        return SettingsRow(label: label, subtitle: viaSettings && !granted ? "macos did not ask, so turn it on in system settings" : nil, last: last) {
+        return SettingsRow(label: label, subtitle: viaSettings && !granted ? "macos did not ask, so you might need to turn it on in system settings" : nil, last: last) {
             if granted {
                 Status("granted", done: true)
             } else if viaSettings {
