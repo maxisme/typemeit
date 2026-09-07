@@ -190,8 +190,8 @@ in vec2 aPos;
 void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
 `;
 
-// Ports of PuffView.Trail and PuffView.Dynamics. The constants here mirror the
-// Swift; change them together.
+// Ports of PuffView.Trail, PuffView.Dynamics and CloudView.Shy. The constants
+// here mirror the Swift; change them together.
 
 /** Peak-hold on the expansion with a slow decay, so a retreat leaves a trail. */
 class Trail {
@@ -230,6 +230,41 @@ class Dynamics {
     const e = Math.min(1, Math.max(0.05, Dynamics.restExpansion(this.env)));
     this.flow += dt * (0.08 + 6 * Math.max(0, this.env - before));
     return { expansion: e, trail: this.trail.step(e, now), flow: this.flow };
+  }
+}
+
+/**
+ * The puff shies away from the pointer: within a few radii of it, the whole
+ * cloud drifts a little in the opposite direction, and drifts back once the
+ * pointer leaves. The shift is at most `SHIFT` of the cloud's radius and
+ * follows the pointer lazily, so it reads as smoke stirred by the cursor
+ * rather than a thing dodging it. `radius` is the resting cloud's radius in
+ * the same units as the points.
+ */
+class Shy {
+  static reach = 3.2; static shift = 0.12; static toward = 0.4; static back = 0.7;
+  x = 0; y = 0; last = null;
+  constructor(radius) { this.radius = radius; }
+  step(pointerX, pointerY, centreX, centreY, now) {
+    let tx = 0, ty = 0;
+    if (pointerX !== null) {
+      const dx = centreX - pointerX, dy = centreY - pointerY;
+      const d = Math.hypot(dx, dy);
+      const reach = Shy.reach * this.radius;
+      if (d > 1e-3 && d < reach) {
+        const w = 1 - d / reach;
+        const push = Shy.shift * this.radius * w * w;
+        tx = dx / d * push; ty = dy / d * push;
+      }
+    }
+    if (this.last === null) { this.last = now; return this; }
+    const dt = Math.min(Math.max(now - this.last, 0), 0.1);
+    this.last = now;
+    const moving = Math.hypot(tx, ty) > Math.hypot(this.x, this.y);
+    const k = 1 - Math.exp(-dt / (moving ? Shy.toward : Shy.back));
+    this.x += (tx - this.x) * k;
+    this.y += (ty - this.y) * k;
+    return this;
   }
 }
 
@@ -341,6 +376,9 @@ try {
 
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const dynamics = new Dynamics();
+// The resting cloud's radius in CSS px: the shader's radius at rest
+// expansion, in a VIEW px square.
+const shy = new Shy(VIEW * (0.05 + 0.2 * Dynamics.restExpansion(0)));
 const start = performance.now();
 let dpr = 1;
 
@@ -375,7 +413,10 @@ function frame(nowMs) {
 
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
-  gl.uniform2f(uniforms.uCentre, canvas.width / 2, canvas.height / 2);
+  // Only a real pointer stirs the cloud; a touch is under a finger, not near it.
+  const stirred = canHover && pointer.seen && !reduceMotion;
+  shy.step(stirred ? pointer.x : null, stirred ? pointer.y : null, innerWidth / 2, innerHeight / 2, now);
+  gl.uniform2f(uniforms.uCentre, (innerWidth / 2 + shy.x) * dpr, (innerHeight / 2 - shy.y) * dpr);
   gl.uniform1f(uniforms.uSize, VIEW * dpr);
   gl.uniform1f(uniforms.uTime, time);
   gl.uniform1f(uniforms.uExpansion, s.expansion);
