@@ -228,12 +228,12 @@ class Dynamics {
 /**
  * The smoke keeps clear of the pointer: the puff stays where it is, and the
  * smoke within `radius` of the cursor is pushed out to sit around it, none
- * of it lost. The hole opens and closes over `open` seconds and trails the
- * cursor by `lag`, so it is smoke getting out of the way rather than a
- * stencil. Positions are fractions of the square the puff is drawn in.
+ * of it lost. The pocket opens over `open` seconds, closes over `close`, and
+ * trails the cursor by `lag`, so the smoke is seen moving out of the way and
+ * drifting back rather than switching. Positions are fractions of the square the puff is drawn in.
  */
 class Repel {
-  static radius = 0.025; static open = 0.2; static lag = 0.08;
+  static radius = 0.03; static open = 0.35; static close = 0.5; static lag = 0.08;
   x = 0; y = 0; r = 0; last = null;
   /** `point` is where the pointer is, or null for no pointer. */
   step(point, now) {
@@ -244,7 +244,8 @@ class Repel {
       const k = 1 - Math.exp(-dt / Repel.lag);
       this.x += (point.x - this.x) * k; this.y += (point.y - this.y) * k;
     }
-    this.r += ((point ? Repel.radius : 0) - this.r) * (1 - Math.exp(-dt / Repel.open));
+    const target = point ? Repel.radius : 0;
+    this.r += (target - this.r) * (1 - Math.exp(-dt / (target > this.r ? Repel.open : Repel.close)));
     return this;
   }
 }

@@ -100,17 +100,18 @@ struct CloudView: View {
 
     /// The smoke keeps clear of the mouse: the cloud stays where it is, and
     /// the smoke within `radius` of the cursor is pushed out to sit around
-    /// it, none of it lost. The hole opens and closes over `open` seconds
-    /// and trails the cursor by `lag`, so it is smoke getting out of the
-    /// way rather than a stencil. Positions are fractions of the square the
+    /// it, none of it lost. The pocket opens over `open` seconds, closes
+    /// over `close`, and trails the cursor by `lag`, so the smoke is seen
+    /// moving out of the way and drifting back rather than switching. Positions are fractions of the square the
     /// puff is drawn in. Mirrored by `Repel` in web/index.html; change the
     /// constants together.
     ///
     /// A reference type so the timeline closure can update it without
     /// triggering a view update.
     final class Repel {
-        static let radius = 0.025
-        static let open = 0.2
+        static let radius = 0.03
+        static let open = 0.35
+        static let close = 0.5
         static let lag = 0.08
 
         private var hole = SIMD3<Float>.zero
@@ -130,7 +131,7 @@ struct CloudView: View {
                 hole.y += (Float(point.y) - hole.y) * k
             }
             let target: Float = point == nil ? 0 : Float(Repel.radius)
-            hole.z += (target - hole.z) * (1 - exp(-dt / Float(Repel.open)))
+            hole.z += (target - hole.z) * (1 - exp(-dt / Float(target > hole.z ? Repel.open : Repel.close)))
             return hole
         }
     }

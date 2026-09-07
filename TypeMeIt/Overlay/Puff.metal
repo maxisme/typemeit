@@ -293,29 +293,30 @@ static float lightning(float2 uv, float R, float seed, float age) {
 // MARK: Repelling
 
 // The smoke keeps clear of a point: `hole` is where in xy, in the same
-// centred units as `uv`, and the radius kept clear in z. Smoke inside that
-// radius is pushed out to the rim, and the smoke beyond shuffles outwards
-// to make room, less and less with distance. The map is area-preserving
-// (a ring at distance r shows what was at sqrt(r^2 - h^2)), so no smoke is
-// lost or made: the same amount sits around the hole as filled it.
+// centred units as `uv`, and how far around it the smoke gives way in z.
+// Smoke near the point shuffles outwards to make room, most at about that
+// distance and less and less further out, and nothing at the point
+// itself, so there is no edge anywhere. Outside the very middle the map is
+// close to area-preserving (a ring at distance r shows roughly what was at
+// sqrt(r^2 - h^2)), so the smoke that gives way gathers just outside
+// rather than vanishing.
 static float2 repelled(float2 uv, float3 hole) {
     float2 d = uv - hole.xy;
     float h = hole.z;
     if (h <= 0.0) { return uv; }
     float r2 = dot(d, d);
     float h2 = h * h;
-    if (r2 <= h2) { return hole.xy; }
-    // Full at the rim, easing off over a few radii so far smoke is still.
     float reach = 3.0 * h;
-    float push = h2 * exp(-(r2 - h2) / (reach * reach));
-    return hole.xy + d * sqrt(max(r2 - push, 0.0) / r2);
+    float push = h2 * (1.0 - exp(-r2 / h2)) * exp(-r2 / (reach * reach));
+    return hole.xy + d * sqrt(max(r2 - push, 0.0) / max(r2, 1e-9));
 }
 
-// 0 inside the hole, 1 outside, soft at the rim, so the cleared spot has no
-// hard edge.
+// How much of the smoke has given way: thinnest at the point, back to full
+// a couple of radii out, with no edge.
 static float repelFade(float2 uv, float3 hole) {
     if (hole.z <= 0.0) { return 1.0; }
-    return smoothstep(hole.z * 0.75, hole.z * 1.25, length(uv - hole.xy));
+    float2 d = uv - hole.xy;
+    return 1.0 - 0.55 * exp(-dot(d, d) / (hole.z * hole.z));
 }
 
 // Colour of the puff at `position` in a view of `size`, premultiplied.
