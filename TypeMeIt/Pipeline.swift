@@ -47,6 +47,11 @@ final class Pipeline {
         overlay.model.onCopy = { [weak self] in self?.copyFromPrompt() }
         overlay.model.onKeep = { [weak self] in self?.keepLearned() }
         overlay.model.onUndo = { [weak self] in self?.undoLearned() }
+        overlay.model.onOpenCleanup = { [weak self] in
+            self?.keepLearned()
+            AppState.shared.settingsTab = .cleanup
+            NotificationCenter.default.post(name: MenuBarLabel.openSettings, object: nil)
+        }
         overlay.model.onInstall = { [weak self] in self?.toastTask?.cancel(); self?.overlay.hide(); Updates.shared.install() }
     }
 
