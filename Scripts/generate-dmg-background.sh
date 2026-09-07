@@ -10,8 +10,10 @@
 #
 # Two lines of words, set in DM Mono Light, the design system's display face,
 # lowercase like everything else the app says: the name of the thing at 11pt in
-# ink along the top, and where to drag it at 9pt in ink-3 along the bottom,
-# under the icon labels. Both carry the display tracking of -0.02em. They are small on
+# ink along the top, and where to drag it at 9pt in paper, centred on the icon
+# row over the smoke, in the gap between the two icons. The gap is 234 to 426
+# window points and the window's centre is 330, so the line is centred on the
+# window; keep it under about 190 points wide or it runs into the icons. Both carry the display tracking of -0.02em. They are small on
 # purpose -- the icons are the window, the words are a caption. No mark and no
 # arrow: the app's own icon is already the largest thing in the window, and the
 # folder beside it says where the app goes. The direction of the drag is carried
@@ -37,8 +39,8 @@ TITLE_INK="#0a0a0a"   # ink
 TITLE_Y=66       # baseline of the line, in window points
 SUB="drag to your applications folder..."
 SUB_PT=9
-SUB_INK="#6e6e6e"     # ink-3
-SUB_Y=372
+SUB_INK="#FFFFFF"     # paper, over the dark smoke
+SUB_Y=214            # centreline, not baseline: this one is centred on the icon row
 
 W=660
 H=410
@@ -50,8 +52,9 @@ python3 - "$PUFFS" "$OUT" "$W" "$H" "$FONT" \
     "$TITLE" "$TITLE_PT" "$TITLE_Y" "$TITLE_INK" "$SUB" "$SUB_PT" "$SUB_Y" "$SUB_INK" <<'PY'
 import subprocess, sys, tempfile, shutil, os
 puffs, out, W, H, font = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5]
-lines = [(sys.argv[6], int(sys.argv[7]), int(sys.argv[8]), sys.argv[9]),
-         (sys.argv[10], int(sys.argv[11]), int(sys.argv[12]), sys.argv[13])]
+# (text, point size, y, colour, how y is measured)
+lines = [(sys.argv[6], int(sys.argv[7]), int(sys.argv[8]), sys.argv[9], "baseline"),
+         (sys.argv[10], int(sys.argv[11]), int(sys.argv[12]), sys.argv[13], "centre")]
 T = tempfile.mkdtemp()
 run = lambda *a: subprocess.run([str(x) for x in a], check=True)
 ident = lambda f, fmt: int(subprocess.run(["magick","identify","-format",fmt,f],
@@ -84,11 +87,15 @@ for name, cx, cy, sz, op, mb in [("p4", 500, 428, 360, 0.95,  6),
 
 # The words: each line's point size doubles for the 2x asset, and -0.02em of
 # tracking is -0.04px per point of that. -kerning takes the per-glyph figure.
-for text, pt, y, ink in lines:
+for text, pt, y, ink, measure in lines:
     px = pt * 2
+    if measure == "baseline":
+        gravity, offset = "North", y*2 - px
+    else:
+        gravity, offset = "Center", y*2 - H   # Center measures from the middle
     run("magick", f"{T}/acc.png", "-font", font, "-pointsize", px,
-        "-kerning", f"{-0.02*px:.2f}", "-fill", ink, "-gravity", "North",
-        "-annotate", f"+0+{y*2-px}", text, f"{T}/n.png")
+        "-kerning", f"{-0.02*px:.2f}", "-fill", ink, "-gravity", gravity,
+        "-annotate", f"+0{offset:+d}", text, f"{T}/n.png")
     shutil.move(f"{T}/n.png", f"{T}/acc.png")
 
 # Grain, laid on after compositing rather than as a filter, to break up the
