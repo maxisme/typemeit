@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Type Me It</title>
-<meta property="og:title" content="Type Me It">
+<title>type me it</title>
+<meta property="og:site_name" content="type me it">
+<meta property="og:title" content="type me it">
+<meta property="og:description" content="type me it">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://typeme.it/">
 <meta property="og:image" content="https://typeme.it/og.png">
@@ -15,7 +17,7 @@
 <meta name="twitter:image" content="https://typeme.it/og.png">
 <link rel="canonical" href="https://typeme.it/">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Type Me It","url":"https://typeme.it/","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 26 or newer, Apple silicon","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"downloadUrl":"https://github.com/maxisme/typemeit/releases/latest/download/TypeMeIt.dmg","description":"Hold fn, speak, let go. Push-to-talk dictation for the Mac, transcribed on the Mac by Parakeet, pasted where the cursor is. Free, no account, nothing leaves the computer.","author":{"@type":"Person","name":"Max"},"sameAs":"https://github.com/maxisme/typemeit"}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"type me it","url":"https://typeme.it/","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 26 or newer, Apple silicon","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"downloadUrl":"https://typeme.it/download","description":"Hold fn, speak, let go. Push-to-talk dictation for the Mac, transcribed on the Mac by Parakeet, pasted where the cursor is. Free, no account, nothing leaves the computer.","author":{"@type":"Person","name":"Max"},"sameAs":"https://github.com/maxisme/typemeit"}
 </script>
 <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -89,7 +91,7 @@
 </head>
 <body>
 <canvas id="c"></canvas>
-<button id="download" type="button">Download Type Me It for macOS</button>
+<button id="download" type="button">download type me it for macos</button>
 <p id="notmac" role="status" aria-live="polite"></p>
 <pre id="err"></pre>
 <ul id="more">
@@ -108,31 +110,22 @@
 // tell that a "Mac" is actually an iPad.
 const isMac = () => /mac/i.test(navigator.userAgentData?.platform ?? navigator.platform)
   && navigator.maxTouchPoints < 2;
-// Every release carries the DMG twice: as TypeMeIt.dmg, the fixed name this
-// fallback URL resolves to, and as "Type Me It <version>.dmg", so the saved
-// file says which version it is. The API tells us the versioned name; if it
-// does not answer in time, the fixed name still downloads the same bytes.
-const DMG = "https://github.com/maxisme/typemeit/releases/latest/download/TypeMeIt.dmg";
-const LATEST = "https://api.github.com/repos/maxisme/typemeit/releases/latest";
-async function versionedDMG() {
-  const res = await fetch(LATEST, { signal: AbortSignal.timeout(2000) });
-  if (!res.ok) throw new Error(res.status);
-  const asset = (await res.json()).assets.find(a => /^Type Me It .*\.dmg$/.test(a.name));
-  if (!asset) throw new Error("no versioned dmg");
-  return asset.browser_download_url;
-}
+// /download is the Worker in worker.js: it streams the latest release's DMG
+// from GitHub under the name "type me it.dmg". GitHub itself cannot hold an
+// asset with spaces in its name, so the name is set on the way through.
+const DMG = "/download";
 // Pressing the button with a pointer must not focus it: the focus ring is a
 // big circle around the puff, and it has no business showing up on a click.
 // Cancelling the default of the mouse press stops the focus without stopping
 // the click, so the keyboard still tabs to it and still gets the ring. Only
 // mousedown: cancelling a touch press can swallow the tap.
 document.getElementById("download").addEventListener("mousedown", (ev) => ev.preventDefault());
-document.getElementById("download").addEventListener("click", async () => {
+document.getElementById("download").addEventListener("click", () => {
   if (!isMac()) {
     document.getElementById("notmac").textContent = "type me it is for macos only";
     return;
   }
-  location.href = await versionedDMG().catch(() => DMG);
+  location.href = DMG;
 });
 
 // Reveal the links on the first attempt to scroll down: a wheel, a downward

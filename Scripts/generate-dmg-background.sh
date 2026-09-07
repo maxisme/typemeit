@@ -8,14 +8,18 @@
 # drawn here at coordinates the layout script does not share streams at nothing.
 # Change both together.
 #
-# One line of words along the top, set in DM Mono Light, the design system's display
-# face, at 22pt with the display tracking of -0.02em in ink-3, lowercase like
-# everything else the app says. display-3 is 30pt, but a monospace line at
-# that size run wider than the window. No mark and no arrow: the app's own icon is already the largest thing in
-# the window, and the folder beside it says where the app goes. The direction of
-# the drag is carried by the smoke instead of by an arrow -- puffs growing and
-# darkening from the app toward the folder, rising slightly as they go, each
-# smeared a little more than the last.
+# Two lines of words, set in DM Mono Light, the design system's display face,
+# lowercase like everything else the app says: the name of the thing at 11pt in
+# ink along the top, and an ascii arrow at 9pt in paper, centred on the icon
+# row over the smoke, in the gap between the two icons, pointing from the app
+# to the folder. The gap is 234 to 426 window points and the window's centre is
+# 330, so the line is centred on the window. Both carry the display tracking
+# of -0.02em. They are small on purpose -- the icons are the window, the words
+# are a caption. No mark: the app's own icon is already the largest thing in
+# the window, and the folder beside it says where the app goes. The direction of the drag is carried
+# by the smoke -- puffs growing and darkening from the app toward the folder,
+# rising slightly as they go, each smeared a little more than the last -- and by
+# the small arrow set over it.
 #
 # Note that Finder, not this image, decides the colour of the two icon labels:
 # black in Light appearance, white in Dark, with no per-image override. The
@@ -30,7 +34,13 @@ OUT="Scripts/dmg-background.png"
 PUFFS="Scripts/puff"
 FONT="Scripts/fonts/DMMono-Light.ttf"     # display face from design/tokens.json
 TITLE="minimal transcription app"
-TITLE_Y=72       # baseline of the line, in window points
+TITLE_PT=11
+TITLE_INK="#0a0a0a"   # ink
+TITLE_Y=66       # baseline of the line, in window points
+SUB="---->"
+SUB_PT=9
+SUB_INK="#FFFFFF"     # paper, over the dark smoke
+SUB_Y=214            # centreline, not baseline: this one is centred on the icon row
 
 W=660
 H=410
@@ -38,11 +48,13 @@ ICON_Y=214       # centre of both Finder icons, in window points
 APP_X=170
 FOLDER_X=490
 
-python3 - "$PUFFS" "$OUT" "$W" "$H" "$FONT" "$TITLE" "$TITLE_Y" <<'PY'
+python3 - "$PUFFS" "$OUT" "$W" "$H" "$FONT" \
+    "$TITLE" "$TITLE_PT" "$TITLE_Y" "$TITLE_INK" "$SUB" "$SUB_PT" "$SUB_Y" "$SUB_INK" <<'PY'
 import subprocess, sys, tempfile, shutil, os
-puffs, out, W, H, font, title, title_y = (sys.argv[1], sys.argv[2], int(sys.argv[3]),
-                                          int(sys.argv[4]), sys.argv[5], sys.argv[6],
-                                          int(sys.argv[7]))
+puffs, out, W, H, font = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5]
+# (text, point size, y, colour, how y is measured)
+lines = [(sys.argv[6], int(sys.argv[7]), int(sys.argv[8]), sys.argv[9], "baseline"),
+         (sys.argv[10], int(sys.argv[11]), int(sys.argv[12]), sys.argv[13], "centre")]
 T = tempfile.mkdtemp()
 run = lambda *a: subprocess.run([str(x) for x in a], check=True)
 ident = lambda f, fmt: int(subprocess.run(["magick","identify","-format",fmt,f],
@@ -64,8 +76,11 @@ for name, cx, cy, sz, op, mb in [("p4", 500, 428, 360, 0.95,  6),
     s = f"{T}/{name}-{cx}.png"
     # The shader draws white smoke on transparent. Negating the colour channels
     # and leaving alpha alone turns it into black smoke of the same shape, which
-    # then composites straight over the white ground.
+    # then composites straight over the white ground. The transparent border
+    # gives the motion blur room: smeared onto a canvas cut at the sprite's edge,
+    # the smoke ends in a hard vertical line.
     run("magick", f"{puffs}/{name}.png", "-trim", "+repage", "-resize", f"{sz}x{sz}",
+        "-bordercolor", "none", "-border", mb*3,
         "-motion-blur", f"0x{mb}+0", "-channel","RGB","-negate","+channel",
         "-channel","A","-evaluate","multiply",op,"+channel", s)
     w, h = ident(s,"%w"), ident(s,"%h")
@@ -73,12 +88,18 @@ for name, cx, cy, sz, op, mb in [("p4", 500, 428, 360, 0.95,  6),
         "-compose","Over","-composite", f"{T}/n.png")
     shutil.move(f"{T}/n.png", f"{T}/acc.png")
 
-# The title: 22pt with -0.02em tracking is 44px and -0.88px between glyphs at
-# 2x. -kerning takes the per-glyph figure. ink-3 is #6e6e6e.
-run("magick", f"{T}/acc.png", "-font", font, "-pointsize", "44", "-kerning", "-0.88",
-    "-fill", "#6e6e6e", "-gravity", "North",
-    "-annotate", f"+0+{title_y*2-44}", title, f"{T}/n.png")
-shutil.move(f"{T}/n.png", f"{T}/acc.png")
+# The words: each line's point size doubles for the 2x asset, and -0.02em of
+# tracking is -0.04px per point of that. -kerning takes the per-glyph figure.
+for text, pt, y, ink, measure in lines:
+    px = pt * 2
+    if measure == "baseline":
+        gravity, offset = "North", y*2 - px
+    else:
+        gravity, offset = "Center", y*2 - H   # Center measures from the middle
+    run("magick", f"{T}/acc.png", "-font", font, "-pointsize", px,
+        "-kerning", f"{-0.02*px:.2f}", "-fill", ink, "-gravity", gravity,
+        "-annotate", f"+0{offset:+d}", text, f"{T}/n.png")
+    shutil.move(f"{T}/n.png", f"{T}/acc.png")
 
 # Grain, laid on after compositing rather than as a filter, to break up the
 # banding a near-flat ramp rings into on an 8-bit panel. Very light: on a white

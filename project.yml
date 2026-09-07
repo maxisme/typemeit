@@ -64,7 +64,7 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIconFile: "$(APP_ICON_FILE)"
         LSMinimumSystemVersion: "26.0"
-        NSMicrophoneUsageDescription: "Type Me It records your voice while you hold the Fn key so it can transcribe it."
+        NSMicrophoneUsageDescription: "type me it records your voice while you hold the Fn key so it can transcribe it."
         NSHumanReadableCopyright: ""
         NSPrincipalClass: NSApplication
         SUFeedURL: https://github.com/maxisme/typemeit/releases/latest/download/appcast.xml
@@ -80,7 +80,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit
-        PRODUCT_NAME: Type Me It
+        PRODUCT_NAME: type me it
         PRODUCT_MODULE_NAME: TypeMeIt
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_OBJC_BRIDGING_HEADER: ""
@@ -92,7 +92,7 @@ targets:
         # release icon inverted and its menu bar puff is dashed.
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit.dev
-          PRODUCT_NAME: Type Me It Dev
+          PRODUCT_NAME: type me it dev
           APP_ICON_FILE: AppIcon-Dev
   TypeMeItTests:
     type: bundle.unit-test
@@ -107,7 +107,7 @@ targets:
       configs:
         # The host app has a different product name in Debug.
         Debug:
-          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Type Me It Dev.app/Contents/MacOS/Type Me It Dev"
+          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/type me it dev.app/Contents/MacOS/type me it dev"
           BUNDLE_LOADER: "$(TEST_HOST)"
 schemes:
   TypeMeIt:

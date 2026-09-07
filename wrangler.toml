@@ -1,10 +1,12 @@
-# Assets-only Worker: every request is served from ./web as a static file, so
-# there is no `main` and no Worker code to run.
+# Every request is served from ./web as a static file, except /download, which
+# worker.js answers by streaming the latest DMG from GitHub under its own name.
 name = "typemeit-web-dev"
+main = "worker.js"
 compatibility_date = "2026-07-01"
 
 [assets]
 directory = "./web"
+binding = "ASSETS"
 
 [env.production]
 name = "typemeit-web"
@@ -12,3 +14,4 @@ routes = [{ pattern = "typeme.it", custom_domain = true }]
 
 [env.production.assets]
 directory = "./web"
+binding = "ASSETS"

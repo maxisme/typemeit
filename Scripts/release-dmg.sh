@@ -20,7 +20,7 @@ IDENTITY="Developer ID Application: Max Mitchell (Z28DW76Y3W)"
 BUILD="$PWD/build"
 DERIVED="$BUILD/DerivedData"
 ARCHIVE="$BUILD/TypeMeIt.xcarchive"
-APP="$BUILD/export/Type Me It.app"
+APP="$BUILD/export/type me it.app"
 
 # Always moves forward, so it outranks every earlier build with no shared-state
 # lookup. A commit count does not survive re-running the same commit.
@@ -78,14 +78,11 @@ xcodebuild -exportArchive \
 
 VERSION="${MARKETING_VERSION:-$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")}"
 
-# The DMG is published under two names. The unversioned one is what
-# /releases/latest/download/TypeMeIt.dmg resolves to, which only works if the
-# asset name is the same every release; the appcast and the site's fallback link
-# depend on it. The versioned copy is what the site sends visitors to once it
-# has asked the GitHub API which release is latest, so the file they save says
-# which version it is.
+# The asset is named the same every release: /releases/latest/download/TypeMeIt.dmg
+# is what the appcast and the site's download Worker fetch, and that path only
+# resolves for a fixed name. GitHub replaces spaces in asset names with dots, so
+# the name a visitor saves ("type me it.dmg") is set by the Worker, not here.
 DMG="$BUILD/TypeMeIt.dmg"
-VERSIONED_DMG="$BUILD/Type Me It $VERSION.dmg"
 
 # Notarization round-trips to Apple and takes minutes, so a binary that can never
 # pass fails here instead -- locally, in a second, naming the reason.
@@ -115,7 +112,7 @@ rm -f "$BUILD/TypeMeIt.zip"
 STAGE="$BUILD/dmg-stage"
 rm -rf "$STAGE" "$DMG"
 mkdir -p "$STAGE"
-cp -R "$APP" "$STAGE/Type Me It.app"
+cp -R "$APP" "$STAGE/type me it.app"
 ln -s /Applications "$STAGE/Applications"
 # Finder errors on a background picture that is not staged, so the layout script
 # is told which case this is rather than left to guess.
@@ -131,11 +128,11 @@ fi
 # it out after compression looks like it works and silently produces a default
 # window.
 RW="$BUILD/TypeMeIt-rw.dmg"
-MNT="/Volumes/Type Me It"
+MNT="/Volumes/type me it"
 rm -f "$RW"
-hdiutil create -volname "Type Me It" -srcfolder "$STAGE" -ov -format UDRW "$RW"
+hdiutil create -volname "type me it" -srcfolder "$STAGE" -ov -format UDRW "$RW"
 hdiutil attach "$RW" -nobrowse -mountpoint "$MNT"
-osascript Scripts/dmg-layout.applescript "Type Me It" "$BACKGROUND"
+osascript Scripts/dmg-layout.applescript "type me it" "$BACKGROUND"
 sync
 # Finder is still writing the .DS_Store the layout just arranged, and a detach
 # that races it fails with "Resource busy". Patience first; -force is a last
@@ -160,7 +157,7 @@ xcrun stapler validate "$DMG"
 VERIFY="$BUILD/verify-mnt"
 rm -rf "$VERIFY"
 hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$VERIFY"
-result="$(syspolicy_check distribution "$VERIFY/Type Me It.app" 2>&1 || true)"
+result="$(syspolicy_check distribution "$VERIFY/type me it.app" 2>&1 || true)"
 hdiutil detach "$VERIFY"
 echo "$result"
 if grep -q "failed one or more" <<<"$result"; then
@@ -199,8 +196,5 @@ fi
 
 [ -f "$UPDATES/appcast.xml" ] || { echo "generate_appcast produced no appcast.xml"; exit 1; }
 
-cp "$DMG" "$VERSIONED_DMG"
-
 echo "==> $DMG"
-echo "==> $VERSIONED_DMG"
 echo "==> $UPDATES/appcast.xml"
