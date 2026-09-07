@@ -46,7 +46,9 @@ cat > "$BUILD/ExportOptions-developer-id.plist" <<PLIST
   <key>teamID</key>
   <string>${DEVELOPMENT_TEAM}</string>
   <key>signingStyle</key>
-  <string>automatic</string>
+  <string>manual</string>
+  <key>signingCertificate</key>
+  <string>Developer ID Application</string>
 </dict>
 </plist>
 PLIST
