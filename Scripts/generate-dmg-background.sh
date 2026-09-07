@@ -13,9 +13,10 @@
 # ink along the top, and an ascii arrow at 9pt in paper, centred on the icon
 # row over the smoke, in the gap between the two icons, pointing from the app
 # to the folder. The gap is 234 to 426 window points and the window's centre is
-# 330, so the line is centred on the window. Both carry the display tracking of -0.02em. They are small on
-# purpose -- the icons are the window, the words are a caption. No mark: the app's own icon is already the largest thing in the window, and the
-# folder beside it says where the app goes. The direction of the drag is carried
+# 330, so the line is centred on the window. Both carry the display tracking
+# of -0.02em. They are small on purpose -- the icons are the window, the words
+# are a caption. No mark: the app's own icon is already the largest thing in
+# the window, and the folder beside it says where the app goes. The direction of the drag is carried
 # by the smoke -- puffs growing and darkening from the app toward the folder,
 # rising slightly as they go, each smeared a little more than the last -- and by
 # the small arrow set over it.
