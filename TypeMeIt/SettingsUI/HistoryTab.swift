@@ -104,18 +104,17 @@ struct HistoryTab: View {
                         if let app = e.appName { Text(app.lowercased()).font(.system(size: 10)).foregroundStyle(DesignTokens.Colors.ink3) }
                     }
                     telemetry(e)
-                    if expanded.contains(e.id), e.transcript != e.displayText {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("heard").font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
-                            Text(e.transcript).font(.system(size: 12)).foregroundStyle(DesignTokens.Colors.ink2).textSelection(.enabled)
+                    if e.transcript != e.displayText {
+                        if e.recordingFile != nil {
+                            stages(e)
+                        } else if expanded.contains(e.id) {
+                            stage("heard", e.transcript)
                         }
-                        .padding(.horizontal, 8).padding(.vertical, 6)
-                        .background(Rectangle().fill(DesignTokens.Colors.inkA04))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
-                .onTapGesture { if expanded.contains(e.id) { expanded.remove(e.id) } else { expanded.insert(e.id) } }
+                .onTapGesture { toggleExpanded(e.id) }
                 HStack(spacing: 4) {
                     if e.recordingFile != nil {
                         let on = player.playing == e.id
@@ -128,6 +127,46 @@ struct HistoryTab: View {
             .padding(.horizontal, 12).padding(.vertical, 10)
             if !last { RowRule() }
         }
+    }
+
+    private func toggleExpanded(_ id: UUID) {
+        if expanded.contains(id) { expanded.remove(id) } else { expanded.insert(id) }
+    }
+
+    /// An accordion under rows that kept their audio and whose text changed
+    /// after the engine heard it, so the original can be checked against the
+    /// recording. Rows where nothing changed have nothing to show.
+    @ViewBuilder
+    private func stages(_ e: HistoryEntry) -> some View {
+        let open = expanded.contains(e.id)
+        VStack(alignment: .leading, spacing: 0) {
+            Button { toggleExpanded(e.id) } label: {
+                HStack(spacing: 5) {
+                    Image("akar-chevron-down").resizable().frame(width: 10, height: 10)
+                        .rotationEffect(.degrees(open ? 0 : -90))
+                    Text("heard")
+                }
+                .font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+                .padding(.horizontal, 7).padding(.vertical, 3)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(open ? "hide what was heard" : "show what was heard before clean-up")
+            if open { stage(nil, e.transcript) }
+        }
+        .background(Rectangle().fill(DesignTokens.Colors.inkA04))
+        .animation(.easeOut(duration: 0.15), value: open)
+    }
+
+    private func stage(_ label: String?, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if let label { Text(label).font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink3) }
+            Text(text).font(.system(size: 12)).textSelection(.enabled)
+        }
+        .foregroundStyle(DesignTokens.Colors.ink2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 8).padding(.vertical, 6)
+        .background(Rectangle().fill(DesignTokens.Colors.inkA04))
     }
 
     /// Stage timings, monospaced and always visible.

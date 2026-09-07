@@ -174,7 +174,7 @@ final class Pipeline {
             } catch {
                 if gen == self.generation {
                     Log.transcriber.error("\(error.localizedDescription)")
-                    self.finishIdle()
+                    self.finishIdle(discarding: recordingFile)
                 }
                 return
             }
@@ -185,7 +185,10 @@ final class Pipeline {
         }
     }
 
-    private func finishIdle() {
+    /// Returns to idle as if the dictation never happened. A recording saved
+    /// for it would otherwise sit in the archive with no history entry.
+    private func finishIdle(discarding recordingFile: String? = nil) {
+        if let recordingFile { RecordingArchive.delete([recordingFile]) }
         phase = .idle
         shortcuts.setPhase(.idle)
         overlay.hide()
@@ -197,9 +200,11 @@ final class Pipeline {
     }
 
     private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, entryId: UUID, recordingFile: String?, generation gen: Int) async {
-        if TextCleanup.isBlank(raw) { finishIdle(); return }
+        if TextCleanup.isBlank(raw) { finishIdle(discarding: recordingFile); return }
         let customWords = settings.customWords
         let cleaned = TextCleanup.run(raw, customWords: customWords, aliases: store.aliases(customWords: customWords), threshold: Fixed.wordCorrectionThreshold)
+        // Fillers alone ("um", "uh") clean down to nothing; that is silence, not a dictation.
+        if TextCleanup.isBlank(cleaned.text) { finishIdle(discarding: recordingFile); return }
         var finalText = cleaned.text
         var postProcessed: String?
         var postProcessMs: Int?
