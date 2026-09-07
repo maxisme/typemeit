@@ -1,0 +1,58 @@
+name: downloads
+
+# Nothing here builds or ships anything -- it watches the download channel and
+# pushes to notifi when there is something to know. Scheduled workflows only run
+# from the default branch, so both jobs stay dispatchable by hand for testing.
+on:
+  schedule:
+    - cron: "0 9 * * *" # the daily report
+    - cron: "0 */6 * * *" # the health check
+  workflow_dispatch:
+    inputs:
+      job:
+        description: which job to run
+        type: choice
+        options: [report, healthcheck]
+        default: report
+
+permissions:
+  contents: read
+
+concurrency:
+  group: downloads
+  cancel-in-progress: false
+
+jobs:
+  # The delta since the last snapshot, plus the appcast-derived install estimate.
+  # It commits the snapshot back, which is the whole point: GitHub's counters are
+  # cumulative, so without a dated history there is no way to see a day's change.
+  report:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 9 * * *' || inputs.job == 'report'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # append today's snapshot to data/downloads.json
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - env:
+          NOTIFI_TOKEN: ${{ secrets.NOTIFI_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: Scripts/download-report.sh
+      - name: Commit the snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/downloads.json
+          git diff --cached --quiet || git commit -m "downloads: snapshot $(date -u +%F)"
+          git push
+
+  # Six-hourly rather than hourly: a HEAD costs nothing, but the alert is only
+  # useful if it is still believed, and this is a free Mac app rather than a
+  # pager rotation.
+  healthcheck:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 */6 * * *' || inputs.job == 'healthcheck'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - env:
+          NOTIFI_TOKEN: ${{ secrets.NOTIFI_TOKEN }}
+        run: Scripts/download-healthcheck.sh
