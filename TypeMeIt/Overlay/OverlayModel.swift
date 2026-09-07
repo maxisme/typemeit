@@ -74,5 +74,5 @@ final class OverlayModel {
     var onKeep: (@MainActor () -> Void)?
     var onUndo: (@MainActor () -> Void)?
     var onInstall: (@MainActor () -> Void)?
-    var onOpenCleanup: (@MainActor () -> Void)?
+    var onOpenIntelligence: (@MainActor () -> Void)?
 }

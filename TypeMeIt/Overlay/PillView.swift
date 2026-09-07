@@ -52,16 +52,16 @@ struct PillView: View {
         case .copyPrompt:
             Image("akar-clipboard").resizable().frame(width: 14, height: 14).foregroundStyle(DesignTokens.Colors.ink2)
         case .learned:
-            // The same mark the clean-up page puts beside a learned word, and
+            // The same mark the intelligence page puts beside a learned word, and
             // a way to that page.
-            Button { model.onOpenCleanup?() } label: {
+            Button { model.onOpenIntelligence?() } label: {
                 Image("akar-sparkles").resizable().frame(width: 14, height: 14)
                     .foregroundStyle(DesignTokens.Colors.ink)
                     .frame(width: 24, height: 24)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help("Open clean-up")
+            .help("Open intelligence")
         case .updateReady, .updateFailed:
             Image("akar-sparkles").resizable().frame(width: 14, height: 14).foregroundStyle(DesignTokens.Colors.ink)
         default:

@@ -23,7 +23,7 @@ final class Pipeline {
     private var copyPromptTask: Task<Void, Never>?
     private var toastTask: Task<Void, Never>?
     private var lastRecordingFirstBuffer = false
-    /// Spike: screen text read while the user is still speaking, so it costs
+    /// Screen text read while the user is still speaking, so it costs
     /// nothing after the recording ends.
     private var screenContextTask: Task<[String], Never>?
 
@@ -50,9 +50,9 @@ final class Pipeline {
         overlay.model.onCopy = { [weak self] in self?.copyFromPrompt() }
         overlay.model.onKeep = { [weak self] in self?.keepLearned() }
         overlay.model.onUndo = { [weak self] in self?.undoLearned() }
-        overlay.model.onOpenCleanup = { [weak self] in
+        overlay.model.onOpenIntelligence = { [weak self] in
             self?.keepLearned()
-            AppState.shared.settingsTab = .cleanup
+            AppState.shared.settingsTab = .intelligence
             NotificationCenter.default.post(name: MenuBarLabel.openSettings, object: nil)
         }
         overlay.model.onInstall = { [weak self] in self?.toastTask?.cancel(); self?.overlay.hide(); Updates.shared.install() }
@@ -64,6 +64,7 @@ final class Pipeline {
             Log.app.error("Shortcuts not installed; Input Monitoring is missing")
         }
         if settings.alwaysOnMicrophone { capture.warmUp(uid: settings.microphoneUID) }
+        if settings.postProcessingEnabled, settings.screenContextEnabled { Task.detached { await ScreenContext.prewarm() } }
     }
 
     func applyMicrophoneSettings() {

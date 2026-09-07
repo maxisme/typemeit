@@ -1,13 +1,13 @@
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case insights, settings, cleanup, history
+    case insights, settings, intelligence, history
 
     var icon: String {
         switch self {
         case .insights: "akar-statistic-up"
         case .settings: "akar-gear"
-        case .cleanup: "akar-sparkles"
+        case .intelligence: "akar-sparkles"
         case .history: "akar-history"
         }
     }
@@ -55,7 +55,7 @@ struct SettingsView: View {
             Group {
                 switch tab ?? .insights {
                 case .settings: MainSettingsTab()
-                case .cleanup: CleanupTab()
+                case .intelligence: IntelligenceTab()
                 case .history: HistoryTab()
                 case .insights: InsightsTab()
                 }
@@ -250,18 +250,6 @@ struct MainSettingsTab: View {
                     SettingsRow(label: "offer to copy when no text box is focused") {
                         Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "read the screen for names", subtitle: settings.screenContextEnabled && !screenGranted ? "needs screen recording permissions, which are off" : "spike · clean-up sees the words in the window you dictate into · needs screen recording permissions") {
-                        HStack(spacing: 8) {
-                            if settings.screenContextEnabled, !screenGranted {
-                                Button("system settings") { NSWorkspace.shared.open(SecureInput.screenRecordingSettingsURL) }.buttonStyle(InkButtonStyle())
-                            }
-                            Toggle("", isOn: Binding(get: { settings.screenContextEnabled }, set: { on in
-                                settings.screenContextEnabled = on
-                                if on, !CGPreflightScreenCaptureAccess() { CGRequestScreenCaptureAccess() }
-                                screenGranted = CGPreflightScreenCaptureAccess()
-                            })).toggleStyle(.switch).labelsHidden()
-                        }
-                    }
                     SettingsRow(label: "key after typing", last: !settings.autoSubmit) {
                         Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
                     }
@@ -330,10 +318,19 @@ struct MainSettingsTab: View {
     }
 }
 
-struct CleanupTab: View {
+struct IntelligenceTab: View {
     @State private var settings = Settings.shared
     @State private var store = Store.shared
     @State private var newWord = ""
+    @State private var screenGranted = CGPreflightScreenCaptureAccess()
+    /// The grant lands in System Settings, not in the app, so it is re-read
+    /// while the window is up.
+    private let poll = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+
+    private var screenSubtitle: String {
+        if settings.screenContextEnabled, !screenGranted { return "needs screen recording permissions, which are off" }
+        return "names and terms in the window you dictate into are spelled the way they appear there · needs screen recording permissions"
+    }
 
     var body: some View {
         ScrollView {
@@ -342,8 +339,21 @@ struct CleanupTab: View {
                     SettingsRow(label: "clean up with apple intelligence", subtitle: "on device") {
                         Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "learn from corrections", last: true) {
+                    SettingsRow(label: "learn from corrections") {
                         Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "read the screen", subtitle: screenSubtitle, last: true) {
+                        HStack(spacing: 8) {
+                            if settings.screenContextEnabled, !screenGranted {
+                                Button("system settings") { NSWorkspace.shared.open(SecureInput.screenRecordingSettingsURL) }.buttonStyle(InkButtonStyle())
+                            }
+                            Toggle("", isOn: Binding(get: { settings.screenContextEnabled }, set: { on in
+                                settings.screenContextEnabled = on
+                                if on, !CGPreflightScreenCaptureAccess() { CGRequestScreenCaptureAccess() }
+                                screenGranted = CGPreflightScreenCaptureAccess()
+                            })).toggleStyle(.switch).labelsHidden()
+                        }
+                        .disabled(!settings.postProcessingEnabled)
                     }
                 }
                 SettingsGroup(title: "custom words") {
@@ -383,6 +393,7 @@ struct CleanupTab: View {
             }
             .padding(20)
         }
+        .onReceive(poll) { _ in screenGranted = CGPreflightScreenCaptureAccess() }
     }
 }
 

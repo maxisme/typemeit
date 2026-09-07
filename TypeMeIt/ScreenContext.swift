@@ -1,4 +1,4 @@
-// Spike: reads the text on the user's screen while they dictate, so the
+// Reads the text on the user's screen while they dictate, so the
 // clean-up model knows the names and terms the speaker is probably looking
 // at. A grabbed frame of the frontmost window goes through Vision's text
 // recogniser; the lines it returns are boiled down to the words worth
@@ -38,6 +38,15 @@ enum ScreenContext {
         let ms = Int(elapsed.components.seconds * 1000) + Int(elapsed.components.attoseconds / 1_000_000_000_000_000)
         Log.screenContext.info("Read \(lines.count) lines from \(window.owningApplication?.applicationName ?? "?", privacy: .public) in \(ms) ms")
         return lines
+    }
+
+    /// Vision loads its recogniser on first use, which took 4 s on an M-series
+    /// Mac; run once at launch so no dictation waits for it.
+    static func prewarm() async {
+        guard let ctx = CGContext(data: nil, width: 64, height: 64, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+              let image = ctx.makeImage() else { return }
+        _ = await recognise(image)
     }
 
     /// Vision's accurate recogniser without language correction: correction
