@@ -239,18 +239,18 @@ struct MainSettingsTab: View {
                             ForEach(CloudPosition.allCases, id: \.self) { Text($0.label).tag($0) }
                         }.pickerStyle(.segmented).labelsHidden().fixedSize()
                     }
-                    SettingsRow(label: "sounds") {
+                    SettingsRow(label: "sounds", last: true) {
                         Toggle("", isOn: $settings.audioFeedback).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "offer to copy when nothing is focused", last: true) {
-                        Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
-                    }
                 }
-                SettingsGroup(title: "paste") {
-                    SettingsRow(label: "space after paste") {
+                SettingsGroup(title: "typing") {
+                    SettingsRow(label: "space after typing") {
                         Toggle("", isOn: $settings.appendTrailingSpace).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "key after paste", last: !settings.autoSubmit) {
+                    SettingsRow(label: "offer to copy when no text box is focused") {
+                        Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "key after typing", last: !settings.autoSubmit) {
                         Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
                     }
                     if settings.autoSubmit {

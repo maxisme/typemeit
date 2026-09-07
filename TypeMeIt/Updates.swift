@@ -15,7 +15,7 @@ import Sparkle
 /// `state`. Settings renders that as a line of text or an install button.
 @MainActor
 @Observable
-final class Updates: NSObject {
+final class Updates: NSObject, SPUUpdaterDelegate {
     static let shared = Updates()
 
     enum State: Equatable {
@@ -57,7 +57,7 @@ final class Updates: NSObject {
         super.init()
         guard !Updates.isDevBuild else { return }
         driver.owner = self
-        let updater = SPUUpdater(hostBundle: .main, applicationBundle: .main, userDriver: driver, delegate: nil)
+        let updater = SPUUpdater(hostBundle: .main, applicationBundle: .main, userDriver: driver, delegate: self)
         updater.automaticallyChecksForUpdates = true
         do {
             try updater.start()
@@ -66,6 +66,19 @@ final class Updates: NSObject {
         } catch {
             Log.app.error("Updater failed to start: \(error.localizedDescription)")
             state = .unreachable
+        }
+    }
+
+    /// Sparkle tells the user driver about updates it finds, but a background
+    /// check that finds nothing ends silently; only the delegate hears about
+    /// it. Without this the status would say "checking" forever.
+    nonisolated func updater(_ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck, error: (any Error)?) {
+        let outcome: State? = if let error {
+            (error as NSError).domain == SUSparkleErrorDomain && (error as NSError).code == SUError.noUpdateError.rawValue ? .upToDate : nil
+        } else { nil }
+        Task { @MainActor in
+            guard case .checking = self.state else { return }
+            if let outcome { self.set(outcome) } else if error != nil { self.set(.unreachable) } else { self.set(.upToDate) }
         }
     }
 
