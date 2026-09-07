@@ -24,8 +24,10 @@ final class Updates: NSObject {
         case downloading(version: String)
         case readyToInstall(version: String)
         case installing
-        /// The feed or the download could not be fetched; usually no network.
+        /// The feed could not be fetched; usually no network.
         case unreachable
+        /// An update was found but its download failed. Sparkle tries again on the next check.
+        case downloadFailed(version: String)
     }
 
     /// The dev build is not in the appcast, and an update would replace it
@@ -47,6 +49,9 @@ final class Updates: NSObject {
     @ObservationIgnored private var updater: SPUUpdater?
     @ObservationIgnored private let driver = SilentDriver()
     @ObservationIgnored private var idleTimer: Timer?
+    /// Versions already announced with a toast, so each is announced once
+    /// however many times the hourly check finds it again.
+    @ObservationIgnored private var announced: Set<String> = []
 
     private override init() {
         super.init()
@@ -84,7 +89,41 @@ final class Updates: NSObject {
         }
     }
 
-    fileprivate func set(_ state: State) { self.state = state }
+    fileprivate func set(_ state: State) {
+        self.state = state
+        switch state {
+        case .readyToInstall(let version):
+            AppState.shared.updateReady = version
+            if !installsAutomatically { announce(version, toast: .updateReady(version: version)) }
+        case .downloadFailed(let version):
+            AppState.shared.updateReady = nil
+            announce(version, toast: .updateFailed(version: version))
+        default:
+            AppState.shared.updateReady = nil
+        }
+    }
+
+    /// Shows a toast for `version` once, waiting for a moment when nothing
+    /// else is on screen.
+    private func announce(_ version: String, toast: OverlayModel.State) {
+        guard !announced.contains(version) else { return }
+        if Pipeline.shared.showToast(toast) { announced.insert(version); return }
+        Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { _ in
+            Task { @MainActor in
+                guard Updates.shared.state == Updates.shared.stateMatching(toast) else { return }
+                Updates.shared.announce(version, toast: toast)
+            }
+        }
+    }
+
+    /// The updater state a toast belongs to, so a stale retry is dropped.
+    private func stateMatching(_ toast: OverlayModel.State) -> State {
+        switch toast {
+        case .updateReady(let v): .readyToInstall(version: v)
+        case .updateFailed(let v): .downloadFailed(version: v)
+        default: .checking
+        }
+    }
 }
 
 /// The `SPUUserDriver` that answers Sparkle without a window. Every reply is
@@ -127,8 +166,12 @@ private final class SilentDriver: NSObject, SPUUserDriver {
     }
 
     func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
-        Log.app.notice("Update check failed: \(error.localizedDescription)")
-        owner?.set(.unreachable)
+        Log.app.notice("Update failed: \(error.localizedDescription)")
+        if case .downloading(let version) = owner?.state {
+            owner?.set(.downloadFailed(version: version))
+        } else {
+            owner?.set(.unreachable)
+        }
         acknowledgement()
     }
 

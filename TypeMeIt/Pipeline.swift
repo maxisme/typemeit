@@ -47,6 +47,7 @@ final class Pipeline {
         overlay.model.onCopy = { [weak self] in self?.copyFromPrompt() }
         overlay.model.onKeep = { [weak self] in self?.keepLearned() }
         overlay.model.onUndo = { [weak self] in self?.undoLearned() }
+        overlay.model.onInstall = { [weak self] in self?.toastTask?.cancel(); self?.overlay.hide(); Updates.shared.install() }
     }
 
     func start() {
@@ -295,7 +296,17 @@ final class Pipeline {
     func showLearnedToast(batchId: UUID, words: [String]) {
         guard !words.isEmpty else { return }
         toastBatch = batchId
-        overlay.show(.learned(batchId: batchId, words: words))
+        showToast(.learned(batchId: batchId, words: words))
+    }
+
+    /// Shows a pill that hides itself after `ToastTiming.timeout`, not
+    /// counting time the pointer rests on it. Only while nothing else is on
+    /// screen: a toast must not cover a dictation.
+    /// - Returns: false when the overlay was busy and nothing was shown.
+    @discardableResult
+    func showToast(_ state: OverlayModel.State) -> Bool {
+        guard phase == .idle, overlay.model.state == .hidden else { return false }
+        overlay.show(state)
         toastTask?.cancel()
         toastTask = Task { [weak self] in
             var remaining = ToastTiming.timeout
@@ -306,9 +317,10 @@ final class Pipeline {
                 guard !Task.isCancelled, let self else { return }
                 if !self.overlay.model.toastPaused { remaining -= step }
             }
-            guard !Task.isCancelled, let self, case .learned = self.overlay.model.state else { return }
+            guard !Task.isCancelled, let self, self.overlay.model.state == state else { return }
             self.overlay.hide()
         }
+        return true
     }
 
     private func keepLearned() {

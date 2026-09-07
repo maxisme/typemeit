@@ -308,6 +308,7 @@ struct MainSettingsTab: View {
                 Button("install \(v)") { updates.install() }.buttonStyle(InkButtonStyle())
             case .installing: statusText("installing…")
             case .unreachable: statusText("can't reach the update server")
+            case .downloadFailed(let v): statusText("couldn't download \(v) · trying again later")
             }
         }
     }
