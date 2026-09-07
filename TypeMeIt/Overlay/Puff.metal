@@ -292,16 +292,19 @@ static float lightning(float2 uv, float R, float seed, float age) {
 
 // MARK: Stirring
 
-// The smoke parted by a fingertip at `stir` (in the same centred units as
-// `uv`): the point `uv` shows what was, before the stir, a little closer to
-// the fingertip, so smoke around it is pushed outwards and thinned on top of
-// it. The push is a Gaussian bump `reach` wide, zero at the fingertip itself
-// and at any distance, so nothing tears; `amount` is its strength, 0 for
-// none.
-static float2 stirred(float2 uv, float2 stir, float amount, float reach) {
-    float2 d = uv - stir;
-    return uv - d * amount * exp(-dot(d, d) / (reach * reach));
+// How far the smoke at `uv` has been shoved by a gust: a puff of air left
+// behind by something passing through, centred on `gust.xy` with the shove
+// `gust.zw`, in the same centred units as `uv` (the view's short side spans
+// -0.5...0.5). The shove falls off as a Gaussian `reach` wide, so the wake
+// is soft-edged; whoever feeds the gusts fades `zw` over time so the smoke
+// eases back. Sum this over every live gust and subtract it from `uv`.
+static float2 gustShift(float2 uv, float4 gust, float reach) {
+    float2 d = uv - gust.xy;
+    return gust.zw * exp(-dot(d, d) / (reach * reach));
 }
+
+// The reach of every gust: a little under the resting cloud's radius.
+static float gustReach() { return radius(0.5) * 0.8; }
 
 // Colour of the puff at `position` in a view of `size`, premultiplied.
 // expansion: 0 = fully retracted wisp, 1 = fully expanded cloud.
@@ -315,13 +318,12 @@ static float2 stirred(float2 uv, float2 stir, float amount, float reach) {
 //         The flash lasts a second; the value also seeds its route.
 // density: multiplies the amount of smoke; 1 is normal, more is thicker.
 // tint: colour of the smoke; alpha scales overall opacity.
-// stir: where the smoke is being parted, in the same centred units as the
-//       view (short side -0.5...0.5), and how strongly in z; 0 for not.
-static half4 render(float2 position, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint, float3 stir) {
+// stir: how far the smoke at this position has been shoved, in the same
+//       centred units as the view (short side -0.5...0.5): the summed
+//       `gustShift` of the live gusts. Zero for still air.
+static half4 render(float2 position, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint, float2 stir) {
     float scale = min(size.x, size.y);
-    float2 uv = (position - 0.5 * size) / scale;
-    // The stir reaches about the resting cloud's radius around the fingertip.
-    uv = stirred(uv, stir.xy, stir.z, radius(0.5) * 0.9);
+    float2 uv = (position - 0.5 * size) / scale - stir;
     float e = saturate(expansion);
     float tr = max(e, saturate(trail));
 
@@ -389,6 +391,12 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
 
 /// position, color: supplied by SwiftUI. The remaining arguments are
 /// documented on smoke::render.
-[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint, float3 stir) {
+// `gusts` is `gustCount` * 4 floats, each gust as `smoke::gustShift` takes it.
+[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint, device const float *gusts, int gustCount) {
+    float2 uv = (position - 0.5 * size) / min(size.x, size.y);
+    float2 stir = 0.0;
+    for (int i = 0; i + 3 < gustCount; i += 4) {
+        stir += smoke::gustShift(uv, float4(gusts[i], gusts[i + 1], gusts[i + 2], gusts[i + 3]), smoke::gustReach());
+    }
     return smoke::render(position, size, time, expansion, trail, flow, disperse, strike, density, tint, stir);
 }

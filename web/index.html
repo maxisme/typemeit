@@ -165,6 +165,8 @@ document.getElementById("download").addEventListener("click", async () => {
 // of the page, and the y axis is flipped because gl_FragCoord runs upwards
 // while the shader (like SwiftUI) expects y down: its light comes from the top.
 const VIEW = 440;
+// Most gusts alive at once; see Stir.
+const GUSTS = 8;
 
 const FRAG = `#version 300 es
 precision highp float;
@@ -177,12 +179,18 @@ uniform float uTrail;
 uniform float uFlow;
 uniform float uStrike;
 uniform vec4 uTint;
-uniform vec3 uStir;
+uniform vec4 uGusts[${GUSTS}];
+uniform int uGustCount;
 out vec4 fragColor;
 void main() {
   vec2 p = gl_FragCoord.xy - uCentre;
   p.y = -p.y;
-  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uStrike, 1.0, uTint, uStir);
+  vec2 uv = p / uSize;
+  vec2 stir = vec2(0.0);
+  for (int i = 0; i < ${GUSTS}; i++) {
+    if (i < uGustCount) stir += gustShift(uv, uGusts[i], gustReach());
+  }
+  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uStrike, 1.0, uTint, stir);
 }
 `;
 
@@ -235,25 +243,38 @@ class Dynamics {
 }
 
 /**
- * The pointer stirs the smoke: the puff stays where it is, and the smoke
- * parts around the cursor as it passes through. The point the shader is
- * given lags the pointer a little, so the smoke swirls after it rather than
- * snapping, and the strength eases out when there is no pointer to stir it.
+ * The pointer stirs the smoke: the puff stays where it is, and the smoke is
+ * brushed along by the cursor as it passes through, closing again behind it.
+ * Every `spacing` of travel leaves a gust where the cursor was, shoving the
+ * smoke the way it was going by up to `shove` at full speed, and each gust
+ * fades over `fade` seconds so the smoke eases back. A still cursor stirs
+ * nothing. Positions are fractions of the square the puff is drawn in.
  */
 class Stir {
-  static lag = 0.12; static amount = 0.15; static fade = 0.5;
-  x = 0; y = 0; strength = 0; last = null;
-  step(target, now) {
-    if (this.last === null) { this.last = now; if (target) { this.x = target.x; this.y = target.y; } return this; }
-    const dt = Math.min(Math.max(now - this.last, 0), 0.1);
-    this.last = now;
-    if (target) {
-      const k = 1 - Math.exp(-dt / Stir.lag);
-      this.x += (target.x - this.x) * k; this.y += (target.y - this.y) * k;
+  static spacing = 0.035; static shove = 0.028; static fullSpeed = 3.0; static fade = 0.5; static capacity = GUSTS;
+  gusts = []; lastPoint = null; lastGust = null; last = null;
+  /** The live gusts, four floats each as the shader takes them. */
+  step(point, now) {
+    const lastTime = this.last, lastPoint = this.lastPoint;
+    this.last = now; this.lastPoint = point;
+    if (lastTime === null || lastPoint === null || point === null) { this.lastGust = point; return this.flat(); }
+    const dt = Math.min(Math.max(now - lastTime, 0), 0.1);
+    const decay = Math.exp(-dt / Stir.fade);
+    for (const g of this.gusts) { g.dx *= decay; g.dy *= decay; }
+    const from = this.lastGust ?? lastPoint;
+    const dx = point.x - from.x, dy = point.y - from.y;
+    const travelled = Math.hypot(dx, dy);
+    if (travelled >= Stir.spacing && dt > 0) {
+      const speed = Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y) / dt;
+      const strength = Stir.shove * Math.min(1, speed / Stir.fullSpeed);
+      this.gusts.push({ x: point.x, y: point.y, dx: dx / travelled * strength, dy: dy / travelled * strength });
+      if (this.gusts.length > Stir.capacity) this.gusts.shift();
+      this.lastGust = point;
     }
-    this.strength += ((target ? 1 : 0) - this.strength) * (1 - Math.exp(-dt / Stir.fade));
-    return this;
+    this.gusts = this.gusts.filter((g) => Math.hypot(g.dx, g.dy) >= 0.0005);
+    return this.flat();
   }
+  flat() { return this.gusts.flatMap((g) => [g.x, g.y, g.dx, g.dy]); }
 }
 
 // Pointer: the puff stays in the middle of the page; the pointer's speed is
@@ -356,7 +377,7 @@ try {
   const aPos = gl.getAttribLocation(program, "aPos");
   gl.enableVertexAttribArray(aPos);
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uStrike", "uTint", "uStir"]
+  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uStrike", "uTint", "uGusts", "uGustCount"]
     .map((n) => [n, gl.getUniformLocation(program, n)]));
 } catch (e) {
   err.textContent = String(e.message || e);
@@ -412,8 +433,9 @@ function frame(nowMs) {
   // it. The point is the pointer relative to the puff, as a fraction of the
   // square it is drawn in, y down like the shader.
   const stirring = canHover && pointer.seen && !reduceMotion;
-  stir.step(stirring ? { x: (pointer.x - innerWidth / 2) / VIEW, y: (pointer.y - innerHeight / 2) / VIEW } : null, now);
-  gl.uniform3f(uniforms.uStir, stir.x, stir.y, Stir.amount * stir.strength);
+  const gusts = stir.step(stirring ? { x: (pointer.x - innerWidth / 2) / VIEW, y: (pointer.y - innerHeight / 2) / VIEW } : null, now);
+  gl.uniform1i(uniforms.uGustCount, gusts.length / 4);
+  if (gusts.length) gl.uniform4fv(uniforms.uGusts, gusts);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   if (!reduceMotion) requestAnimationFrame(frame);

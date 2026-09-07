@@ -282,16 +282,19 @@ float lightning(vec2 uv, float R, float seed, float age) {
 
 // MARK: Stirring
 
-// The smoke parted by a fingertip at 'stir' (in the same centred units as
-// 'uv'): the point 'uv' shows what was, before the stir, a little closer to
-// the fingertip, so smoke around it is pushed outwards and thinned on top of
-// it. The push is a Gaussian bump 'reach' wide, zero at the fingertip itself
-// and at any distance, so nothing tears; 'amount' is its strength, 0 for
-// none.
-vec2 stirred(vec2 uv, vec2 stir, float amount, float reach) {
-    vec2 d = uv - stir;
-    return uv - d * amount * exp(-dot(d, d) / (reach * reach));
+// How far the smoke at 'uv' has been shoved by a gust: a puff of air left
+// behind by something passing through, centred on 'gust.xy' with the shove
+// 'gust.zw', in the same centred units as 'uv' (the view's short side spans
+// -0.5...0.5). The shove falls off as a Gaussian 'reach' wide, so the wake
+// is soft-edged; whoever feeds the gusts fades 'zw' over time so the smoke
+// eases back. Sum this over every live gust and subtract it from 'uv'.
+vec2 gustShift(vec2 uv, vec4 gust, float reach) {
+    vec2 d = uv - gust.xy;
+    return gust.zw * exp(-dot(d, d) / (reach * reach));
 }
+
+// The reach of every gust: a little under the resting cloud's radius.
+float gustReach() { return radius(0.5) * 0.8; }
 
 // Colour of the puff at 'position' in a view of 'size', premultiplied.
 // expansion: 0 = fully retracted wisp, 1 = fully expanded cloud.
@@ -305,13 +308,12 @@ vec2 stirred(vec2 uv, vec2 stir, float amount, float reach) {
 //         The flash lasts a second; the value also seeds its route.
 // density: multiplies the amount of smoke; 1 is normal, more is thicker.
 // tint: colour of the smoke; alpha scales overall opacity.
-// stir: where the smoke is being parted, in the same centred units as the
-//       view (short side -0.5...0.5), and how strongly in z; 0 for not.
-vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, vec4 tint, vec3 stir) {
+// stir: how far the smoke at this position has been shoved, in the same
+//       centred units as the view (short side -0.5...0.5): the summed
+//       'gustShift' of the live gusts. Zero for still air.
+vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, vec4 tint, vec2 stir) {
     float scale = min(size.x, size.y);
-    vec2 uv = (position - 0.5 * size) / scale;
-    // The stir reaches about the resting cloud's radius around the fingertip.
-    uv = stirred(uv, stir.xy, stir.z, radius(0.5) * 0.9);
+    vec2 uv = (position - 0.5 * size) / scale - stir;
     float e = saturate(expansion);
     float tr = max(e, saturate(trail));
 

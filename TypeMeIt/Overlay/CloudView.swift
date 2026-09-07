@@ -30,11 +30,12 @@ struct CloudView: View {
             let mouse = NSEvent.mouseLocation
             let at = CGPoint(x: (mouse.x - model.cloudCentre.x) / CloudView.size,
                              y: (model.cloudCentre.y - mouse.y) / CloudView.size)
+            let gusts = stir.step(at, at: now)
             PuffView(level: level(at: now), tint: tint,
                      arrival: model.shownAt, departure: model.departedAt,
                      strike: strike(at: ctx.date), density: 1 + (CloudView.processingDensity - 1) * settled(at: ctx.date),
                      settle: CloudView.processingSettle * settled(at: ctx.date),
-                     stir: stir.step(at, at: now))
+                     gusts: gusts)
         }
         .animation(.easeInOut(duration: 0.2), value: model.backdrop)
         .frame(width: CloudView.size, height: CloudView.size)
@@ -99,27 +100,49 @@ struct CloudView: View {
     }
 
     /// The mouse stirs the smoke: the cloud stays where it is, and the smoke
-    /// parts around the cursor as it passes through. The point the puff is
-    /// given lags the mouse a little, so the smoke swirls after it rather
-    /// than snapping. Mirrored by `Stir` in web/index.html; change the
-    /// constants together.
+    /// is brushed along by the cursor as it passes through, closing again
+    /// behind it. Every `spacing` of travel leaves a gust where the cursor
+    /// was, shoving the smoke the way it was going by up to `shove` at full
+    /// speed, and each gust fades over `fade` seconds so the smoke eases
+    /// back. A still cursor stirs nothing. Positions are fractions of the
+    /// square the puff is drawn in. Mirrored by `Stir` in web/index.html;
+    /// change the constants together.
     ///
     /// A reference type so the timeline closure can update it without
     /// triggering a view update.
     final class Stir {
-        static let lag = 0.12
+        static let spacing = 0.035
+        static let shove = 0.028
+        /// Cursor speed, in view widths per second, at which the shove is
+        /// its strongest.
+        static let fullSpeed = 3.0
+        static let fade = 0.5
+        static let capacity = 8
 
-        private var point: CGPoint?
+        private var gusts: [(x: Double, y: Double, dx: Double, dy: Double)] = []
+        private var lastPoint: CGPoint?
+        private var lastGust: CGPoint?
         private var lastTime: TimeInterval?
 
-        func step(_ target: CGPoint, at now: TimeInterval) -> CGPoint {
-            defer { lastTime = now }
-            guard let lastTime, let current = point else { point = target; return target }
+        /// The live gusts, four floats each as `PuffView.gusts` takes them.
+        func step(_ point: CGPoint, at now: TimeInterval) -> [Float] {
+            defer { lastTime = now; lastPoint = point }
+            guard let lastTime, let lastPoint else { lastGust = point; return [] }
             let dt = min(max(now - lastTime, 0), 0.1)
-            let k = 1 - exp(-dt / Stir.lag)
-            let p = CGPoint(x: current.x + (target.x - current.x) * k, y: current.y + (target.y - current.y) * k)
-            point = p
-            return p
+            let decay = exp(-dt / Stir.fade)
+            for i in gusts.indices { gusts[i].dx *= decay; gusts[i].dy *= decay }
+            let from = lastGust ?? lastPoint
+            let dx = point.x - from.x, dy = point.y - from.y
+            let travelled = hypot(dx, dy)
+            if travelled >= Stir.spacing, dt > 0 {
+                let speed = hypot(point.x - lastPoint.x, point.y - lastPoint.y) / dt
+                let strength = Stir.shove * min(1, speed / Stir.fullSpeed)
+                gusts.append((point.x, point.y, dx / travelled * strength, dy / travelled * strength))
+                if gusts.count > Stir.capacity { gusts.removeFirst() }
+                lastGust = point
+            }
+            gusts.removeAll { hypot($0.dx, $0.dy) < 0.0005 }
+            return gusts.flatMap { [Float($0.x), Float($0.y), Float($0.dx), Float($0.dy)] }
         }
     }
 
