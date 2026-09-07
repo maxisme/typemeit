@@ -76,8 +76,11 @@ for name, cx, cy, sz, op, mb in [("p4", 500, 428, 360, 0.95,  6),
     s = f"{T}/{name}-{cx}.png"
     # The shader draws white smoke on transparent. Negating the colour channels
     # and leaving alpha alone turns it into black smoke of the same shape, which
-    # then composites straight over the white ground.
+    # then composites straight over the white ground. The transparent border
+    # gives the motion blur room: smeared onto a canvas cut at the sprite's edge,
+    # the smoke ends in a hard vertical line.
     run("magick", f"{puffs}/{name}.png", "-trim", "+repage", "-resize", f"{sz}x{sz}",
+        "-bordercolor", "none", "-border", mb*3,
         "-motion-blur", f"0x{mb}+0", "-channel","RGB","-negate","+channel",
         "-channel","A","-evaluate","multiply",op,"+channel", s)
     w, h = ident(s,"%w"), ident(s,"%h")
