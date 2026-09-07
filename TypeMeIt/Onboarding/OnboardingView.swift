@@ -18,6 +18,9 @@ struct OnboardingView: View {
     @State private var listenGranted = CGPreflightListenEventAccess()
     @State private var fnOK = SecureInput.fnKeyDoesNothing
     @State private var dictated = false
+    /// Steps whose grant click did not produce a permission. macOS shows the
+    /// prompt once per app, so the button on these steps opens System Settings.
+    @State private var needsSettings: Set<Step> = []
     @State private var scratch = ""
     @State private var store = Store.shared
     private let poll = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -84,7 +87,7 @@ struct OnboardingView: View {
         case .model: "hold the fn key, speak, let go. your words are transcribed on this mac by parakeet, about 700 mb downloaded once, tidied up by apple intelligence, and typed where your cursor is. nothing leaves your computer."
         case .microphone: "type me it needs the microphone to hear you."
         case .accessibility: "lets type me it type into the app you are using and notice when you correct a word."
-        case .fnKey: "input monitoring lets type me it see fn while other apps are in front. macos also uses fn for its own shortcuts, so set “press 🌐 key to” to “do nothing” in system settings › keyboard. fn only works on apple keyboards."
+        case .fnKey: "input monitoring lets type me it see fn while other apps are in front. macos uses fn for a shortcut of its own, which is turned off in keyboard settings. fn only works on apple keyboards."
         case .tryIt: "hold fn and say something. let go when you are done."
         }
     }
@@ -116,34 +119,28 @@ struct OnboardingView: View {
             }
         case .microphone:
             permission("microphone", granted: micGranted, grant: {
+                if AVCaptureDevice.authorizationStatus(for: .audio) == .denied { return false }
                 AVCaptureDevice.requestAccess(for: .audio) { ok in Task { @MainActor in micGranted = ok } }
-            }, settings: SecureInput.microphoneSettingsURL)
+                return true
+            }, missing: { AVCaptureDevice.authorizationStatus(for: .audio) != .authorized }, settings: SecureInput.microphoneSettingsURL)
         case .accessibility:
             permission("accessibility", granted: axGranted, grant: {
                 let opts = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
                 axGranted = AXIsProcessTrustedWithOptions(opts)
-            }, settings: SecureInput.accessibilitySettingsURL)
+                return true
+            }, missing: { !AXIsProcessTrusted() }, settings: SecureInput.accessibilitySettingsURL)
         case .fnKey:
             SettingsGroup {
-                SettingsRow(label: "input monitoring") {
-                    if listenGranted {
-                        Status("granted", done: true)
-                    } else {
-                        HStack(spacing: 8) {
-                            Button("system settings") { NSWorkspace.shared.open(SecureInput.inputMonitoringSettingsURL) }.buttonStyle(InkButtonStyle())
-                            Button("grant") { listenGranted = CGRequestListenEventAccess() }.buttonStyle(InkButtonStyle(primary: true))
-                        }
-                    }
-                }
-                SettingsRow(label: "press 🌐 key to", last: true) {
+                permissionRow("input monitoring", granted: listenGranted, grant: {
+                    listenGranted = CGRequestListenEventAccess()
+                    return true
+                }, missing: { !CGPreflightListenEventAccess() }, settings: SecureInput.inputMonitoringSettingsURL, last: false)
+                SettingsRow(label: "press 🌐 key to", subtitle: fnOK ? nil : "set it to “do nothing”", last: true) {
                     if fnOK {
                         Status("do nothing", done: true)
                     } else {
-                        HStack(spacing: 12) {
-                            Status("a system action")
-                            Button("keyboard settings") { NSWorkspace.shared.open(SecureInput.keyboardSettingsURL) }
-                                .buttonStyle(InkButtonStyle())
-                        }
+                        Button("keyboard settings") { NSWorkspace.shared.open(SecureInput.keyboardSettingsURL) }
+                            .buttonStyle(InkButtonStyle(primary: true))
                     }
                 }
             }
@@ -172,17 +169,38 @@ struct OnboardingView: View {
         }
     }
 
-    private func permission(_ label: String, granted: Bool, grant: @escaping () -> Void, settings: URL) -> some View {
+    private func permission(_ label: String, granted: Bool, grant: @escaping () -> Bool, missing: @escaping () -> Bool, settings: URL) -> some View {
         SettingsGroup {
-            SettingsRow(label: label, last: true) {
-                if granted {
-                    Status("granted", done: true)
-                } else {
-                    HStack(spacing: 8) {
-                        Button("system settings") { NSWorkspace.shared.open(settings) }.buttonStyle(InkButtonStyle())
-                        Button("grant", action: grant).buttonStyle(InkButtonStyle(primary: true))
+            permissionRow(label, granted: granted, grant: grant, missing: missing, settings: settings, last: true)
+        }
+    }
+
+    /// One button. "grant" asks macOS for the permission; `grant` returns
+    /// false when it already knows the prompt cannot appear. macOS shows the
+    /// prompt once per app, so if a moment later the permission is still
+    /// `missing` and this app is still active, meaning no dialog took the
+    /// focus, the prompt was used up on an earlier launch: the button becomes
+    /// "system settings" and opens the pane straight away.
+    private func permissionRow(_ label: String, granted: Bool, grant: @escaping () -> Bool, missing: @escaping () -> Bool, settings: URL, last: Bool) -> some View {
+        let current = step
+        let viaSettings = needsSettings.contains(current)
+        return SettingsRow(label: label, subtitle: viaSettings && !granted ? "macos did not ask, so turn it on in system settings" : nil, last: last) {
+            if granted {
+                Status("granted", done: true)
+            } else if viaSettings {
+                Button("system settings") { NSWorkspace.shared.open(settings) }.buttonStyle(InkButtonStyle(primary: true))
+            } else {
+                Button("grant") {
+                    if !grant() { needsSettings.insert(current); NSWorkspace.shared.open(settings); return }
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(1.5))
+                        refresh()
+                        if step == current, missing(), NSApp.isActive {
+                            needsSettings.insert(current)
+                            NSWorkspace.shared.open(settings)
+                        }
                     }
-                }
+                }.buttonStyle(InkButtonStyle(primary: true))
             }
         }
     }
