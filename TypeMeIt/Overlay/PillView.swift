@@ -63,7 +63,7 @@ struct PillView: View {
     @ViewBuilder private var centre: some View {
         switch model.state {
         case .copyPrompt:
-            label("nothing to paste into")
+            label("nowhere to type it")
         case .learned(_, let words):
             if words.count == 1 {
                 // The word itself in bold, kept as the user spelt it, since
