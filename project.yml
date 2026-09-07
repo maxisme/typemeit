@@ -69,6 +69,8 @@ targets:
         NSPrincipalClass: NSApplication
         SUFeedURL: https://github.com/maxisme/typemeit/releases/latest/download/appcast.xml
         SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 3600
+        SUAutomaticallyUpdate: true
         SUPublicEDKey: WGBC31wJMt0uMIwvfVDsWaqVJL8ki+jRfdKACFhPEDw=
     entitlements:
       path: TypeMeIt/Support/TypeMeIt.entitlements

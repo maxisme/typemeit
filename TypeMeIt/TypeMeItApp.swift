@@ -206,8 +206,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         secureInputTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AppState.shared.secureInputOn = SecureInput.isEnabled }
         }
-        // Touch the updater so Sparkle's scheduled check starts even if the menu
-        // has never been opened.
+        // Creating the updater checks for an update now and schedules the hourly check.
         _ = Updates.shared
         reconcileLaunchAtLogin()
     }
