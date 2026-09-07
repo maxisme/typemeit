@@ -156,6 +156,9 @@ document.getElementById("download").addEventListener("click", () => {
 // of the page, and the y axis is flipped because gl_FragCoord runs upwards
 // while the shader (like SwiftUI) expects y down: its light comes from the top.
 const VIEW = 440;
+// Most gaps in the smoke at once: the one under the pointer and those it
+// has left behind; see Repel.
+const GAPS = 17;
 
 const FRAG = `#version 300 es
 precision highp float;
@@ -168,12 +171,22 @@ uniform float uTrail;
 uniform float uFlow;
 uniform float uStrike;
 uniform vec4 uTint;
-uniform vec3 uHole;
+uniform vec4 uGaps[${GAPS}];
+uniform int uGapCount;
 out vec4 fragColor;
 void main() {
   vec2 p = gl_FragCoord.xy - uCentre;
   p.y = -p.y;
-  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uStrike, 1.0, uTint, uHole);
+  vec2 uv = p / uSize;
+  vec2 shift = vec2(0.0);
+  float clear = 1.0;
+  for (int i = 0; i < ${GAPS}; i++) {
+    if (i < uGapCount) {
+      shift += repelShift(uv, uGaps[i].xyz, uTime);
+      clear *= repelFade(uv, uGaps[i].xyz, uTime);
+    }
+  }
+  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uStrike, 1.0, uTint, shift, clear);
 }
 `;
 
@@ -228,26 +241,44 @@ class Dynamics {
 /**
  * The smoke keeps clear of the pointer: the puff stays where it is, and the
  * smoke within `radius` of the cursor is pushed out to sit around it, none
- * of it lost. The pocket opens over `open` seconds, closes over `close`, and
- * trails the cursor by `lag`, so the smoke is seen moving out of the way and
- * drifting back rather than switching. Positions are fractions of the square the puff is drawn in.
+ * of it lost. The gap opens over `open` seconds and trails the cursor by
+ * `lag`, and as the cursor moves it leaves a gap behind every `spacing` of
+ * travel, each closing over `close` seconds, so a stroke through the cloud
+ * cuts it in two and the halves close up again from the far end once the
+ * cursor is out the other side. Positions are fractions of the square the
+ * puff is drawn in.
  */
 class Repel {
-  static radius = 0.03; static open = 0.35; static close = 0.5; static lag = 0.08;
-  x = 0; y = 0; r = 0; last = null;
-  /** `point` is where the pointer is, or null for no pointer. */
+  static radius = 0.04; static open = 0.3; static close = 0.8; static lag = 0.08; static spacing = 0.02; static capacity = GAPS - 1;
+  /** The gap under the pointer. */
+  live = { x: 0, y: 0, r: 0 };
+  /** Gaps left behind it, oldest first. */
+  laid = []; lastLaid = null; last = null;
+  /** `point` is where the pointer is, or null for no pointer. Returns the gaps, four floats each as the shader takes them. */
   step(point, now) {
-    if (this.last === null) { this.last = now; if (point) { this.x = point.x; this.y = point.y; } return this; }
+    if (this.last === null) { this.last = now; if (point) { this.live.x = point.x; this.live.y = point.y; } return this.flat(); }
     const dt = Math.min(Math.max(now - this.last, 0), 0.1);
     this.last = now;
+    const closing = Math.exp(-dt / Repel.close);
+    for (const g of this.laid) g.r *= closing;
+    this.laid = this.laid.filter((g) => g.r >= 0.002);
+    const live = this.live;
     if (point) {
       const k = 1 - Math.exp(-dt / Repel.lag);
-      this.x += (point.x - this.x) * k; this.y += (point.y - this.y) * k;
+      live.x += (point.x - live.x) * k; live.y += (point.y - live.y) * k;
     }
     const target = point ? Repel.radius : 0;
-    this.r += (target - this.r) * (1 - Math.exp(-dt / (target > this.r ? Repel.open : Repel.close)));
-    return this;
+    live.r += (target - live.r) * (1 - Math.exp(-dt / (target > live.r ? Repel.open : Repel.close)));
+    if (live.r > 0.002 && this.lastLaid && Math.hypot(live.x - this.lastLaid.x, live.y - this.lastLaid.y) >= Repel.spacing) {
+      this.laid.push({ ...live });
+      if (this.laid.length > Repel.capacity) this.laid.shift();
+      this.lastLaid = { x: live.x, y: live.y };
+    } else if (!this.lastLaid) {
+      this.lastLaid = { x: live.x, y: live.y };
+    }
+    return this.flat();
   }
+  flat() { return [...this.laid, this.live].flatMap((g) => [g.x, g.y, g.r, 0]); }
 }
 
 // Pointer: the puff stays in the middle of the page; the pointer's speed is
@@ -350,7 +381,7 @@ try {
   const aPos = gl.getAttribLocation(program, "aPos");
   gl.enableVertexAttribArray(aPos);
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uStrike", "uTint", "uHole"]
+  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uStrike", "uTint", "uGaps", "uGapCount"]
     .map((n) => [n, gl.getUniformLocation(program, n)]));
 } catch (e) {
   err.textContent = String(e.message || e);
@@ -406,8 +437,9 @@ function frame(nowMs) {
   // near it. The point is the pointer relative to the puff, as a fraction
   // of the square it is drawn in, y down like the shader.
   const parting = canHover && pointer.seen && !reduceMotion;
-  repel.step(parting ? { x: (pointer.x - innerWidth / 2) / VIEW, y: (pointer.y - innerHeight / 2) / VIEW } : null, now);
-  gl.uniform3f(uniforms.uHole, repel.x, repel.y, repel.r);
+  const gaps = repel.step(parting ? { x: (pointer.x - innerWidth / 2) / VIEW, y: (pointer.y - innerHeight / 2) / VIEW } : null, now);
+  gl.uniform1i(uniforms.uGapCount, gaps.length / 4);
+  gl.uniform4fv(uniforms.uGaps, gaps);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   if (!reduceMotion) requestAnimationFrame(frame);

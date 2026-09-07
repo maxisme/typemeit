@@ -297,15 +297,15 @@ float repelRadius(vec2 uv, vec3 hole, float time) {
 // point itself, so there is no edge anywhere. The shift is gentle, most of
 // the giving way being the thinning below, so the smoke around it is not
 // visibly stretched.
-vec2 repelled(vec2 uv, vec3 hole, float time) {
-    if (hole.z <= 0.0) { return uv; }
+vec2 repelShift(vec2 uv, vec3 hole, float time) {
+    if (hole.z <= 0.0) { return vec2(0.0); }
     vec2 d = uv - hole.xy;
     float h = repelRadius(uv, hole, time);
     float r2 = dot(d, d);
     float h2 = h * h;
     float reach = 3.0 * h;
-    float push = 0.45 * h2 * (1.0 - exp(-r2 / h2)) * exp(-r2 / (reach * reach));
-    return hole.xy + d * sqrt(max(r2 - push, 0.0) / max(r2, 1e-9));
+    float push = 0.6 * h2 * (1.0 - exp(-r2 / h2)) * exp(-r2 / (reach * reach));
+    return uv - (hole.xy + d * sqrt(max(r2 - push, 0.0) / max(r2, 1e-9)));
 }
 
 // How much of the smoke has given way: thinnest at the point, back to full
@@ -314,7 +314,7 @@ float repelFade(vec2 uv, vec3 hole, float time) {
     if (hole.z <= 0.0) { return 1.0; }
     vec2 d = uv - hole.xy;
     float h = repelRadius(uv, hole, time);
-    return 1.0 - 0.8 * exp(-dot(d, d) / (h * h));
+    return 1.0 - 0.92 * exp(-dot(d, d) / (h * h));
 }
 
 // Colour of the puff at 'position' in a view of 'size', premultiplied.
@@ -329,13 +329,14 @@ float repelFade(vec2 uv, vec3 hole, float time) {
 //         The flash lasts a second; the value also seeds its route.
 // density: multiplies the amount of smoke; 1 is normal, more is thicker.
 // tint: colour of the smoke; alpha scales overall opacity.
-// hole: where the smoke keeps clear of, in the same centred units as the
-//       view (short side -0.5...0.5), and the radius it keeps clear in z;
-//       0 for nowhere.
-vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, vec4 tint, vec3 hole) {
+// shift: how far the smoke at this position has been moved aside, in the
+//       same centred units as the view (short side -0.5...0.5): the summed
+//       'repelShift' of the gaps. Zero for none.
+// clear: how much of the smoke here is left, 0...1: the product of the
+//       gaps' 'repelFade'. 1 for all of it.
+vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, vec4 tint, vec2 shift, float clear) {
     float scale = min(size.x, size.y);
-    vec2 uv = repelled((position - 0.5 * size) / scale, hole, time);
-    float clear = repelFade((position - 0.5 * size) / scale, hole, time);
+    vec2 uv = (position - 0.5 * size) / scale - shift;
     float e = saturate(expansion);
     float tr = max(e, saturate(trail));
 

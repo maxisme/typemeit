@@ -34,7 +34,7 @@ struct CloudView: View {
                      arrival: model.shownAt, departure: model.departedAt,
                      strike: strike(at: ctx.date), density: 1 + (CloudView.processingDensity - 1) * settled(at: ctx.date),
                      settle: CloudView.processingSettle * settled(at: ctx.date),
-                     hole: repel.step(at, at: now))
+                     gaps: repel.step(at, at: now))
         }
         .animation(.easeInOut(duration: 0.2), value: model.backdrop)
         .frame(width: CloudView.size, height: CloudView.size)
@@ -74,7 +74,7 @@ struct CloudView: View {
     /// Over the first half second of processing the cloud settles: smaller
     /// by this much expansion, and this much thicker.
     static let processingSettle = 0.2
-    static let processingDensity = 1.9
+    static let processingDensity = 1.7
     /// It lets go again as it departs, so a thin cloud drifts apart rather
     /// than a dense ball bursting.
     private func settled(at now: Date) -> Double {
@@ -100,39 +100,64 @@ struct CloudView: View {
 
     /// The smoke keeps clear of the mouse: the cloud stays where it is, and
     /// the smoke within `radius` of the cursor is pushed out to sit around
-    /// it, none of it lost. The pocket opens over `open` seconds, closes
-    /// over `close`, and trails the cursor by `lag`, so the smoke is seen
-    /// moving out of the way and drifting back rather than switching. Positions are fractions of the square the
-    /// puff is drawn in. Mirrored by `Repel` in web/index.html; change the
-    /// constants together.
+    /// it, none of it lost. The gap opens over `open` seconds and trails
+    /// the cursor by `lag`, and as the cursor moves it leaves a gap behind
+    /// every `spacing` of travel, each closing over `close` seconds, so a
+    /// stroke through the cloud cuts it in two and the halves close up
+    /// again from the far end once the cursor is out the other side.
+    /// Positions are fractions of the square the puff is drawn in. Mirrored
+    /// by `Repel` in web/index.html; change the constants together.
     ///
     /// A reference type so the timeline closure can update it without
     /// triggering a view update.
     final class Repel {
-        static let radius = 0.03
-        static let open = 0.35
-        static let close = 0.5
-        static let lag = 0.08
+        static let radius: Float = 0.04
+        static let open: Float = 0.3
+        static let close: Float = 0.8
+        static let lag: Float = 0.08
+        static let spacing: Float = 0.02
+        static let capacity = 16
 
-        private var hole = SIMD3<Float>.zero
+        /// The gap under the cursor.
+        private var live = SIMD3<Float>.zero
+        /// Gaps left behind it, oldest first.
+        private var laid: [SIMD3<Float>] = []
+        private var lastLaid: SIMD2<Float>?
         private var lastTime: TimeInterval?
 
-        /// `point` is where the cursor is, or nil for no cursor.
-        func step(_ point: CGPoint?, at now: TimeInterval) -> SIMD3<Float> {
+        /// `point` is where the cursor is, or nil for no cursor. Returns the
+        /// gaps, four floats each as `PuffView.gaps` takes them.
+        func step(_ point: CGPoint?, at now: TimeInterval) -> [Float] {
             defer { lastTime = now }
             guard let lastTime else {
-                if let point { hole = SIMD3(Float(point.x), Float(point.y), 0) }
-                return hole
+                if let point { live = SIMD3(Float(point.x), Float(point.y), 0) }
+                return flat()
             }
             let dt = Float(min(max(now - lastTime, 0), 0.1))
+            let closing = exp(-dt / Repel.close)
+            for i in laid.indices { laid[i].z *= closing }
+            laid.removeAll { $0.z < 0.002 }
             if let point {
-                let k = 1 - exp(-dt / Float(Repel.lag))
-                hole.x += (Float(point.x) - hole.x) * k
-                hole.y += (Float(point.y) - hole.y) * k
+                let k = 1 - exp(-dt / Repel.lag)
+                live.x += (Float(point.x) - live.x) * k
+                live.y += (Float(point.y) - live.y) * k
             }
-            let target: Float = point == nil ? 0 : Float(Repel.radius)
-            hole.z += (target - hole.z) * (1 - exp(-dt / Float(target > hole.z ? Repel.open : Repel.close)))
-            return hole
+            let target: Float = point == nil ? 0 : Repel.radius
+            let tau = target > live.z ? Repel.open : Repel.close
+            live.z += (target - live.z) * (1 - exp(-dt / tau))
+            let here = SIMD2(live.x, live.y)
+            if live.z > 0.002, let from = lastLaid, hypot(here.x - from.x, here.y - from.y) >= Repel.spacing {
+                laid.append(live)
+                if laid.count > Repel.capacity { laid.removeFirst() }
+                lastLaid = here
+            } else if lastLaid == nil {
+                lastLaid = here
+            }
+            return flat()
+        }
+
+        private func flat() -> [Float] {
+            (laid + [live]).flatMap { [$0.x, $0.y, $0.z, 0] }
         }
     }
 
