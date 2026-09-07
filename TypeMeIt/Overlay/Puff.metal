@@ -290,6 +290,19 @@ static float lightning(float2 uv, float R, float seed, float age) {
     return env * saturate(glow);
 }
 
+// MARK: Stirring
+
+// The smoke parted by a fingertip at `stir` (in the same centred units as
+// `uv`): the point `uv` shows what was, before the stir, a little closer to
+// the fingertip, so smoke around it is pushed outwards and thinned on top of
+// it. The push is a Gaussian bump `reach` wide, zero at the fingertip itself
+// and at any distance, so nothing tears; `amount` is its strength, 0 for
+// none.
+static float2 stirred(float2 uv, float2 stir, float amount, float reach) {
+    float2 d = uv - stir;
+    return uv - d * amount * exp(-dot(d, d) / (reach * reach));
+}
+
 // Colour of the puff at `position` in a view of `size`, premultiplied.
 // expansion: 0 = fully retracted wisp, 1 = fully expanded cloud.
 // trail: the expansion the puff is retreating from, >= expansion. Fragments
@@ -302,9 +315,13 @@ static float lightning(float2 uv, float R, float seed, float age) {
 //         The flash lasts a second; the value also seeds its route.
 // density: multiplies the amount of smoke; 1 is normal, more is thicker.
 // tint: colour of the smoke; alpha scales overall opacity.
-static half4 render(float2 position, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint) {
+// stir: where the smoke is being parted, in the same centred units as the
+//       view (short side -0.5...0.5), and how strongly in z; 0 for not.
+static half4 render(float2 position, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint, float3 stir) {
     float scale = min(size.x, size.y);
     float2 uv = (position - 0.5 * size) / scale;
+    // The stir reaches about the resting cloud's radius around the fingertip.
+    uv = stirred(uv, stir.xy, stir.z, radius(0.5) * 0.9);
     float e = saturate(expansion);
     float tr = max(e, saturate(trail));
 
@@ -372,6 +389,6 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
 
 /// position, color: supplied by SwiftUI. The remaining arguments are
 /// documented on smoke::render.
-[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint) {
-    return smoke::render(position, size, time, expansion, trail, flow, disperse, strike, density, tint);
+[[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint, float3 stir) {
+    return smoke::render(position, size, time, expansion, trail, flow, disperse, strike, density, tint, stir);
 }

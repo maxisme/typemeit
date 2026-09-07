@@ -48,6 +48,11 @@ struct PuffView: View {
     /// Taken off the expansion the level asks for, so the puff can settle
     /// smaller than its rest. Only used with `level`.
     var settle: Double = 0
+    /// Where the smoke is being parted, as a fraction of the view's short
+    /// side from its centre, y down; nil for nowhere.
+    var stir: CGPoint? = nil
+    /// How strongly the smoke is parted there.
+    static let stirAmount = 0.15
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     @State private var dynamics = Dynamics()
@@ -71,7 +76,8 @@ struct PuffView: View {
                         .float(Float(disperse(at: now))),
                         .float(Float(struck)),
                         .float(Float(density)),
-                        .color(tint)))
+                        .color(tint),
+                        .float3(Float(stir?.x ?? 0), Float(stir?.y ?? 0), Float(stir == nil || reduceMotion ? 0 : PuffView.stirAmount))))
                 }
         }
     }
@@ -79,7 +85,7 @@ struct PuffView: View {
     /// Compiles the shader ahead of its first frame, which otherwise stalls
     /// for a moment.
     static func compileShader() async throws {
-        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .float(0), .float(-1), .float(1), .color(.white))
+        try await ShaderLibrary.puff(.float2(CGSize(width: 1, height: 1)), .float(0), .float(0.5), .float(0.5), .float(0), .float(0), .float(-1), .float(1), .color(.white), .float3(0, 0, 0))
             .compile(as: .colorEffect)
     }
 

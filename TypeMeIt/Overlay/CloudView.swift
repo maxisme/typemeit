@@ -11,6 +11,7 @@ struct CloudView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var grown = false
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    @State private var stir = Stir()
 
     /// Side of the square the puff is drawn in. The resting cloud is about a
     /// quarter of it across.
@@ -22,11 +23,18 @@ struct CloudView: View {
     static let arrivalScale: CGFloat = 0.3
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || !isProcessing)) { ctx in
-            PuffView(level: level(at: ctx.date.timeIntervalSinceReferenceDate), tint: tint,
+        TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion)) { ctx in
+            let now = ctx.date.timeIntervalSinceReferenceDate
+            // The mouse relative to the cloud, as a fraction of the square
+            // it is drawn in; screen coordinates run upwards, the puff's down.
+            let mouse = NSEvent.mouseLocation
+            let at = CGPoint(x: (mouse.x - model.cloudCentre.x) / CloudView.size,
+                             y: (model.cloudCentre.y - mouse.y) / CloudView.size)
+            PuffView(level: level(at: now), tint: tint,
                      arrival: model.shownAt, departure: model.departedAt,
                      strike: strike(at: ctx.date), density: 1 + (CloudView.processingDensity - 1) * settled(at: ctx.date),
-                     settle: CloudView.processingSettle * settled(at: ctx.date))
+                     settle: CloudView.processingSettle * settled(at: ctx.date),
+                     stir: stir.step(at, at: now))
         }
         .animation(.easeInOut(duration: 0.2), value: model.backdrop)
         .frame(width: CloudView.size, height: CloudView.size)
@@ -88,6 +96,31 @@ struct CloudView: View {
         guard isProcessing else { return struck }
         let elapsed = now.timeIntervalSince(struck)
         return struck.addingTimeInterval(max(0, floor(elapsed)))
+    }
+
+    /// The mouse stirs the smoke: the cloud stays where it is, and the smoke
+    /// parts around the cursor as it passes through. The point the puff is
+    /// given lags the mouse a little, so the smoke swirls after it rather
+    /// than snapping. Mirrored by `Stir` in web/index.html; change the
+    /// constants together.
+    ///
+    /// A reference type so the timeline closure can update it without
+    /// triggering a view update.
+    final class Stir {
+        static let lag = 0.12
+
+        private var point: CGPoint?
+        private var lastTime: TimeInterval?
+
+        func step(_ target: CGPoint, at now: TimeInterval) -> CGPoint {
+            defer { lastTime = now }
+            guard let lastTime, let current = point else { point = target; return target }
+            let dt = min(max(now - lastTime, 0), 0.1)
+            let k = 1 - exp(-dt / Stir.lag)
+            let p = CGPoint(x: current.x + (target.x - current.x) * k, y: current.y + (target.y - current.y) * k)
+            point = p
+            return p
+        }
     }
 
     /// The chosen colour, or white or dark grey against what is behind the
