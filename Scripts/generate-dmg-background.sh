@@ -8,10 +8,10 @@
 # drawn here at coordinates the layout script does not share streams at nothing.
 # Change both together.
 #
-# Two lines of words along the top, set in DM Mono Light, the design system's
-# display face, in ink-3, lowercase like everything else the app says: the name
-# of the thing at 13pt (the ui size) and, under it, where to drag it at 10pt
-# (the micro size). Both carry the display tracking of -0.02em. They are small on
+# Two lines of words, set in DM Mono Light, the design system's display face,
+# in ink, lowercase like everything else the app says: the name of the thing at
+# 11pt along the top, and where to drag it at 9pt along the bottom, under the
+# icon labels. Both carry the display tracking of -0.02em. They are small on
 # purpose -- the icons are the window, the words are a caption. No mark and no
 # arrow: the app's own icon is already the largest thing in the window, and the
 # folder beside it says where the app goes. The direction of the drag is carried
@@ -32,11 +32,11 @@ OUT="Scripts/dmg-background.png"
 PUFFS="Scripts/puff"
 FONT="Scripts/fonts/DMMono-Light.ttf"     # display face from design/tokens.json
 TITLE="minimal transcription app"
-TITLE_PT=13
-TITLE_Y=64       # baseline of the line, in window points
+TITLE_PT=11
+TITLE_Y=66       # baseline of the line, in window points
 SUB="drag to your applications folder..."
-SUB_PT=10
-SUB_Y=84
+SUB_PT=9
+SUB_Y=372
 
 W=660
 H=410
@@ -82,11 +82,11 @@ for name, cx, cy, sz, op, mb in [("p4", 500, 428, 360, 0.95,  6),
 
 # The words: each line's point size doubles for the 2x asset, and -0.02em of
 # tracking is -0.04px per point of that. -kerning takes the per-glyph figure.
-# ink-3 is #6e6e6e.
+# ink is #0a0a0a.
 for text, pt, y in lines:
     px = pt * 2
     run("magick", f"{T}/acc.png", "-font", font, "-pointsize", px,
-        "-kerning", f"{-0.02*px:.2f}", "-fill", "#6e6e6e", "-gravity", "North",
+        "-kerning", f"{-0.02*px:.2f}", "-fill", "#0a0a0a", "-gravity", "North",
         "-annotate", f"+0+{y*2-px}", text, f"{T}/n.png")
     shutil.move(f"{T}/n.png", f"{T}/acc.png")
 
