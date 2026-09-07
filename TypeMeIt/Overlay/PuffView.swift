@@ -50,7 +50,8 @@ struct PuffView: View {
     var settle: Double = 0
     /// Gaps the smoke keeps clear of, four floats each as the shader takes
     /// them: where, as fractions of the view's short side from its centre,
-    /// y down, then the radius, then one unused. Empty for none.
+    /// y down, then the radius, then how fully open in 0...1. Empty for
+    /// none.
     var gaps: [Float] = []
 
     @State private var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion

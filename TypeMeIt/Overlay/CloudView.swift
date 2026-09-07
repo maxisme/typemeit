@@ -102,11 +102,13 @@ struct CloudView: View {
     /// the smoke within `radius` of the cursor is pushed out to sit around
     /// it, none of it lost. The gap opens over `open` seconds and trails
     /// the cursor by `lag`, and as the cursor moves it leaves a gap behind
-    /// every `spacing` of travel, each closing over `close` seconds, so a
+    /// every `spacing` of travel, each fading over `close` seconds, so a
     /// stroke through the cloud cuts it in two and the halves close up
-    /// again from the far end once the cursor is out the other side.
-    /// Positions are fractions of the square the puff is drawn in. Mirrored
-    /// by `Repel` in web/index.html; change the constants together.
+    /// again from the far end once the cursor is out the other side. Gaps
+    /// fade rather than shrink, so a closing cut grows fainter instead of
+    /// narrowing to specks. Positions are fractions of the square the puff
+    /// is drawn in. Mirrored by `Repel` in web/index.html; change the
+    /// constants together.
     ///
     /// A reference type so the timeline closure can update it without
     /// triggering a view update.
@@ -118,10 +120,10 @@ struct CloudView: View {
         static let spacing: Float = 0.02
         static let capacity = 16
 
-        /// The gap under the cursor.
-        private var live = SIMD3<Float>.zero
+        /// The gap under the cursor: where, the radius, how open.
+        private var live = SIMD4<Float>(0, 0, Repel.radius, 0)
         /// Gaps left behind it, oldest first.
-        private var laid: [SIMD3<Float>] = []
+        private var laid: [SIMD4<Float>] = []
         private var lastLaid: SIMD2<Float>?
         private var lastTime: TimeInterval?
 
@@ -130,23 +132,23 @@ struct CloudView: View {
         func step(_ point: CGPoint?, at now: TimeInterval) -> [Float] {
             defer { lastTime = now }
             guard let lastTime else {
-                if let point { live = SIMD3(Float(point.x), Float(point.y), 0) }
+                if let point { live.x = Float(point.x); live.y = Float(point.y) }
                 return flat()
             }
             let dt = Float(min(max(now - lastTime, 0), 0.1))
             let closing = exp(-dt / Repel.close)
-            for i in laid.indices { laid[i].z *= closing }
-            laid.removeAll { $0.z < 0.002 }
+            for i in laid.indices { laid[i].w *= closing }
+            laid.removeAll { $0.w < 0.03 }
             if let point {
                 let k = 1 - exp(-dt / Repel.lag)
                 live.x += (Float(point.x) - live.x) * k
                 live.y += (Float(point.y) - live.y) * k
             }
-            let target: Float = point == nil ? 0 : Repel.radius
-            let tau = target > live.z ? Repel.open : Repel.close
-            live.z += (target - live.z) * (1 - exp(-dt / tau))
+            let target: Float = point == nil ? 0 : 1
+            let tau = target > live.w ? Repel.open : Repel.close
+            live.w += (target - live.w) * (1 - exp(-dt / tau))
             let here = SIMD2(live.x, live.y)
-            if live.z > 0.002, let from = lastLaid, hypot(here.x - from.x, here.y - from.y) >= Repel.spacing {
+            if live.w > 0.03, let from = lastLaid, hypot(here.x - from.x, here.y - from.y) >= Repel.spacing {
                 laid.append(live)
                 if laid.count > Repel.capacity { laid.removeFirst() }
                 lastLaid = here
@@ -157,7 +159,7 @@ struct CloudView: View {
         }
 
         private func flat() -> [Float] {
-            (laid + [live]).flatMap { [$0.x, $0.y, $0.z, 0] }
+            (laid + [live]).flatMap { [$0.x, $0.y, $0.z, $0.w] }
         }
     }
 

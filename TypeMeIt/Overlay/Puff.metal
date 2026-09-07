@@ -292,39 +292,39 @@ static float lightning(float2 uv, float R, float seed, float age) {
 
 // MARK: Repelling
 
-// The smoke keeps clear of a point: `hole` is where in xy, in the same
-// centred units as `uv`, and how far around it the smoke gives way in z.
+// The smoke keeps clear of a gap: `gap` is where in xy, in the same centred
+// units as `uv`, its radius in z, and how fully it is open in w, 0...1.
 // The patch that gives way is not a disc: its extent is knocked about by
 // noise that drifts with time, so it is a ragged, shifting gap in the
 // smoke rather than a shape stamped on it.
-static float repelRadius(float2 uv, float3 hole, float time) {
-    float n = snoise(float3(uv * (1.3 / hole.z) + 3.0, time * 0.35));
-    return hole.z * (1.0 + 0.45 * n);
+static float repelRadius(float2 uv, float4 gap, float time) {
+    float n = snoise(float3(uv * (1.3 / gap.z) + 3.0, time * 0.35));
+    return gap.z * (1.0 + 0.45 * n);
 }
 
-// Smoke near the point shuffles outwards to make room, most at about the
-// patch's radius and less and less further out, and not at all at the
-// point itself, so there is no edge anywhere. The shift is gentle, most of
-// the giving way being the thinning below, so the smoke around it is not
-// visibly stretched.
-static float2 repelShift(float2 uv, float3 hole, float time) {
-    if (hole.z <= 0.0) { return float2(0.0); }
-    float2 d = uv - hole.xy;
-    float h = repelRadius(uv, hole, time);
+// How far the smoke at `uv` has shuffled outwards to make room: most at
+// about the gap's radius and less and less further out, and not at all at
+// the gap's centre, so there is no edge anywhere. The shift is gentle, most
+// of the giving way being the thinning below, so the smoke around it is
+// not visibly stretched.
+static float2 repelShift(float2 uv, float4 gap, float time) {
+    if (gap.w <= 0.0) { return float2(0.0); }
+    float2 d = uv - gap.xy;
+    float h = repelRadius(uv, gap, time);
     float r2 = dot(d, d);
     float h2 = h * h;
     float reach = 3.0 * h;
-    float push = 0.6 * h2 * (1.0 - exp(-r2 / h2)) * exp(-r2 / (reach * reach));
-    return uv - (hole.xy + d * sqrt(max(r2 - push, 0.0) / max(r2, 1e-9)));
+    float push = 0.6 * gap.w * h2 * (1.0 - exp(-r2 / h2)) * exp(-r2 / (reach * reach));
+    return uv - (gap.xy + d * sqrt(max(r2 - push, 0.0) / max(r2, 1e-9)));
 }
 
-// How much of the smoke has given way: thinnest at the point, back to full
+// How much of the smoke is left: thinnest at the gap's centre, back to full
 // a couple of radii out, with no edge.
-static float repelFade(float2 uv, float3 hole, float time) {
-    if (hole.z <= 0.0) { return 1.0; }
-    float2 d = uv - hole.xy;
-    float h = repelRadius(uv, hole, time);
-    return 1.0 - 0.92 * exp(-dot(d, d) / (h * h));
+static float repelFade(float2 uv, float4 gap, float time) {
+    if (gap.w <= 0.0) { return 1.0; }
+    float2 d = uv - gap.xy;
+    float h = repelRadius(uv, gap, time);
+    return 1.0 - 0.92 * gap.w * exp(-dot(d, d) / (h * h));
 }
 
 // Colour of the puff at `position` in a view of `size`, premultiplied.
@@ -414,14 +414,14 @@ static half4 render(float2 position, float2 size, float time, float expansion, f
 
 /// position, color: supplied by SwiftUI. The remaining arguments are
 /// documented on smoke::render.
-// `gaps` is `gapCount` floats, four per gap: where in xy and the radius in
-// z, as `smoke::repelShift` takes them, and a fourth unused.
+// `gaps` is `gapCount` floats, four per gap, as `smoke::repelShift` takes
+// them.
 [[stitchable]] half4 puff(float2 position, half4 color, float2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, half4 tint, device const float *gaps, int gapCount) {
     float2 uv = (position - 0.5 * size) / min(size.x, size.y);
     float2 shift = 0.0;
     float clear = 1.0;
     for (int i = 0; i + 3 < gapCount; i += 4) {
-        float3 gap = float3(gaps[i], gaps[i + 1], gaps[i + 2]);
+        float4 gap = float4(gaps[i], gaps[i + 1], gaps[i + 2], gaps[i + 3]);
         shift += smoke::repelShift(uv, gap, time);
         clear *= smoke::repelFade(uv, gap, time);
     }
