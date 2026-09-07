@@ -182,8 +182,8 @@ struct MainSettingsTab: View {
     /// Screen Recording is the only permission that lets the app read the
     /// screen, so the row says what is read and what it asks for.
     private var backdropSubtitle: String {
-        if settings.cloudMatchesBackdrop, !screenGranted { return "needs screen recording permissions, which are off" }
-        return "reads a few pixels under the cloud · needs screen recording permissions"
+        if settings.cloudMatchesBackdrop, !screenGranted { return "needs screen recording permissions" }
+        return "reads a few pixels under the cloud - needs screen recording permissions"
     }
 
     var body: some View {

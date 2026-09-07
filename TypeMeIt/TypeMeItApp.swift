@@ -86,7 +86,7 @@ struct MenuContent: View {
         if let owner = appState.secureInputOwner {
             if owner.isLoginWindow {
                 Text("secure input is stuck on from the lock screen")
-                Text("fn works, but esc, space and the copy shortcut do not. lock and unlock the mac to clear it.")
+                Text("type me it will not be functioning properly. lock and unlock the mac to clear it.")
             } else {
                 Text("secure input is on in \(owner.name)")
                 Text("fn works, but esc, space and the copy shortcut do not until \(owner.name) releases it.")
