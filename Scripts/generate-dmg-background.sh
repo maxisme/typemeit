@@ -9,9 +9,9 @@
 # Change both together.
 #
 # Two lines of words, set in DM Mono Light, the design system's display face,
-# in ink, lowercase like everything else the app says: the name of the thing at
-# 11pt along the top, and where to drag it at 9pt along the bottom, under the
-# icon labels. Both carry the display tracking of -0.02em. They are small on
+# lowercase like everything else the app says: the name of the thing at 11pt in
+# ink along the top, and where to drag it at 9pt in ink-3 along the bottom,
+# under the icon labels. Both carry the display tracking of -0.02em. They are small on
 # purpose -- the icons are the window, the words are a caption. No mark and no
 # arrow: the app's own icon is already the largest thing in the window, and the
 # folder beside it says where the app goes. The direction of the drag is carried
@@ -33,9 +33,11 @@ PUFFS="Scripts/puff"
 FONT="Scripts/fonts/DMMono-Light.ttf"     # display face from design/tokens.json
 TITLE="minimal transcription app"
 TITLE_PT=11
+TITLE_INK="#0a0a0a"   # ink
 TITLE_Y=66       # baseline of the line, in window points
 SUB="drag to your applications folder..."
 SUB_PT=9
+SUB_INK="#6e6e6e"     # ink-3
 SUB_Y=372
 
 W=660
@@ -45,11 +47,11 @@ APP_X=170
 FOLDER_X=490
 
 python3 - "$PUFFS" "$OUT" "$W" "$H" "$FONT" \
-    "$TITLE" "$TITLE_PT" "$TITLE_Y" "$SUB" "$SUB_PT" "$SUB_Y" <<'PY'
+    "$TITLE" "$TITLE_PT" "$TITLE_Y" "$TITLE_INK" "$SUB" "$SUB_PT" "$SUB_Y" "$SUB_INK" <<'PY'
 import subprocess, sys, tempfile, shutil, os
 puffs, out, W, H, font = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5]
-lines = [(sys.argv[6], int(sys.argv[7]), int(sys.argv[8])),
-         (sys.argv[9], int(sys.argv[10]), int(sys.argv[11]))]
+lines = [(sys.argv[6], int(sys.argv[7]), int(sys.argv[8]), sys.argv[9]),
+         (sys.argv[10], int(sys.argv[11]), int(sys.argv[12]), sys.argv[13])]
 T = tempfile.mkdtemp()
 run = lambda *a: subprocess.run([str(x) for x in a], check=True)
 ident = lambda f, fmt: int(subprocess.run(["magick","identify","-format",fmt,f],
@@ -82,11 +84,10 @@ for name, cx, cy, sz, op, mb in [("p4", 500, 428, 360, 0.95,  6),
 
 # The words: each line's point size doubles for the 2x asset, and -0.02em of
 # tracking is -0.04px per point of that. -kerning takes the per-glyph figure.
-# ink is #0a0a0a.
-for text, pt, y in lines:
+for text, pt, y, ink in lines:
     px = pt * 2
     run("magick", f"{T}/acc.png", "-font", font, "-pointsize", px,
-        "-kerning", f"{-0.02*px:.2f}", "-fill", "#0a0a0a", "-gravity", "North",
+        "-kerning", f"{-0.02*px:.2f}", "-fill", ink, "-gravity", "North",
         "-annotate", f"+0+{y*2-px}", text, f"{T}/n.png")
     shutil.move(f"{T}/n.png", f"{T}/acc.png")
 
