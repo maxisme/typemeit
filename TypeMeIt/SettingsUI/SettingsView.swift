@@ -250,6 +250,18 @@ struct MainSettingsTab: View {
                     SettingsRow(label: "offer to copy when no text box is focused") {
                         Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
                     }
+                    SettingsRow(label: "read the screen for names", subtitle: settings.screenContextEnabled && !screenGranted ? "needs screen recording permissions, which are off" : "spike · clean-up sees the words in the window you dictate into · needs screen recording permissions") {
+                        HStack(spacing: 8) {
+                            if settings.screenContextEnabled, !screenGranted {
+                                Button("system settings") { NSWorkspace.shared.open(SecureInput.screenRecordingSettingsURL) }.buttonStyle(InkButtonStyle())
+                            }
+                            Toggle("", isOn: Binding(get: { settings.screenContextEnabled }, set: { on in
+                                settings.screenContextEnabled = on
+                                if on, !CGPreflightScreenCaptureAccess() { CGRequestScreenCaptureAccess() }
+                                screenGranted = CGPreflightScreenCaptureAccess()
+                            })).toggleStyle(.switch).labelsHidden()
+                        }
+                    }
                     SettingsRow(label: "key after typing", last: !settings.autoSubmit) {
                         Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
                     }

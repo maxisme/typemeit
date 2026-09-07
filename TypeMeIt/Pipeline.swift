@@ -23,6 +23,9 @@ final class Pipeline {
     private var copyPromptTask: Task<Void, Never>?
     private var toastTask: Task<Void, Never>?
     private var lastRecordingFirstBuffer = false
+    /// Spike: screen text read while the user is still speaking, so it costs
+    /// nothing after the recording ends.
+    private var screenContextTask: Task<[String], Never>?
 
     private init() {
         shortcuts.onEvent = { [weak self] event in self?.handle(event) }
@@ -126,7 +129,18 @@ final class Pipeline {
             return
         }
         overlay.show(.arming)
-        if settings.postProcessingEnabled { Task { await PostProcessor.shared.prewarm() } }
+        screenContextTask?.cancel()
+        screenContextTask = nil
+        if settings.postProcessingEnabled {
+            Task { await PostProcessor.shared.prewarm() }
+            if settings.screenContextEnabled, let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier {
+                let customWords = settings.customWords
+                screenContextTask = Task {
+                    let lines = await ScreenContext.captureLines(pid: pid)
+                    return await ScreenContext.terms(from: lines, excluding: customWords)
+                }
+            }
+        }
         Task { await Transcriber.shared.preload() }
     }
 
@@ -220,8 +234,11 @@ final class Pipeline {
             phase = .cleaningUp
             shortcuts.setPhase(.cleaningUp)
             overlay.show(.cleaningUp)
+            let screenTerms = await screenContextTask?.value ?? []
+            screenContextTask = nil
+            if !screenTerms.isEmpty { Log.screenContext.info("Screen terms: \(screenTerms.joined(separator: ", "), privacy: .private)") }
             let start = ContinuousClock.now
-            postProcessed = await PostProcessor.shared.run(cleaned.text, customWords: customWords)
+            postProcessed = await PostProcessor.shared.run(cleaned.text, customWords: customWords, screenTerms: screenTerms)
             let ms = Pipeline.elapsedMs(since: start)
             postProcessMs = ms
             Log.postProcess.info("Post-processing took \(ms) ms (\(postProcessed == nil ? "fell back to local cleanup" : "applied"))")
