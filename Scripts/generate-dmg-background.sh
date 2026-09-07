@@ -8,14 +8,16 @@
 # drawn here at coordinates the layout script does not share streams at nothing.
 # Change both together.
 #
-# One line of words along the top, set in DM Mono Light, the design system's display
-# face, at 22pt with the display tracking of -0.02em in ink-3, lowercase like
-# everything else the app says. display-3 is 30pt, but a monospace line at
-# that size run wider than the window. No mark and no arrow: the app's own icon is already the largest thing in
-# the window, and the folder beside it says where the app goes. The direction of
-# the drag is carried by the smoke instead of by an arrow -- puffs growing and
-# darkening from the app toward the folder, rising slightly as they go, each
-# smeared a little more than the last.
+# Two lines of words along the top, set in DM Mono Light, the design system's
+# display face, in ink-3, lowercase like everything else the app says: the name
+# of the thing at 13pt (the ui size) and, under it, where to drag it at 10pt
+# (the micro size). Both carry the display tracking of -0.02em. They are small on
+# purpose -- the icons are the window, the words are a caption. No mark and no
+# arrow: the app's own icon is already the largest thing in the window, and the
+# folder beside it says where the app goes. The direction of the drag is carried
+# by the smoke instead of by an arrow -- puffs growing and darkening from the app
+# toward the folder, rising slightly as they go, each smeared a little more than
+# the last.
 #
 # Note that Finder, not this image, decides the colour of the two icon labels:
 # black in Light appearance, white in Dark, with no per-image override. The
@@ -30,7 +32,11 @@ OUT="Scripts/dmg-background.png"
 PUFFS="Scripts/puff"
 FONT="Scripts/fonts/DMMono-Light.ttf"     # display face from design/tokens.json
 TITLE="minimal transcription app"
-TITLE_Y=72       # baseline of the line, in window points
+TITLE_PT=13
+TITLE_Y=64       # baseline of the line, in window points
+SUB="drag to your applications folder..."
+SUB_PT=10
+SUB_Y=84
 
 W=660
 H=410
@@ -38,11 +44,12 @@ ICON_Y=214       # centre of both Finder icons, in window points
 APP_X=170
 FOLDER_X=490
 
-python3 - "$PUFFS" "$OUT" "$W" "$H" "$FONT" "$TITLE" "$TITLE_Y" <<'PY'
+python3 - "$PUFFS" "$OUT" "$W" "$H" "$FONT" \
+    "$TITLE" "$TITLE_PT" "$TITLE_Y" "$SUB" "$SUB_PT" "$SUB_Y" <<'PY'
 import subprocess, sys, tempfile, shutil, os
-puffs, out, W, H, font, title, title_y = (sys.argv[1], sys.argv[2], int(sys.argv[3]),
-                                          int(sys.argv[4]), sys.argv[5], sys.argv[6],
-                                          int(sys.argv[7]))
+puffs, out, W, H, font = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5]
+lines = [(sys.argv[6], int(sys.argv[7]), int(sys.argv[8])),
+         (sys.argv[9], int(sys.argv[10]), int(sys.argv[11]))]
 T = tempfile.mkdtemp()
 run = lambda *a: subprocess.run([str(x) for x in a], check=True)
 ident = lambda f, fmt: int(subprocess.run(["magick","identify","-format",fmt,f],
@@ -73,12 +80,15 @@ for name, cx, cy, sz, op, mb in [("p4", 500, 428, 360, 0.95,  6),
         "-compose","Over","-composite", f"{T}/n.png")
     shutil.move(f"{T}/n.png", f"{T}/acc.png")
 
-# The title: 22pt with -0.02em tracking is 44px and -0.88px between glyphs at
-# 2x. -kerning takes the per-glyph figure. ink-3 is #6e6e6e.
-run("magick", f"{T}/acc.png", "-font", font, "-pointsize", "44", "-kerning", "-0.88",
-    "-fill", "#6e6e6e", "-gravity", "North",
-    "-annotate", f"+0+{title_y*2-44}", title, f"{T}/n.png")
-shutil.move(f"{T}/n.png", f"{T}/acc.png")
+# The words: each line's point size doubles for the 2x asset, and -0.02em of
+# tracking is -0.04px per point of that. -kerning takes the per-glyph figure.
+# ink-3 is #6e6e6e.
+for text, pt, y in lines:
+    px = pt * 2
+    run("magick", f"{T}/acc.png", "-font", font, "-pointsize", px,
+        "-kerning", f"{-0.02*px:.2f}", "-fill", "#6e6e6e", "-gravity", "North",
+        "-annotate", f"+0+{y*2-px}", text, f"{T}/n.png")
+    shutil.move(f"{T}/n.png", f"{T}/acc.png")
 
 # Grain, laid on after compositing rather than as a filter, to break up the
 # banding a near-flat ramp rings into on an 8-bit panel. Very light: on a white
