@@ -22,6 +22,7 @@ struct OnboardingView: View {
     /// prompt once per app, so the button on these steps opens System Settings.
     @State private var needsSettings: Set<Step> = []
     @State private var scratch = ""
+    @FocusState private var scratchFocused: Bool
     @State private var store = Store.shared
     private let poll = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -159,6 +160,8 @@ struct OnboardingView: View {
                     Status("waiting for a dictation…")
                     TextField("dictate into this field", text: $scratch)
                         .textFieldStyle(.plain)
+                        .focused($scratchFocused)
+                        .onAppear { scratchFocused = true }
                         .font(DesignTokens.Fonts.ui)
                         .padding(.horizontal, 10)
                         .frame(height: 28)
