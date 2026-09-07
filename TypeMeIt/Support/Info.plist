@@ -27,7 +27,7 @@
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Type Me It records your voice while you hold the Fn key so it can transcribe it.</string>
+	<string>type me it records your voice while you hold the Fn key so it can transcribe it.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUEnableAutomaticChecks</key>

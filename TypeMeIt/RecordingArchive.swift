@@ -50,7 +50,7 @@ enum RecordingArchive {
         let file = try AVAudioFile(forWriting: url, settings: settings, commonFormat: .pcmFormatFloat32, interleaved: false)
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(pcm.count)),
               let channel = buffer.floatChannelData?[0] else {
-            throw NSError(domain: "Type Me It.Audio", code: 2, userInfo: [NSLocalizedDescriptionKey: "Could not allocate an audio buffer"])
+            throw NSError(domain: "type me it.Audio", code: 2, userInfo: [NSLocalizedDescriptionKey: "Could not allocate an audio buffer"])
         }
         pcm.withUnsafeBufferPointer { channel.update(from: $0.baseAddress!, count: pcm.count) }
         buffer.frameLength = AVAudioFrameCount(pcm.count)

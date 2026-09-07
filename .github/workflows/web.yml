@@ -5,10 +5,14 @@ on:
     branches: [main]
     paths:
       - "web/**"
+      - "worker.js"
+      - "wrangler.toml"
       - ".github/workflows/web.yml"
   pull_request:
     paths:
       - "web/**"
+      - "worker.js"
+      - "wrangler.toml"
       - ".github/workflows/web.yml"
 
 permissions:

@@ -68,7 +68,7 @@ final class AudioCapture: @unchecked Sendable {
         let input = engine.inputNode
         let inFormat = input.outputFormat(forBus: 0)
         guard inFormat.sampleRate > 0, inFormat.channelCount > 0 else {
-            throw NSError(domain: "Type Me It.Audio", code: 1, userInfo: [NSLocalizedDescriptionKey: "No audio input device"])
+            throw NSError(domain: "type me it.Audio", code: 1, userInfo: [NSLocalizedDescriptionKey: "No audio input device"])
         }
         converter = AVAudioConverter(from: inFormat, to: AudioCapture.targetFormat)
         input.removeTap(onBus: 0)
