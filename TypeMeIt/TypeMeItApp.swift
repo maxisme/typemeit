@@ -29,7 +29,9 @@ struct TypeMeItApp: App {
 @Observable
 final class AppState {
     static let shared = AppState()
-    var secureInputOn = false
+    /// Who holds Secure Input, or nil when it is off.
+    var secureInputOwner: SecureInput.Owner?
+    var secureInputOn: Bool { secureInputOwner != nil }
     var recording = false
     var transcribing = false
     var ready = false
@@ -81,8 +83,14 @@ struct MenuContent: View {
     }
 
     var body: some View {
-        if appState.secureInputOn {
-            Text("Secure Input is on in another app. Fn is unavailable.")
+        if let owner = appState.secureInputOwner {
+            if owner.isLoginWindow {
+                Text("secure input is stuck on from the lock screen")
+                Text("fn works, but esc, space and the copy shortcut do not. lock and unlock the mac to clear it.")
+            } else {
+                Text("secure input is on in \(owner.name)")
+                Text("fn works, but esc, space and the copy shortcut do not until \(owner.name) releases it.")
+            }
             Divider()
         }
         Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(AttributedString("Open ") + MenuContent.bold("type me it")) }
@@ -209,7 +217,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observePipeline()
         previewToastIfAsked()
         secureInputTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-            Task { @MainActor in AppState.shared.secureInputOn = SecureInput.isEnabled }
+            Task { @MainActor in
+                let owner = SecureInput.owner
+                if owner != AppState.shared.secureInputOwner { AppState.shared.secureInputOwner = owner }
+            }
         }
         // Creating the updater checks for an update now and schedules the hourly check.
         _ = Updates.shared
