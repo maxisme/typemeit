@@ -103,6 +103,17 @@ enum ScreenContext {
         let letters = token.filter(\.isLetter)
         let hasDigit = token.contains(where: \.isNumber)
         if hasDigit { return letters.count >= 2 }
+        // Code identifiers. The spell checker splits on these separators and
+        // passes "parse_config" and "user.name" as two correct words each, so
+        // they never reach the dictionary rule below. An underscore or a dot
+        // between letters only ever appears in code. A hyphen also joins
+        // ordinary words ("well-known"), so kebab-case counts only when one
+        // side is not a word.
+        let parts = token.split(whereSeparator: { $0 == "_" || $0 == "." || $0 == "-" }).map(String.init)
+        if parts.count >= 2, parts.allSatisfy({ $0.contains(where: \.isLetter) }) {
+            if token.contains("_") || token.contains(".") { return true }
+            if parts.contains(where: { !isKnownWord($0.lowercased()) }) { return true }
+        }
         let upper = letters.filter(\.isUppercase).count
         if upper >= 2, upper == letters.count, letters.count >= 2, letters.count <= 6 { return true } // acronym
         if upper >= 1, !token.first!.isUppercase { return true } // camelCase, iPhone

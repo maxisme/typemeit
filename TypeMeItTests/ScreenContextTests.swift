@@ -42,6 +42,23 @@ final class ScreenContextTests: XCTestCase {
         XCTAssertFalse(ScreenContext.isCandidate("monday", isKnownWord: { _ in true }))
     }
 
+    func testCodeIdentifiersAreCandidatesEvenWhenTheirPartsAreWords() {
+        let parts: Set<String> = ["parse", "config", "user", "name", "well", "known", "screen", "context", "max", "retries"]
+        let known: (String) -> Bool = { parts.contains($0) || $0 == "parse_config" || $0 == "user.name" || $0 == "well-known" || $0 == "screen-context" }
+        XCTAssertTrue(ScreenContext.isCandidate("parse_config", isKnownWord: known))
+        XCTAssertTrue(ScreenContext.isCandidate("user.name", isKnownWord: known))
+        XCTAssertTrue(ScreenContext.isCandidate("MAX_RETRIES", isKnownWord: known))
+        XCTAssertTrue(ScreenContext.isCandidate("kebab-zentryx", isKnownWord: known))
+        XCTAssertFalse(ScreenContext.isCandidate("well-known", isKnownWord: known))
+        XCTAssertFalse(ScreenContext.isCandidate("screen-context", isKnownWord: known))
+    }
+
+    func testFunctionCallsLoseTheirParentheses() {
+        XCTAssertEqual(ScreenContext.clean("parseConfig()"), "parseConfig")
+        XCTAssertEqual(ScreenContext.clean("self.settings,"), "self.settings")
+        XCTAssertNil(ScreenContext.clean("a.b.c"))
+    }
+
     func testPromptCarriesScreenTermsAfterCustomWords() {
         let p = PostProcessor.prompt(for: "hi", customWords: ["Kavuu"], screenTerms: ["Zentryx", "GitHub"])
         XCTAssertEqual(p, PostProcessor.template.replacingOccurrences(of: "${output}", with: "hi")
