@@ -284,29 +284,37 @@ float lightning(vec2 uv, float R, float seed, float age) {
 
 // The smoke keeps clear of a point: 'hole' is where in xy, in the same
 // centred units as 'uv', and how far around it the smoke gives way in z.
-// Smoke near the point shuffles outwards to make room, most at about that
-// distance and less and less further out, and nothing at the point
-// itself, so there is no edge anywhere. Outside the very middle the map is
-// close to area-preserving (a ring at distance r shows roughly what was at
-// sqrt(r^2 - h^2)), so the smoke that gives way gathers just outside
-// rather than vanishing.
-vec2 repelled(vec2 uv, vec3 hole) {
+// The patch that gives way is not a disc: its extent is knocked about by
+// noise that drifts with time, so it is a ragged, shifting gap in the
+// smoke rather than a shape stamped on it.
+float repelRadius(vec2 uv, vec3 hole, float time) {
+    float n = snoise(vec3(uv * (1.3 / hole.z) + 3.0, time * 0.35));
+    return hole.z * (1.0 + 0.45 * n);
+}
+
+// Smoke near the point shuffles outwards to make room, most at about the
+// patch's radius and less and less further out, and not at all at the
+// point itself, so there is no edge anywhere. The shift is gentle, most of
+// the giving way being the thinning below, so the smoke around it is not
+// visibly stretched.
+vec2 repelled(vec2 uv, vec3 hole, float time) {
+    if (hole.z <= 0.0) { return uv; }
     vec2 d = uv - hole.xy;
-    float h = hole.z;
-    if (h <= 0.0) { return uv; }
+    float h = repelRadius(uv, hole, time);
     float r2 = dot(d, d);
     float h2 = h * h;
     float reach = 3.0 * h;
-    float push = h2 * (1.0 - exp(-r2 / h2)) * exp(-r2 / (reach * reach));
+    float push = 0.45 * h2 * (1.0 - exp(-r2 / h2)) * exp(-r2 / (reach * reach));
     return hole.xy + d * sqrt(max(r2 - push, 0.0) / max(r2, 1e-9));
 }
 
 // How much of the smoke has given way: thinnest at the point, back to full
 // a couple of radii out, with no edge.
-float repelFade(vec2 uv, vec3 hole) {
+float repelFade(vec2 uv, vec3 hole, float time) {
     if (hole.z <= 0.0) { return 1.0; }
     vec2 d = uv - hole.xy;
-    return 1.0 - 0.55 * exp(-dot(d, d) / (hole.z * hole.z));
+    float h = repelRadius(uv, hole, time);
+    return 1.0 - 0.8 * exp(-dot(d, d) / (h * h));
 }
 
 // Colour of the puff at 'position' in a view of 'size', premultiplied.
@@ -326,8 +334,8 @@ float repelFade(vec2 uv, vec3 hole) {
 //       0 for nowhere.
 vec4 render(vec2 position, vec2 size, float time, float expansion, float trail, float flow, float disperse, float strike, float density, vec4 tint, vec3 hole) {
     float scale = min(size.x, size.y);
-    vec2 uv = repelled((position - 0.5 * size) / scale, hole);
-    float clear = repelFade((position - 0.5 * size) / scale, hole);
+    vec2 uv = repelled((position - 0.5 * size) / scale, hole, time);
+    float clear = repelFade((position - 0.5 * size) / scale, hole, time);
     float e = saturate(expansion);
     float tr = max(e, saturate(trail));
 
