@@ -2,7 +2,8 @@ import AppKit
 import SwiftUI
 
 /// Borderless, non-activating panel at the bottom centre of the screen with
-/// the mouse, or against its left or right edge halfway up. The transparent 460 x 260 window sits on the bottom edge of
+/// the mouse, at its top centre, or against its left or right edge halfway
+/// up. The transparent 460 x 260 window sits on the bottom edge of
 /// the visible screen, so the cloud has room to swell and the pill can
 /// change width and cast a shadow without the window resizing.
 @MainActor
@@ -47,12 +48,13 @@ final class OverlayPanel {
         let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main ?? NSScreen.screens[0]
         let visible = screen.visibleFrame
         // The cloud's centre is half the panel across and restHeight up, so
-        // at a side the panel hangs partly off the screen to put the cloud
-        // against the edge, halfway up.
+        // at a side or the top the panel hangs partly off the screen to put
+        // the cloud against the edge.
         let half = OverlayPanel.size.width / 2
         let position = model.presentation == .cloud ? Settings.shared.cloudPosition : .centre
         let origin: NSPoint = switch position {
         case .left: NSPoint(x: visible.minX + OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
+        case .top: NSPoint(x: visible.midX - half, y: visible.maxY - OverlayPanel.sideInset - CloudView.restHeight)
         case .centre: NSPoint(x: visible.midX - half, y: visible.minY)
         case .right: NSPoint(x: visible.maxX - OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
         }
