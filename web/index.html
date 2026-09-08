@@ -28,6 +28,9 @@
 <style>
   :root { --paper: #0e0e0e; --ink: #f0f0f0; }
   html, body { margin: 0; height: 100%; background: var(--paper); overflow: hidden; }
+  /* Inverting the page is quick but not a cut: the paper and the ink cross
+     over INVERT milliseconds, matched by the smoke tint in the script. */
+  html, body, #hint strong, #more a { transition: background-color 280ms ease-in-out, color 280ms ease-in-out; }
   /* Nothing on the page is text to copy: the puff is a canvas, the button's
      label is off-screen, and the note and links are furniture. A drag across
      them should do nothing rather than paint a selection over the puff. */
@@ -47,10 +50,13 @@
      the corners of its box do not swallow clicks that miss the cloud. The
      puff is drawn into a VIEW px square but only fills the middle of it, so
      this is sized for the cloud, not the square; HOVER_RADIUS in the script
-     is the same circle. */
+     is the same circle. --view is the square's width, set by the script from
+     the viewport, and the cloud's circle is 180/440 of it. */
+  :root { --view: 440px; }
   #download {
-    position: fixed; left: 50%; top: 50%; width: 180px; height: 180px;
-    margin: -90px 0 0 -90px; padding: 0; border: 0; border-radius: 50%;
+    position: fixed; left: 50%; top: 50%;
+    width: calc(var(--view) * 180 / 440); height: calc(var(--view) * 180 / 440);
+    margin: 0; transform: translate(-50%, -50%); padding: 0; border: 0; border-radius: 50%;
     background: none; cursor: default; text-indent: -9999px; overflow: hidden;
     -webkit-tap-highlight-color: transparent;
   }
@@ -63,7 +69,7 @@
 
   /* Design-system note text: DM Mono, lowercase, ink-3 on paper, no surface. */
   #hint {
-    position: fixed; left: 50%; top: calc(50% + 120px); transform: translateX(-50%);
+    position: fixed; left: 50%; top: calc(50% + var(--view) * 120 / 440); transform: translateX(-50%);
     margin: 0; font: 10px/1.4 "DM Mono", ui-monospace, Menlo, monospace;
     color: #8a8a8a; text-align: center; white-space: nowrap;
   }
@@ -74,22 +80,23 @@
 
 
   /* The page has nothing to scroll to, so a scroll is a request for more.
-     The links sit at the bottom, invisible until the first wheel, swipe or
-     scroll key, then fade in and stay. Same face and colour as #hint.
-     The email is a mailto link, plain like the rest. */
+     The links sit at the bottom, dim so they are found but not read, until
+     the first wheel, swipe or scroll key brings them up to full and they stay.
+     Same face and colour as #hint. The email is a mailto link, plain like
+     the rest. */
   #more {
     position: fixed; left: 0; right: 0; bottom: 20px;
     margin: 0; padding: 0; list-style: none;
     display: flex; justify-content: center; gap: 18px;
     font: 12px/1.4 "DM Mono", ui-monospace, Menlo, monospace;
     color: #8a8a8a;
-    opacity: 0; transition: opacity 560ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0.3; transition: opacity 560ms cubic-bezier(0.16, 1, 0.3, 1);
   }
-  #more.shown, #more:focus-within { opacity: 1; }
+  #more.shown, #more:hover, #more:focus-within { opacity: 1; }
   #more a { color: inherit; text-decoration: none; }
   #more a:hover { color: var(--ink); }
   #more a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 5px; }
-  @media (prefers-reduced-motion: reduce) { #more { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { #more, html, body, #hint strong, #more a { transition: none; } }
 </style>
 </head>
 <body>
@@ -186,7 +193,16 @@ let armed = false;
 // the Swift view does. Here that square is a fixed VIEW px wide in the middle
 // of the page, and the y axis is flipped because gl_FragCoord runs upwards
 // while the shader (like SwiftUI) expects y down: its light comes from the top.
-const VIEW = 440;
+// The square is most of the shorter side of the viewport, so the cloud fills
+// the page on a laptop screen and on a phone alike; it never drops below the
+// 440 it was designed at, and never grows past a point where the cloud would
+// leave the screen. HOVER_RADIUS and the button follow it.
+const VIEW_MIN = 440, VIEW_MAX = 1300, VIEW_SHARE = 1.6;
+let VIEW = VIEW_MIN;
+function fitView() {
+  VIEW = Math.min(VIEW_MAX, Math.max(VIEW_MIN, Math.min(innerWidth, innerHeight) * VIEW_SHARE));
+  document.documentElement.style.setProperty("--view", `${VIEW}px`);
+}
 
 const FRAG = `#version 300 es
 precision highp float;
@@ -275,7 +291,7 @@ addEventListener("pointerdown", (ev) => {
   // A click on the puff itself flushes it red; a click on empty page toggles
   // the inversion. The links at the bottom do neither.
   const d = Math.hypot(ev.clientX - innerWidth / 2, ev.clientY - innerHeight / 2);
-  if (d < HOVER_RADIUS) { blush = performance.now(); strike = (performance.now() - start) / 1000; }
+  if (d < HOVER_RADIUS()) { blush = performance.now(); strike = (performance.now() - start) / 1000; }
   else if (ev.target === canvas || ev.target === document.body) inverted = !inverted;
 });
 
@@ -283,15 +299,18 @@ addEventListener("pointerdown", (ev) => {
 let strike = -1;
 
 // A click on the puff flushes it red, easing back over BLUSH seconds. A click
-// on empty page toggles the inversion outright: white paper, black cloud,
-// with no fade. The smoke tint is the product of the two.
+// on empty page toggles the inversion: white paper, black cloud, crossing
+// over INVERT seconds in step with the CSS transition on the page colours.
+// The smoke tint is the product of the two.
 const BLUSH = 4.0;
 const BLUSH_TINT = [1.0, 0.25, 0.22];
 const DARK = { paper: "#0e0e0e", ink: "#f0f0f0", tint: [1.0, 1.0, 1.0] };
 const LIGHT = { paper: "#f0f0f0", ink: "#0e0e0e", tint: [0.08, 0.08, 0.08] };
+const INVERT = 0.28;
 let blush = -Infinity;
 let inverted = false;
 let shownInverted = null;
+let inversion = 0, inversionAt = null;
 
 // Hovering the puff on a desktop pointer fades it green, in over HOVER_IN
 // seconds and out over HOVER_OUT, so it neither flickers at the edge nor
@@ -300,14 +319,14 @@ let shownInverted = null;
 // never hover, and neither does a page the mouse has not moved over yet — but
 // an armed button holds the green either way until its second click.
 const HOVER_TINT = [0.45, 0.9, 0.5];
-const HOVER_RADIUS = 90;
+const HOVER_RADIUS = () => VIEW * 90 / 440;
 const HOVER_IN = 0.6, HOVER_OUT = 0.45;
 const canHover = matchMedia("(hover: hover) and (pointer: fine)").matches;
 let hover = 0, hoverAt = null;
 
 function hoverAmount(nowMs) {
   const d = Math.hypot(pointer.x - innerWidth / 2, pointer.y - innerHeight / 2);
-  const hovering = armed || (canHover && pointer.seen && d < HOVER_RADIUS);
+  const hovering = armed || (canHover && pointer.seen && d < HOVER_RADIUS());
   const dt = hoverAt === null ? 0 : Math.min((nowMs - hoverAt) / 1000, 0.1);
   hoverAt = nowMs;
   const target = hovering ? 1 : 0;
@@ -324,7 +343,14 @@ function tint(nowMs) {
   }
   const k = Math.max(0, 1 - (nowMs - blush) / (BLUSH * 1000));
   const amount = k * k * (3 - 2 * k);
-  const base = (inverted ? LIGHT : DARK).tint;
+  // The tint follows the toggle at a steady rate, so a second click halfway
+  // through turns it back from where it is rather than jumping.
+  const idt = inversionAt === null ? 0 : Math.min((nowMs - inversionAt) / 1000, 0.1);
+  inversionAt = nowMs;
+  const step = reduceMotion ? 1 : idt / INVERT;
+  inversion += Math.max(-step, Math.min(step, (inverted ? 1 : 0) - inversion));
+  const mix = inversion * inversion * (3 - 2 * inversion);
+  const base = DARK.tint.map((c, i) => c + (LIGHT.tint[i] - c) * mix);
   const h = hoverAmount(nowMs);
   return base.map((c, i) => (c + (HOVER_TINT[i] - c) * h) * (1 + (BLUSH_TINT[i] - 1) * amount));
 }
@@ -368,6 +394,7 @@ const start = performance.now();
 let dpr = 1;
 
 function resize() {
+  fitView();
   dpr = Math.min(devicePixelRatio || 1, 2);
   canvas.width = Math.round(innerWidth * dpr);
   canvas.height = Math.round(innerHeight * dpr);
