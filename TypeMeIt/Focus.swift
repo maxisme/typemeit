@@ -55,17 +55,26 @@ enum Focus {
             guard let element = AX.element(value) else { return nil }
             focused = element
         case .failure(let error) where error.code == .noValue:
+            Log.output.notice("Focus check: no focused element")
             return false
-        case .failure:
+        case .failure(let error):
+            Log.output.notice("Focus check: focused element unavailable (AXError \(error.code.rawValue))")
             return nil
         }
         focused.applyMessagingTimeout()
 
         guard case .success(let role) = focused.copyStringAttribute(kAXRoleAttribute) else {
+            Log.output.notice("Focus check: role unavailable")
             return nil
         }
+        let subrole = (try? focused.copyStringAttribute(kAXSubroleAttribute).get()) ?? "-"
         let valueSettable = focused.isAttributeSettable(kAXValueAttribute)
-        return classifyRole(role, valueSettable: valueSettable)
+        var pid: pid_t = 0
+        AXUIElementGetPid(focused, &pid)
+        let owner = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "pid \(pid)"
+        let isText = classifyRole(role, valueSettable: valueSettable)
+        Log.output.notice("Focus check: \(owner, privacy: .public) role \(role, privacy: .public) subrole \(subrole, privacy: .public) valueSettable \(valueSettable) -> \(isText ? "text input" : "not text input", privacy: .public)")
+        return isText
     }
 }
 
