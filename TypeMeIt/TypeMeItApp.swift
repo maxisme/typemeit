@@ -32,6 +32,10 @@ final class AppState {
     /// Who holds Secure Input, or nil when it is off.
     var secureInputOwner: SecureInput.Owner?
     var secureInputOn: Bool { secureInputOwner != nil }
+    /// A permission revoked in System Settings since launch, or nil.
+    var missingPermission: MissingPermission?
+    /// Why Apple Intelligence cannot run since launch, or nil while it can.
+    var modelUnavailable: SystemLanguageModel.Availability.UnavailableReason?
     var recording = false
     var transcribing = false
     var ready = false
@@ -42,7 +46,7 @@ final class AppState {
     var settingsTab: SettingsTab?
 
     var menuBarImage: NSImage {
-        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, secureInput: secureInputOn, updateReady: updateReady != nil)
+        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, struck: secureInputOn || missingPermission != nil, updateReady: updateReady != nil)
     }
 }
 
@@ -92,6 +96,26 @@ struct MenuContent: View {
                 Text("fn works, but esc, space and the copy shortcut do not until \(owner.name) releases it.")
             }
             Divider()
+        }
+        if let missing = appState.missingPermission {
+            Text("\(missing.name) permission is off")
+            Text("\(missing.consequence) until it is turned back on for type me it.")
+            Button("Open \(missing.name.capitalized) Settings") { NSWorkspace.shared.open(missing.settingsURL) }
+            Divider()
+        }
+        switch appState.modelUnavailable {
+        case .appleIntelligenceNotEnabled:
+            Text("apple intelligence is off")
+            Text("transcripts are typed without clean-up until it is turned back on.")
+            Button("Open Apple Intelligence Settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }
+            Divider()
+        case .modelNotReady:
+            Text("apple intelligence is still downloading")
+            Text("transcripts are typed without clean-up until it finishes.")
+            Button("Open Apple Intelligence Settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }
+            Divider()
+        default:
+            EmptyView()
         }
         Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(AttributedString("Open ") + MenuContent.bold("type me it")) }
             .keyboardShortcut(",", modifiers: .command)
@@ -178,11 +202,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = Store.shared
         applyDockIcon()
         applyAppearance()
-        switch PostProcessor.availability {
-        case .available:
-            break
-        case .unavailable(let reason):
-            showGate(reason)
+        // Only a Mac that can never run Apple Intelligence is stopped here.
+        // Switched off or still downloading, the app runs with clean-up
+        // disabled and says so in the menu and the cleanup tab.
+        if case .unavailable(.deviceNotEligible) = PostProcessor.availability {
+            showGate(.deviceNotEligible)
             return
         }
         if Settings.shared.onboardingComplete, ModelStore.isInstalled, OnboardingView.permissionsGranted {
@@ -220,6 +244,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { @MainActor in
                 let owner = SecureInput.owner
                 if owner != AppState.shared.secureInputOwner { AppState.shared.secureInputOwner = owner }
+                let missing = MissingPermission.first
+                if missing != AppState.shared.missingPermission { AppState.shared.missingPermission = missing }
+                var unavailable: SystemLanguageModel.Availability.UnavailableReason?
+                if case .unavailable(let reason) = PostProcessor.availability { unavailable = reason }
+                if unavailable != AppState.shared.modelUnavailable { AppState.shared.modelUnavailable = unavailable }
             }
         }
         // Creating the updater checks for an update now and schedules the hourly check.
@@ -350,7 +379,7 @@ struct GateView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("type me it needs Apple Intelligence").font(.title2.weight(.semibold))
-            Text(message).frame(maxWidth: 380, alignment: .leading)
+            Text(message).fixedSize(horizontal: false, vertical: true).frame(maxWidth: 380, alignment: .leading)
             HStack {
                 if case .appleIntelligenceNotEnabled = reason {
                     Button("Open System Settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }

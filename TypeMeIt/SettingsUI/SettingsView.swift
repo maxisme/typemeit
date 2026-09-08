@@ -1,3 +1,4 @@
+import FoundationModels
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
@@ -322,16 +323,43 @@ struct CleanupTab: View {
     @State private var settings = Settings.shared
     @State private var store = Store.shared
     @State private var newWord = ""
+    @State private var availability = PostProcessor.availability
+    /// Apple Intelligence is switched in System Settings, not in the app, so
+    /// it is re-read while the window is up.
+    private let poll = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+
+    private var modelAvailable: Bool {
+        if case .available = availability { return true }
+        return false
+    }
+
+    /// Why clean-up cannot run right now, or nil when it can.
+    private var unavailableSubtitle: String? {
+        guard case .unavailable(let reason) = availability else { return nil }
+        switch reason {
+        case .deviceNotEligible: return "this mac cannot run apple intelligence"
+        case .appleIntelligenceNotEnabled: return "apple intelligence is off - turn it on in system settings to clean up and learn from corrections"
+        case .modelNotReady: return "apple intelligence is still downloading - try again in a few minutes"
+        @unknown default: return "apple intelligence is not available right now"
+        }
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 SettingsGroup(title: "clean-up") {
-                    SettingsRow(label: "clean up with apple intelligence", subtitle: "on device") {
-                        Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
+                    SettingsRow(label: "clean up with apple intelligence", subtitle: unavailableSubtitle ?? "on device") {
+                        HStack(spacing: 8) {
+                            if case .unavailable(.appleIntelligenceNotEnabled) = availability {
+                                Button("system settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }.buttonStyle(InkButtonStyle())
+                            }
+                            Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
+                                .disabled(!modelAvailable)
+                        }
                     }
-                    SettingsRow(label: "learn from corrections", last: true) {
+                    SettingsRow(label: "learn from corrections", subtitle: modelAvailable ? nil : "needs apple intelligence", last: true) {
                         Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
+                            .disabled(!modelAvailable)
                     }
                 }
                 SettingsGroup(title: "custom words") {
@@ -371,6 +399,8 @@ struct CleanupTab: View {
             }
             .padding(20)
         }
+        .onAppear { availability = PostProcessor.availability }
+        .onReceive(poll) { _ in availability = PostProcessor.availability }
     }
 }
 
