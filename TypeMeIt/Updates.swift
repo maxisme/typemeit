@@ -82,6 +82,19 @@ final class Updates: NSObject, SPUUpdaterDelegate {
         }
     }
 
+    /// With automatic updates on, Sparkle downloads and stages the update without
+    /// telling the user driver, then waits for the app to quit. Taking over here
+    /// puts the install button in Settings and lets the idle timer relaunch.
+    nonisolated func updater(_ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem, immediateInstallationBlock immediateInstallHandler: @escaping @Sendable () -> Void) -> Bool {
+        let version = item.displayVersionString
+        MainActor.assumeIsolated {
+            driver.installReply = { _ in immediateInstallHandler() }
+            set(.readyToInstall(version: version))
+            installWhenIdle()
+        }
+        return true
+    }
+
     /// Installs the downloaded update and relaunches. Does nothing unless an
     /// update is ready.
     func install() {
