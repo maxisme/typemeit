@@ -199,15 +199,12 @@ struct MainSettingsTab: View {
                 }
                 SettingsGroup(title: "microphone") {
                     SettingsRow(label: "microphone") {
-                        Picker("", selection: Binding(get: { settings.microphoneUID ?? "" }, set: { settings.microphoneUID = $0.isEmpty ? nil : $0; Pipeline.shared.applyMicrophoneSettings() })) {
+                        Picker("", selection: Binding(get: { settings.microphoneUID ?? "" }, set: { settings.microphoneUID = $0.isEmpty ? nil : $0 })) {
                             Text("system default").tag("")
                             ForEach(devices) { d in Text(d.name).tag(d.id) }
                         }
                         .labelsHidden().fixedSize()
                         .onAppear { devices = AudioCapture.inputDevices() }
-                    }
-                    SettingsRow(label: "keep microphone open", subtitle: "faster start") {
-                        Toggle("", isOn: Binding(get: { settings.alwaysOnMicrophone }, set: { settings.alwaysOnMicrophone = $0; Pipeline.shared.applyMicrophoneSettings() })).toggleStyle(.switch).labelsHidden()
                     }
                     SettingsRow(label: "mute other audio", last: true) {
                         Toggle("", isOn: $settings.muteWhileRecording).toggleStyle(.switch).labelsHidden()
