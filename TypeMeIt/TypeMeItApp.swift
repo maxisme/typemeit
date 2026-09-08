@@ -289,12 +289,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Windows
 
+    /// A window sized once to its SwiftUI content. By default an
+    /// `NSHostingController` keeps resizing its window to the content's
+    /// preferred size from inside the window's own layout pass, and on
+    /// macOS 26 AppKit raises when that happens, which aborted the app on
+    /// launch with the gate window up.
+    private static func fixedSizeWindow<V: View>(for view: V) -> NSWindow {
+        let hosting = NSHostingController(rootView: view)
+        hosting.sizingOptions = []
+        let size = hosting.view.fittingSize
+        let window = NSWindow(contentViewController: hosting)
+        window.isReleasedWhenClosed = false
+        window.setContentSize(size)
+        return window
+    }
+
     private func showGate(_ reason: SystemLanguageModel.Availability.UnavailableReason) {
         let view = GateView(reason: reason)
-        let window = NSWindow(contentViewController: NSHostingController(rootView: view))
+        let window = AppDelegate.fixedSizeWindow(for: view)
         window.title = "type me it needs Apple Intelligence"
         window.styleMask = [.titled, .closable]
-        window.isReleasedWhenClosed = false
         window.center()
         gateWindow = window
         NSApp.activate(ignoringOtherApps: true)
@@ -310,11 +324,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } startRunning: { [weak self] in
             if AppState.shared.ready == false { self?.startRunning() }
         }
-        let window = NSWindow(contentViewController: NSHostingController(rootView: view))
+        let window = AppDelegate.fixedSizeWindow(for: view)
         window.title = "welcome"
         window.styleMask = [.titled, .closable, .miniaturizable]
-        window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 520, height: 560))
         window.center()
         onboardingWindow = window
         NSApp.activate(ignoringOtherApps: true)
