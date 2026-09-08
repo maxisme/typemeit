@@ -127,8 +127,8 @@ document.getElementById("download").addEventListener("mousedown", (ev) => ev.pre
 // page never named. Instead it arms the button and says what a second click
 // will do; the click after that fetches the DMG. That is the end of it: the
 // puff is a plaything, and a page kept open through an evening of clicking
-// should not send the same disk image down a dozen times. Further clicks do
-// nothing, and the note says the way back is a refresh.
+// should not send the same disk image down a dozen times, so further clicks
+// do nothing until the page is loaded again.
 {
   const hint = document.getElementById("hint");
   let armed = false, downloaded = false;
@@ -146,7 +146,9 @@ document.getElementById("download").addEventListener("mousedown", (ev) => ev.pre
       return;
     }
     downloaded = true;
-    hint.textContent = "downloading — refresh the page to download again";
+    // The browser's own download shows itself; the note has nothing to add,
+    // so it clears and the puff is left alone again.
+    hint.textContent = "";
     location.href = DMG;
   });
 }
