@@ -1,12 +1,13 @@
 import AVFoundation
 import AppKit
+import FoundationModels
 import SwiftUI
 
 struct OnboardingView: View {
     var finished: () -> Void
     var startRunning: () -> Void
 
-    enum Step: Int, CaseIterable { case model, microphone, accessibility, fnKey, tryIt }
+    enum Step: Int, CaseIterable { case model, microphone, accessibility, cleanup, fnKey, tryIt }
 
     /// Opens on the first step that is not yet satisfied, so a permission
     /// lost since the last launch (a reinstall, a signature change, a TCC
@@ -17,6 +18,7 @@ struct OnboardingView: View {
     @State private var axGranted = AXIsProcessTrusted()
     @State private var listenGranted = CGPreflightListenEventAccess()
     @State private var fnOK = SecureInput.fnKeyDoesNothing
+    @State private var availability = PostProcessor.availability
     @State private var dictated = false
     /// Steps whose grant click did not produce a permission. macOS shows the
     /// prompt once per app, so the button on these steps opens System Settings.
@@ -57,6 +59,10 @@ struct OnboardingView: View {
                     Button("skip") { finished() }
                         .buttonStyle(InkButtonStyle(quiet: true))
                 }
+                if step == .cleanup, !canContinue {
+                    Button("skip") { advance() }
+                        .buttonStyle(InkButtonStyle(quiet: true))
+                }
                 Button(step == .tryIt ? "finish" : "continue") { advance() }
                     .buttonStyle(InkButtonStyle(primary: true))
                     .keyboardShortcut(.defaultAction)
@@ -79,6 +85,7 @@ struct OnboardingView: View {
         case .microphone: "microphone"
         case .accessibility: "accessibility"
         case .fnKey: "the fn key"
+        case .cleanup: "clean-up"
         case .tryIt: "try it"
         }
     }
@@ -89,6 +96,7 @@ struct OnboardingView: View {
         case .microphone: "type me it needs the microphone."
         case .accessibility: "lets type me it type into the app you are using and learn when you correct a word."
         case .fnKey: "input monitoring lets type me it see fn while other apps are in front. macos uses fn for a shortcut of its own, which is turned off in keyboard settings."
+        case .cleanup: "apple intelligence tidies ums, stumbles and repeats out of your words, on this mac. optional: without it your words are typed as heard."
         case .tryIt: "hold fn and say something. let go when you are done."
         }
     }
@@ -143,6 +151,25 @@ struct OnboardingView: View {
                         Button("keyboard settings") { NSWorkspace.shared.open(SecureInput.keyboardSettingsURL) }
                             .buttonStyle(InkButtonStyle(primary: true))
                     }
+                }
+            }
+        case .cleanup:
+            SettingsGroup {
+                switch availability {
+                case .available:
+                    SettingsRow(label: "apple intelligence", last: true) { Status("on", done: true) }
+                case .unavailable(.appleIntelligenceNotEnabled):
+                    SettingsRow(label: "apple intelligence", subtitle: "turn it on in system settings. this page moves on by itself once it is on.", last: true) {
+                        Button("system settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }.buttonStyle(InkButtonStyle(primary: true))
+                    }
+                case .unavailable(.modelNotReady):
+                    SettingsRow(label: "apple intelligence", subtitle: "the download is in system settings. skip and it turns on by itself once done.", last: true) {
+                        Status("downloading…")
+                    }
+                case .unavailable(.deviceNotEligible):
+                    SettingsRow(label: "apple intelligence", last: true) { Status("not available on this mac") }
+                case .unavailable:
+                    SettingsRow(label: "apple intelligence", last: true) { Status("not available right now") }
                 }
             }
         case .tryIt:
@@ -218,6 +245,7 @@ struct OnboardingView: View {
         case .microphone: micGranted
         case .accessibility: axGranted
         case .fnKey: listenGranted && fnOK
+        case .cleanup: if case .available = availability { true } else { false }
         case .tryIt: dictated
         }
     }
@@ -264,6 +292,7 @@ struct OnboardingView: View {
         axGranted = AXIsProcessTrusted()
         listenGranted = CGPreflightListenEventAccess()
         fnOK = SecureInput.fnKeyDoesNothing
+        availability = PostProcessor.availability
         if step == .tryIt, let last = store.newest, Date().timeIntervalSince(last.timestamp) < 120 { dictated = true }
     }
 }
