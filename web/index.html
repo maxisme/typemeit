@@ -62,17 +62,17 @@
   #download:focus:not(:focus-visible) { outline: none; }
 
   /* Design-system note text: DM Mono, lowercase, ink-3 on paper, no surface. */
-  #notmac {
+  #hint {
     position: fixed; left: 50%; top: calc(50% + 120px); transform: translateX(-50%);
     margin: 0; font: 10px/1.4 "DM Mono", ui-monospace, Menlo, monospace;
     color: #8a8a8a; text-align: center; white-space: nowrap;
   }
-  #notmac:empty { display: none; }
+  #hint:empty { display: none; }
 
 
   /* The page has nothing to scroll to, so a scroll is a request for more.
      The links sit at the bottom, invisible until the first wheel, swipe or
-     scroll key, then fade in and stay. Same face and colour as #notmac.
+     scroll key, then fade in and stay. Same face and colour as #hint.
      The email is a mailto link, plain like the rest. */
   #more {
     position: fixed; left: 0; right: 0; bottom: 20px;
@@ -92,7 +92,7 @@
 <body>
 <canvas id="c"></canvas>
 <button id="download" type="button">download type me it for macos</button>
-<p id="notmac" role="status" aria-live="polite"></p>
+<p id="hint" role="status" aria-live="polite"></p>
 <pre id="err"></pre>
 <ul id="more">
   <li><a href="/terms">terms</a></li>
@@ -120,13 +120,28 @@ const DMG = "/download";
 // the click, so the keyboard still tabs to it and still gets the ring. Only
 // mousedown: cancelling a touch press can swallow the tap.
 document.getElementById("download").addEventListener("mousedown", (ev) => ev.preventDefault());
-document.getElementById("download").addEventListener("click", () => {
-  if (!isMac()) {
-    document.getElementById("notmac").textContent = "type me it is for macos only";
-    return;
-  }
-  location.href = DMG;
-});
+// The puff carries no visible label, so a first click would be a download the
+// page never named. Instead it arms the button and says what a second click
+// will do; the click after that fetches the DMG and disarms, so the next one
+// asks again.
+{
+  const hint = document.getElementById("hint");
+  let armed = false;
+  document.getElementById("download").addEventListener("click", () => {
+    if (!isMac()) {
+      hint.textContent = "type me it is for macos only";
+      return;
+    }
+    if (!armed) {
+      armed = true;
+      hint.textContent = "click again to download";
+      return;
+    }
+    armed = false;
+    hint.textContent = "downloading type me it for macos";
+    location.href = DMG;
+  });
+}
 
 // Reveal the links on the first attempt to scroll down: a wheel, a downward
 // swipe, or a scroll key. Every listener is passive and removes itself.
