@@ -96,7 +96,7 @@ struct OnboardingView: View {
         case .microphone: "type me it needs the microphone."
         case .accessibility: "lets type me it type into the app you are using and learn when you correct a word."
         case .fnKey: "input monitoring lets type me it see fn while other apps are in front. macos uses fn for a shortcut of its own, which is turned off in keyboard settings."
-        case .cleanup: "apple intelligence tidies ums, stumbles and repeats out of your words, on this mac. optional: without it your words are typed as heard."
+        case .cleanup: "apple intelligence tidies your words on this mac. optional."
         case .tryIt: "hold fn and say something. let go when you are done."
         }
     }
