@@ -68,6 +68,9 @@
     color: #8a8a8a; text-align: center; white-space: nowrap;
   }
   #hint:empty { display: none; }
+  /* The app's name inside the note is emphasis, and DM Mono is loaded in one
+     weight, so it is brightened to ink rather than set bold. */
+  #hint strong { font-weight: inherit; color: var(--ink); }
 
 
   /* The page has nothing to scroll to, so a scroll is a request for more.
@@ -137,7 +140,9 @@ document.getElementById("download").addEventListener("mousedown", (ev) => ev.pre
     }
     if (!armed) {
       armed = true;
-      hint.textContent = "click again to download";
+      const name = document.createElement("strong");
+      name.textContent = "type me it";
+      hint.replaceChildren("click again to download ", name);
       return;
     }
     downloaded = true;
