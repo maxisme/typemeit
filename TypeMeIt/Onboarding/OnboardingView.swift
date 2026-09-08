@@ -7,7 +7,7 @@ struct OnboardingView: View {
     var finished: () -> Void
     var startRunning: () -> Void
 
-    enum Step: Int, CaseIterable { case model, microphone, accessibility, fnKey, cleanup, tryIt }
+    enum Step: Int, CaseIterable { case model, microphone, accessibility, cleanup, fnKey, tryIt }
 
     /// Opens on the first step that is not yet satisfied, so a permission
     /// lost since the last launch (a reinstall, a signature change, a TCC
