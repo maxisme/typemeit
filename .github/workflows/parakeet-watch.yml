@@ -1,0 +1,77 @@
+name: parakeet-watch
+
+# The speech model is pinned by revision in ModelStore.swift, so a better
+# parakeet shipping upstream is invisible to us until someone goes looking.
+# This goes looking daily and pushes a notification when there is something to
+# do. It never changes the pin -- that is a code change with a new checksum.
+on:
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Notify even when nothing has changed, to test the wiring"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parakeet-watch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - id: check
+        run: |
+          python3 Scripts/check-parakeet-releases.py ${{ inputs.force && '--force' || '' }} \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Findings persist until the pin is bumped, and a daily notification
+      # about the same model is just noise. The cache key is the finding set,
+      # so each distinct one is announced once.
+      - id: seen
+        if: steps.check.outputs.has_findings == 'true'
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .parakeet-seen
+          key: parakeet-seen-${{ steps.check.outputs.digest }}
+
+      - name: Send the notification
+        if: steps.check.outputs.has_findings == 'true' && steps.seen.outputs.cache-hit != 'true'
+        env:
+          NOTIFI_KEY: ${{ secrets.NOTIFI_KEY }}
+          TITLE: ${{ steps.check.outputs.title }}
+          MESSAGE: ${{ steps.check.outputs.message }}
+          LINK: ${{ steps.check.outputs.link }}
+          DIGEST: ${{ steps.check.outputs.digest }}
+        run: |
+          if [ -z "$NOTIFI_KEY" ]; then
+            echo "::error::the NOTIFI_KEY secret is not set, so nobody was told"
+            exit 1
+          fi
+          status=$(curl -sS -o /tmp/notifi-response -w '%{http_code}' \
+            -X POST https://notifi.it/send \
+            -H "Authorization: Bearer $NOTIFI_KEY" \
+            --data-urlencode "title=$TITLE" \
+            --data-urlencode "message=$MESSAGE" \
+            --data-urlencode "link=$LINK")
+          cat /tmp/notifi-response
+          echo
+          if [ "$status" != "202" ]; then
+            echo "::error::notifi.it returned $status"
+            exit 1
+          fi
+          echo "$DIGEST" > .parakeet-seen
+
+      - name: Remember that it was sent
+        if: steps.check.outputs.has_findings == 'true' && steps.seen.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .parakeet-seen
+          key: parakeet-seen-${{ steps.check.outputs.digest }}
