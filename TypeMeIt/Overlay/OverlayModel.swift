@@ -16,6 +16,10 @@ final class OverlayModel {
         case copyPrompt
         case learned(batchId: UUID, words: [String])
         case undone
+        /// An update is downloaded and waiting for the install button.
+        case updateReady(version: String)
+        /// An update was found but its download failed; Sparkle retries on the next hourly check.
+        case updateFailed(version: String)
     }
 
     /// Which view a state is shown in: the dictation itself is the cloud,
@@ -31,6 +35,9 @@ final class OverlayModel {
     var shownAt: Date?
     /// When the cloud started to puff out, or nil while it is still wanted.
     var departedAt: Date?
+    /// When lightning last struck the cloud: on the pin, and as the
+    /// dictation ended and transcription began.
+    var struckAt: Date?
     /// What is under the cloud, when the screen has been sampled. Nil falls
     /// back to the appearance.
     var backdrop: ScreenSampler.Backdrop?
@@ -39,7 +46,7 @@ final class OverlayModel {
         switch state {
         case .hidden: .none
         case .arming, .recording, .pinned, .transcribing, .cleaningUp: .cloud
-        case .copyPrompt, .learned, .undone: .pill
+        case .copyPrompt, .learned, .undone, .updateReady, .updateFailed: .pill
         }
     }
 
@@ -66,4 +73,6 @@ final class OverlayModel {
     var onCopy: (@MainActor () -> Void)?
     var onKeep: (@MainActor () -> Void)?
     var onUndo: (@MainActor () -> Void)?
+    var onInstall: (@MainActor () -> Void)?
+    var onOpenCleanup: (@MainActor () -> Void)?
 }

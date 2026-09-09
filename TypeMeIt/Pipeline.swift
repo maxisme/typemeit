@@ -47,6 +47,12 @@ final class Pipeline {
         overlay.model.onCopy = { [weak self] in self?.copyFromPrompt() }
         overlay.model.onKeep = { [weak self] in self?.keepLearned() }
         overlay.model.onUndo = { [weak self] in self?.undoLearned() }
+        overlay.model.onOpenCleanup = { [weak self] in
+            self?.keepLearned()
+            AppState.shared.settingsTab = .cleanup
+            NotificationCenter.default.post(name: MenuBarLabel.openSettings, object: nil)
+        }
+        overlay.model.onInstall = { [weak self] in self?.toastTask?.cancel(); self?.overlay.hide(); Updates.shared.install() }
     }
 
     func start() {
@@ -150,9 +156,7 @@ final class Pipeline {
             DispatchQueue.main.asyncAfter(deadline: .now() + wait) { Feedback.play(.stop) }
         }
 
-        let discarded = duration < Fixed.minimumRecordingSeconds || AudioCapture.peak(pcm) < Fixed.silencePeak
-        RecordingArchive.save(pcm, recordedAt: recordingStartedAt ?? Date(), note: discarded ? "discarded" : nil)
-        if discarded {
+        if duration < Fixed.minimumRecordingSeconds || AudioCapture.peak(pcm) < Fixed.silencePeak {
             Log.app.info("Empty recording discarded (\(duration) s)")
             phase = .idle
             shortcuts.setPhase(.idle)
@@ -161,7 +165,8 @@ final class Pipeline {
         }
 
         let target = Frontmost.capture()
-        let recordedAt = recordingStartedAt ?? Date()
+        let entryId = UUID()
+        let recordingFile = settings.keepRecordings && settings.historyLimit >= 0 ? RecordingArchive.save(pcm, id: entryId) : nil
         phase = .transcribing
         shortcuts.setPhase(.transcribing)
         overlay.show(.transcribing)
@@ -175,18 +180,21 @@ final class Pipeline {
             } catch {
                 if gen == self.generation {
                     Log.transcriber.error("\(error.localizedDescription)")
-                    self.finishIdle()
+                    self.finishIdle(discarding: recordingFile)
                 }
                 return
             }
             guard gen == self.generation else { return }
             let transcribeMs = Pipeline.elapsedMs(since: transcribeStart)
             Log.transcriber.info("Transcribed \(durationMs) ms of audio in \(transcribeMs) ms")
-            await self.deliver(raw: raw, durationMs: durationMs, transcribeMs: transcribeMs, target: target, recordedAt: recordedAt, generation: gen)
+            await self.deliver(raw: raw, durationMs: durationMs, transcribeMs: transcribeMs, target: target, entryId: entryId, recordingFile: recordingFile, generation: gen)
         }
     }
 
-    private func finishIdle() {
+    /// Returns to idle as if the dictation never happened. A recording saved
+    /// for it would otherwise sit in the archive with no history entry.
+    private func finishIdle(discarding recordingFile: String? = nil) {
+        if let recordingFile { RecordingArchive.delete([recordingFile]) }
         phase = .idle
         shortcuts.setPhase(.idle)
         overlay.hide()
@@ -197,10 +205,12 @@ final class Pipeline {
         return Int(d.components.seconds * 1000) + Int(d.components.attoseconds / 1_000_000_000_000_000)
     }
 
-    private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, recordedAt: Date, generation gen: Int) async {
-        if TextCleanup.isBlank(raw) { finishIdle(); return }
+    private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, entryId: UUID, recordingFile: String?, generation gen: Int) async {
+        if TextCleanup.isBlank(raw) { finishIdle(discarding: recordingFile); return }
         let customWords = settings.customWords
         let cleaned = TextCleanup.run(raw, customWords: customWords, aliases: store.aliases(customWords: customWords), threshold: Fixed.wordCorrectionThreshold)
+        // Fillers alone ("um", "uh") clean down to nothing; that is silence, not a dictation.
+        if TextCleanup.isBlank(cleaned.text) { finishIdle(discarding: recordingFile); return }
         var finalText = cleaned.text
         var postProcessed: String?
         var postProcessMs: Int?
@@ -219,16 +229,15 @@ final class Pipeline {
             if let postProcessed { finalText = postProcessed }
         }
 
-        RecordingArchive.saveText(raw: raw, cleaned: cleaned.text, postProcessed: postProcessed, recordedAt: recordedAt)
         if settings.appendTrailingSpace { finalText += " " }
         let focusedIsTextInput = Focus.focusedElementIsTextInput()
         let pasted = await Output.paste(finalText, autoSubmit: settings.autoSubmit, autoSubmitKey: settings.autoSubmitKey)
         guard gen == generation else { return }
 
         let entry = HistoryEntry(
-            timestamp: Date(), transcript: cleaned.text, postProcessed: postProcessed, postProcessRequested: requested,
+            id: entryId, timestamp: Date(), transcript: cleaned.text, postProcessed: postProcessed, postProcessRequested: requested,
             durationMs: durationMs, transcribeMs: transcribeMs, postProcessMs: postProcessMs, appId: target?.appId, appName: target?.appName, windowTitle: target?.windowTitle,
-            dictionaryFixes: cleaned.dictionaryFixes)
+            dictionaryFixes: cleaned.dictionaryFixes, recordingFile: recordingFile)
         store.append(entry, limit: settings.historyLimit)
 
         phase = .idle
@@ -292,7 +301,17 @@ final class Pipeline {
     func showLearnedToast(batchId: UUID, words: [String]) {
         guard !words.isEmpty else { return }
         toastBatch = batchId
-        overlay.show(.learned(batchId: batchId, words: words))
+        showToast(.learned(batchId: batchId, words: words))
+    }
+
+    /// Shows a pill that hides itself after `ToastTiming.timeout`, not
+    /// counting time the pointer rests on it. Only while nothing else is on
+    /// screen: a toast must not cover a dictation.
+    /// - Returns: false when the overlay was busy and nothing was shown.
+    @discardableResult
+    func showToast(_ state: OverlayModel.State) -> Bool {
+        guard phase == .idle, overlay.model.state == .hidden else { return false }
+        overlay.show(state)
         toastTask?.cancel()
         toastTask = Task { [weak self] in
             var remaining = ToastTiming.timeout
@@ -303,9 +322,10 @@ final class Pipeline {
                 guard !Task.isCancelled, let self else { return }
                 if !self.overlay.model.toastPaused { remaining -= step }
             }
-            guard !Task.isCancelled, let self, case .learned = self.overlay.model.state else { return }
+            guard !Task.isCancelled, let self, self.overlay.model.state == state else { return }
             self.overlay.hide()
         }
+        return true
     }
 
     private func keepLearned() {

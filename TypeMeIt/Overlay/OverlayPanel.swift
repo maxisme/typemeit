@@ -2,7 +2,8 @@ import AppKit
 import SwiftUI
 
 /// Borderless, non-activating panel at the bottom centre of the screen with
-/// the mouse, or against its left or right edge halfway up. The transparent 460 x 260 window sits on the bottom edge of
+/// the mouse, at its top centre, or against its left or right edge halfway
+/// up. The transparent 460 x 260 window sits on the bottom edge of
 /// the visible screen, so the cloud has room to swell and the pill can
 /// change width and cast a shadow without the window resizing.
 @MainActor
@@ -47,12 +48,13 @@ final class OverlayPanel {
         let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main ?? NSScreen.screens[0]
         let visible = screen.visibleFrame
         // The cloud's centre is half the panel across and restHeight up, so
-        // at a side the panel hangs partly off the screen to put the cloud
-        // against the edge, halfway up.
+        // at a side or the top the panel hangs partly off the screen to put
+        // the cloud against the edge.
         let half = OverlayPanel.size.width / 2
         let position = model.presentation == .cloud ? Settings.shared.cloudPosition : .centre
         let origin: NSPoint = switch position {
         case .left: NSPoint(x: visible.minX + OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
+        case .top: NSPoint(x: visible.midX - half, y: visible.maxY - OverlayPanel.sideInset - CloudView.restHeight)
         case .centre: NSPoint(x: visible.midX - half, y: visible.minY)
         case .right: NSPoint(x: visible.maxX - OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
         }
@@ -64,8 +66,11 @@ final class OverlayPanel {
             model.level = 0
             model.shownAt = Date()
             model.departedAt = nil
+            model.struckAt = nil
             model.backdrop = nil
         }
+        // Lightning on the pin, and again as the dictation ends.
+        if state == .pinned || (state == .transcribing && model.isRecording) { model.struckAt = Date() }
         model.state = state
         resample()
         model.copied = false
@@ -84,8 +89,7 @@ final class OverlayPanel {
         sampling?.cancel()
         sampling = nil
         guard panel.isVisible else { model.state = .hidden; return }
-        // The cloud shrinks as it goes; the fade lets it draw in before it is
-        // gone. The pill just fades.
+        // The cloud draws in a little as it fades. The pill just fades.
         let shrinking = model.presentation == .cloud
         if shrinking, model.departedAt == nil { model.departedAt = Date() }
         NSAnimationContext.runAnimationGroup({ ctx in

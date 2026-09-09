@@ -52,7 +52,18 @@ struct PillView: View {
         case .copyPrompt:
             Image("akar-clipboard").resizable().frame(width: 14, height: 14).foregroundStyle(DesignTokens.Colors.ink2)
         case .learned:
-            Image("akar-circle-check").resizable().frame(width: 14, height: 14).foregroundStyle(DesignTokens.Colors.ink)
+            // The same mark the clean-up page puts beside a learned word, and
+            // a way to that page.
+            Button { model.onOpenCleanup?() } label: {
+                Image("akar-sparkles").resizable().frame(width: 14, height: 14)
+                    .foregroundStyle(DesignTokens.Colors.ink)
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Open clean-up")
+        case .updateReady, .updateFailed:
+            Image("akar-sparkles").resizable().frame(width: 14, height: 14).foregroundStyle(DesignTokens.Colors.ink)
         default:
             Color.clear.frame(width: 24, height: 24)
         }
@@ -61,17 +72,21 @@ struct PillView: View {
     @ViewBuilder private var centre: some View {
         switch model.state {
         case .copyPrompt:
-            label("nothing to paste into")
+            label("nowhere to type it")
         case .learned(_, let words):
             if words.count == 1 {
                 // The word itself in bold, kept as the user spelt it, since
                 // that spelling is what was added.
-                label(Text("added ") + Text(words[0]).bold())
+                label(Text("added ") + Text(words[0]).bold() + Text(" to dictionary"))
             } else {
                 label("learned \(words.count) words")
             }
         case .undone:
             label("undone")
+        case .updateReady(let v):
+            label(Text("version ") + Text(v).bold() + Text(" is ready"))
+        case .updateFailed(let v):
+            label("version \(v) didn't download")
         default:
             EmptyView()
         }
@@ -89,9 +104,9 @@ struct PillView: View {
         switch model.state {
         case .copyPrompt:
             HStack(spacing: 6) {
-                // Sized for "copied" from the start, so the button does not
-                // grow when the word changes.
-                Button { model.onCopy?() } label: { Text(model.copied ? "copied" : "copy").frame(minWidth: 46) }
+                // Sized for "copy transcript" from the start, so the button
+                // does not shrink when the label changes.
+                Button { model.onCopy?() } label: { Text(model.copied ? "copied" : "copy transcript").frame(minWidth: 110) }
                     .buttonStyle(InkButtonStyle(primary: true)).disabled(model.copied)
                 cross(help: "Cancel") { model.onCancel?() }
             }
@@ -100,6 +115,13 @@ struct PillView: View {
                 Button("undo") { model.onUndo?() }.buttonStyle(InkButtonStyle())
                 cross(help: "Dismiss") { model.onKeep?() }
             }
+        case .updateReady:
+            HStack(spacing: 6) {
+                Button("install") { model.onInstall?() }.buttonStyle(InkButtonStyle(primary: true))
+                cross(help: "Later") { model.onKeep?() }
+            }
+        case .updateFailed:
+            cross(help: "Dismiss") { model.onKeep?() }
         default:
             Color.clear.frame(width: 22, height: 22)
         }

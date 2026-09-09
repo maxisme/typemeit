@@ -27,7 +27,7 @@ enum Feedback {
         case .stop: stop
         }
         sound?.stop()
-        sound?.volume = 1
+        sound?.volume = 0.2
         sound?.play()
     }
 }

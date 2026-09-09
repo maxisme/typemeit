@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Type Me It · free push-to-talk dictation for Mac</title>
-<meta name="description" content="Hold fn, speak, let go. Transcribed on your Mac, pasted where the cursor is. Nothing leaves the computer.">
-<meta property="og:title" content="Type Me It · free push-to-talk dictation for Mac">
-<meta property="og:description" content="Hold fn, speak, let go. Transcribed on your Mac, pasted where the cursor is. Nothing leaves the computer.">
+<title>type me it</title>
+<meta property="og:site_name" content="type me it">
+<meta property="og:title" content="type me it">
+<meta property="og:description" content="type me it">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://typeme.it/">
 <meta property="og:image" content="https://typeme.it/og.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:image" content="https://typeme.it/og.png">
 <link rel="canonical" href="https://typeme.it/">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Type Me It","url":"https://typeme.it/","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 26 or newer, Apple silicon","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"downloadUrl":"https://github.com/maxisme/typemeit/releases/latest/download/TypeMeIt.dmg","description":"Hold fn, speak, let go. Push-to-talk dictation for the Mac, transcribed on the Mac by Parakeet, pasted where the cursor is. Free, no account, nothing leaves the computer.","author":{"@type":"Person","name":"Max"},"sameAs":"https://github.com/maxisme/typemeit"}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"type me it","url":"https://typeme.it/","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 26 or newer, Apple silicon","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"downloadUrl":"https://typeme.it/download","description":"Hold fn, speak, let go. Push-to-talk dictation for the Mac, transcribed on the Mac by Parakeet, typed where the cursor is. Free, no account, nothing leaves the computer.","author":{"@type":"Person","name":"Max"},"sameAs":"https://github.com/maxisme/typemeit"}
 </script>
 <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -28,6 +28,10 @@
 <style>
   :root { --paper: #0e0e0e; --ink: #f0f0f0; }
   html, body { margin: 0; height: 100%; background: var(--paper); overflow: hidden; }
+  /* Nothing on the page is text to copy: the puff is a canvas, the button's
+     label is off-screen, and the note and links are furniture. A drag across
+     them should do nothing rather than paint a selection over the puff. */
+  body { -webkit-user-select: none; user-select: none; }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
   #err {
     position: fixed; left: 16px; top: 16px; margin: 0; padding: 12px;
@@ -48,22 +52,30 @@
     position: fixed; left: 50%; top: 50%; width: 180px; height: 180px;
     margin: -90px 0 0 -90px; padding: 0; border: 0; border-radius: 50%;
     background: none; cursor: default; text-indent: -9999px; overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
   }
   @media (hover: hover) and (pointer: fine) { #download { cursor: pointer; } }
+  /* Keyboard focus draws a ring around the cloud; a click never should. The
+     script also keeps the pointer from focusing the button at all, for the
+     browsers that treat a click as focus-visible. */
   #download:focus-visible { outline: 2px solid var(--ink); outline-offset: 8px; }
+  #download:focus:not(:focus-visible) { outline: none; }
 
   /* Design-system note text: DM Mono, lowercase, ink-3 on paper, no surface. */
-  #notmac {
+  #hint {
     position: fixed; left: 50%; top: calc(50% + 120px); transform: translateX(-50%);
-    margin: 0; font: 12px/1.4 "DM Mono", ui-monospace, Menlo, monospace;
+    margin: 0; font: 10px/1.4 "DM Mono", ui-monospace, Menlo, monospace;
     color: #8a8a8a; text-align: center; white-space: nowrap;
   }
-  #notmac:empty { display: none; }
+  #hint:empty { display: none; }
+  /* The app's name inside the note is emphasis, and DM Mono is loaded in one
+     weight, so it is brightened to ink rather than set bold. */
+  #hint strong { font-weight: inherit; color: var(--ink); }
 
 
   /* The page has nothing to scroll to, so a scroll is a request for more.
      The links sit at the bottom, invisible until the first wheel, swipe or
-     scroll key, then fade in and stay. Same face and colour as #notmac.
+     scroll key, then fade in and stay. Same face and colour as #hint.
      The email is a mailto link, plain like the rest. */
   #more {
     position: fixed; left: 0; right: 0; bottom: 20px;
@@ -82,12 +94,12 @@
 </head>
 <body>
 <canvas id="c"></canvas>
-<button id="download" type="button">Download Type Me It for macOS</button>
-<p id="notmac" role="status" aria-live="polite"></p>
+<button id="download" type="button">download type me it for macos</button>
+<p id="hint" role="status" aria-live="polite"></p>
 <pre id="err"></pre>
 <ul id="more">
-  <li><a href="terms.html">terms</a></li>
-  <li><a href="privacy.html">privacy</a></li>
+  <li><a href="/terms">terms</a></li>
+  <li><a href="/privacy">privacy</a></li>
   <li><a href="https://github.com/maxisme/typemeit">github</a></li>
   <li><a href="mailto:hello@typeme.it">hello@typeme.it</a></li>
 </ul>
@@ -101,26 +113,51 @@
 // tell that a "Mac" is actually an iPad.
 const isMac = () => /mac/i.test(navigator.userAgentData?.platform ?? navigator.platform)
   && navigator.maxTouchPoints < 2;
-// Every release carries the DMG twice: as TypeMeIt.dmg, the fixed name this
-// fallback URL resolves to, and as "Type Me It <version>.dmg", so the saved
-// file says which version it is. The API tells us the versioned name; if it
-// does not answer in time, the fixed name still downloads the same bytes.
-const DMG = "https://github.com/maxisme/typemeit/releases/latest/download/TypeMeIt.dmg";
-const LATEST = "https://api.github.com/repos/maxisme/typemeit/releases/latest";
-async function versionedDMG() {
-  const res = await fetch(LATEST, { signal: AbortSignal.timeout(2000) });
-  if (!res.ok) throw new Error(res.status);
-  const asset = (await res.json()).assets.find(a => /^Type Me It .*\.dmg$/.test(a.name));
-  if (!asset) throw new Error("no versioned dmg");
-  return asset.browser_download_url;
+// /download is the Worker in worker.js: it streams the latest release's DMG
+// from GitHub under the name "type me it.dmg". GitHub itself cannot hold an
+// asset with spaces in its name, so the name is set on the way through.
+const DMG = "/download";
+// Pressing the button with a pointer must not focus it: the focus ring is a
+// big circle around the puff, and it has no business showing up on a click.
+// Cancelling the default of the mouse press stops the focus without stopping
+// the click, so the keyboard still tabs to it and still gets the ring. Only
+// mousedown: cancelling a touch press can swallow the tap.
+document.getElementById("download").addEventListener("mousedown", (ev) => ev.preventDefault());
+// The puff carries no visible label, so a first click would be a download the
+// page never named. Instead it arms the button and says what a second click
+// will do; the click after that fetches the DMG. That is the end of it: the
+// puff is a plaything, and a page kept open through an evening of clicking
+// should not send the same disk image down a dozen times, so further clicks
+// do nothing until the page is loaded again.
+// Armed is read by hoverAmount below: while the button waits for its second
+// click the cloud holds the green it takes under the pointer, so the page
+// looks as ready as it is even after the mouse has wandered off.
+let armed = false;
+{
+  const hint = document.getElementById("hint");
+  let downloaded = false;
+  document.getElementById("download").addEventListener("click", () => {
+    if (downloaded) return;
+    if (!isMac()) {
+      hint.textContent = "type me it is for macos only";
+      return;
+    }
+    if (!armed) {
+      armed = true;
+      const name = document.createElement("strong");
+      name.textContent = "type me it";
+      hint.replaceChildren("click again to download ", name);
+      return;
+    }
+    downloaded = true;
+    // Nothing is waiting on a click any more, so the green fades out with the
+    // note: the browser's own download shows itself, and the puff is left
+    // alone again.
+    armed = false;
+    hint.textContent = "";
+    location.href = DMG;
+  });
 }
-document.getElementById("download").addEventListener("click", async () => {
-  if (!isMac()) {
-    document.getElementById("notmac").textContent = "Type Me It is macos only.";
-    return;
-  }
-  location.href = await versionedDMG().catch(() => DMG);
-});
 
 // Reveal the links on the first attempt to scroll down: a wheel, a downward
 // swipe, or a scroll key. Every listener is passive and removes itself.
@@ -160,12 +197,13 @@ uniform float uTime;
 uniform float uExpansion;
 uniform float uTrail;
 uniform float uFlow;
+uniform float uStrike;
 uniform vec4 uTint;
 out vec4 fragColor;
 void main() {
   vec2 p = gl_FragCoord.xy - uCentre;
   p.y = -p.y;
-  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, uTint);
+  fragColor = render(p + 0.5 * vec2(uSize), vec2(uSize), uTime, uExpansion, uTrail, uFlow, 0.0, uStrike, 1.0, uTint);
 }
 `;
 
@@ -197,7 +235,7 @@ class Trail {
  * and it breathes out between them, streaming smoke on each rise.
  */
 class Dynamics {
-  static attack = 0.012; static release = 0.22; static gain = 0.75; static rest = 0.44;
+  static attack = 0.012; static release = 0.22; static gain = 0.35; static rest = 0.44;
   env = 0; flow = 0; last = null; trail = new Trail(0.8);
   static restExpansion(level) { return Dynamics.rest + Dynamics.gain * Math.min(Math.max(level, 0), 1); }
   step(level, now) {
@@ -237,9 +275,12 @@ addEventListener("pointerdown", (ev) => {
   // A click on the puff itself flushes it red; a click on empty page toggles
   // the inversion. The links at the bottom do neither.
   const d = Math.hypot(ev.clientX - innerWidth / 2, ev.clientY - innerHeight / 2);
-  if (d < HOVER_RADIUS) blush = performance.now();
+  if (d < HOVER_RADIUS) { blush = performance.now(); strike = (performance.now() - start) / 1000; }
   else if (ev.target === canvas || ev.target === document.body) inverted = !inverted;
 });
+
+// A click on the puff also sends lightning through it, in the shader's clock.
+let strike = -1;
 
 // A click on the puff flushes it red, easing back over BLUSH seconds. A click
 // on empty page toggles the inversion outright: white paper, black cloud,
@@ -256,7 +297,8 @@ let shownInverted = null;
 // seconds and out over HOVER_OUT, so it neither flickers at the edge nor
 // lingers. Hover is a distance test on the pointer against the same circle
 // as the #download button, so the green and the hand agree. Touch devices
-// never hover, and neither does a page the mouse has not moved over yet.
+// never hover, and neither does a page the mouse has not moved over yet — but
+// an armed button holds the green either way until its second click.
 const HOVER_TINT = [0.45, 0.9, 0.5];
 const HOVER_RADIUS = 90;
 const HOVER_IN = 0.6, HOVER_OUT = 0.45;
@@ -265,7 +307,7 @@ let hover = 0, hoverAt = null;
 
 function hoverAmount(nowMs) {
   const d = Math.hypot(pointer.x - innerWidth / 2, pointer.y - innerHeight / 2);
-  const hovering = canHover && pointer.seen && d < HOVER_RADIUS;
+  const hovering = armed || (canHover && pointer.seen && d < HOVER_RADIUS);
   const dt = hoverAt === null ? 0 : Math.min((nowMs - hoverAt) / 1000, 0.1);
   hoverAt = nowMs;
   const target = hovering ? 1 : 0;
@@ -314,7 +356,7 @@ try {
   const aPos = gl.getAttribLocation(program, "aPos");
   gl.enableVertexAttribArray(aPos);
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uTint"]
+  uniforms = Object.fromEntries(["uCentre", "uSize", "uTime", "uExpansion", "uTrail", "uFlow", "uStrike", "uTint"]
     .map((n) => [n, gl.getUniformLocation(program, n)]));
 } catch (e) {
   err.textContent = String(e.message || e);
@@ -362,6 +404,7 @@ function frame(nowMs) {
   gl.uniform1f(uniforms.uExpansion, s.expansion);
   gl.uniform1f(uniforms.uTrail, s.trail);
   gl.uniform1f(uniforms.uFlow, s.flow);
+  gl.uniform1f(uniforms.uStrike, reduceMotion ? -1 : strike);
   const [tr, tg, tb] = tint(nowMs);
   gl.uniform4f(uniforms.uTint, tr, tg, tb, 1);
   gl.drawArrays(gl.TRIANGLES, 0, 3);

@@ -384,14 +384,35 @@ enum TextCleanup {
         return result.joined(separator: " ")
     }
 
-    /// Applies non-filler transcription cleanup: stutter collapse, runs of two
-    /// or more whitespace scalars become one space, then leading and trailing
-    /// whitespace is trimmed.
+    /// Single letters that are English words, so a lone one is never a false start.
+    private static let standaloneLetters: Set<Unicode.Scalar> = ["a", "i", "o"]
+
+    /// Drops false starts: a word the speaker abandoned after its first sound,
+    /// which the speech model emits as a lone lowercase letter ("I don't f a
+    /// little bit of a nit"). Uppercase letters are kept ("plan B"), as are
+    /// "a", "I" and "o", and a letter followed by "?" or "!". The app is
+    /// English-only, so no other single letter is a word.
+    static func removeFalseStarts(_ text: String) -> String {
+        let words = splitWhitespace(text)
+        let kept = words.filter { word in
+            let (prefix, suffix) = extractPunctuation(word)
+            let core = Array(word.unicodeScalars.dropFirst(prefix.unicodeScalars.count).dropLast(suffix.unicodeScalars.count))
+            guard core.count == 1, let c = core.first, isASCIIAlphabetic(c), c.properties.isLowercase, !standaloneLetters.contains(c) else {
+                return true
+            }
+            return !(prefix.isEmpty && (suffix.isEmpty || suffix == "," || suffix == "."))
+        }
+        return kept.joined(separator: " ")
+    }
+
+    /// Applies non-filler transcription cleanup: false-start removal, stutter
+    /// collapse, runs of two or more whitespace scalars become one space, then
+    /// leading and trailing whitespace is trimmed.
     ///
     /// Kept separate from `removeFillerWords` so disabling filler deletion
     /// does not also disable the repeated-word and whitespace cleanup.
     static func normalize(_ text: String) -> String {
-        var normalized = collapseStutters(text)
+        var normalized = collapseStutters(removeFalseStarts(text))
 
         // Clean up multiple spaces to single space (`\s{2,}` -> " ")
         normalized = collapseWhitespaceRuns(normalized)

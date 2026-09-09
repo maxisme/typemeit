@@ -37,14 +37,15 @@ enum Appearance: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// Where on the screen the recording cloud sits: the bottom middle, or
-/// against the left or right edge halfway up.
+/// Where on the screen the recording cloud sits: the bottom middle, the top
+/// middle, or against the left or right edge halfway up.
 enum CloudPosition: String, Codable, CaseIterable, Sendable {
-    case left, centre, right
+    case left, top, centre, right
 
     var label: String {
         switch self {
         case .left: "left"
+        case .top: "top"
         case .centre: "bottom"
         case .right: "right"
         }
@@ -91,6 +92,8 @@ final class Settings {
     var autoSubmit: Bool { didSet { defaults.set(autoSubmit, forKey: "autoSubmit") } }
     var autoSubmitKey: AutoSubmitKey { didSet { defaults.set(autoSubmitKey.rawValue, forKey: "autoSubmitKey") } }
     var historyLimit: Int { didSet { defaults.set(historyLimit, forKey: "historyLimit") } }
+    /// Keeps each dictation's audio next to its history entry.
+    var keepRecordings: Bool { didSet { defaults.set(keepRecordings, forKey: "keepRecordings") } }
     var launchAtLogin: Bool { didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin") } }
     var showDockIcon: Bool { didSet { defaults.set(showDockIcon, forKey: "showDockIcon") } }
     var appearance: Appearance { didSet { defaults.set(appearance.rawValue, forKey: "appearance") } }
@@ -124,7 +127,8 @@ final class Settings {
         autoSubmit = bool("autoSubmit", false)
         autoSubmitKey = AutoSubmitKey(rawValue: d.string(forKey: "autoSubmitKey") ?? "") ?? .enter
         historyLimit = d.object(forKey: "historyLimit") == nil ? 500 : d.integer(forKey: "historyLimit")
-        launchAtLogin = bool("launchAtLogin", false)
+        keepRecordings = bool("keepRecordings", Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true)
+        launchAtLogin = bool("launchAtLogin", true)
         showDockIcon = bool("showDockIcon", true)
         appearance = Appearance(rawValue: d.string(forKey: "appearance") ?? "") ?? .system
         cloudColorEnabled = bool("cloudColorEnabled", false)

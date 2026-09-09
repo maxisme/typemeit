@@ -29,16 +29,24 @@ struct TypeMeItApp: App {
 @Observable
 final class AppState {
     static let shared = AppState()
-    var secureInputOn = false
+    /// Who holds Secure Input, or nil when it is off.
+    var secureInputOwner: SecureInput.Owner?
+    var secureInputOn: Bool { secureInputOwner != nil }
+    /// A permission revoked in System Settings since launch, or nil.
+    var missingPermission: MissingPermission?
+    /// Why Apple Intelligence cannot run since launch, or nil while it can.
+    var modelUnavailable: SystemLanguageModel.Availability.UnavailableReason?
     var recording = false
     var transcribing = false
     var ready = false
+    /// The version downloaded and waiting to be installed, if any.
+    var updateReady: String?
     /// The tab the settings window should show when next opened from the
     /// menu, if any. Cleared once the window has moved there.
     var settingsTab: SettingsTab?
 
     var menuBarImage: NSImage {
-        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, secureInput: secureInputOn)
+        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, struck: secureInputOn || missingPermission != nil, updateReady: updateReady != nil)
     }
 }
 
@@ -79,12 +87,41 @@ struct MenuContent: View {
     }
 
     var body: some View {
-        if appState.secureInputOn {
-            Text("Secure Input is on in another app. Fn is unavailable.")
+        if let owner = appState.secureInputOwner {
+            if owner.isLoginWindow {
+                Text("secure input is stuck on from the lock screen")
+                Text("type me it will not be functioning properly. lock and unlock the mac to clear it.")
+            } else {
+                Text("secure input is on in \(owner.name)")
+                Text("fn works, but esc, space and the copy shortcut do not until \(owner.name) releases it.")
+            }
             Divider()
         }
-        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(AttributedString("Open ") + MenuContent.bold("Type Me It")) }
+        if let missing = appState.missingPermission {
+            Text("\(missing.name) permission is off")
+            Text("\(missing.consequence) until it is turned back on for type me it.")
+            Button("Open \(missing.name.capitalized) Settings") { NSWorkspace.shared.open(missing.settingsURL) }
+            Divider()
+        }
+        switch appState.modelUnavailable {
+        case .appleIntelligenceNotEnabled:
+            Text("apple intelligence is off")
+            Text("transcripts are typed without clean-up until it is turned back on.")
+            Button("Open Apple Intelligence Settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }
+            Divider()
+        case .modelNotReady:
+            Text("apple intelligence is still downloading")
+            Text("transcripts are typed without clean-up until it finishes.")
+            Button("Open Apple Intelligence Settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }
+            Divider()
+        default:
+            EmptyView()
+        }
+        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(AttributedString("Open ") + MenuContent.bold("type me it")) }
             .keyboardShortcut(",", modifiers: .command)
+        if let version = appState.updateReady {
+            Button("Install Update \(version)") { Updates.shared.install() }
+        }
         Divider()
         if Pipeline.shared.phase == .recording {
             Button("Stop Recording") { Pipeline.shared.shortcuts.stopFromMenu() }
@@ -116,7 +153,7 @@ struct MenuContent: View {
             } label: { Text("View All…") }
         }
         Divider()
-        Button("Quit Type Me It") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
+        Button("Quit type me it") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
     }
 
     /// Bold through an attributed string: the menu turns a font modifier
@@ -156,7 +193,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppDelegate.shared = self
     }
 
-    private var gateWindow: NSWindow?
     private var onboardingWindow: NSWindow?
     private var secureInputTimer: Timer?
 
@@ -165,13 +201,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = Store.shared
         applyDockIcon()
         applyAppearance()
-        switch PostProcessor.availability {
-        case .available:
-            break
-        case .unavailable(let reason):
-            showGate(reason)
-            return
-        }
         if Settings.shared.onboardingComplete, ModelStore.isInstalled, OnboardingView.permissionsGranted {
             startRunning()
         } else {
@@ -191,7 +220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if onboardingWindow?.isVisible == true {
             onboardingWindow?.makeKeyAndOrderFront(nil)
-        } else if gateWindow?.isVisible != true {
+        } else {
             NotificationCenter.default.post(name: MenuBarLabel.openSettings, object: nil)
         }
         return false
@@ -204,10 +233,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observePipeline()
         previewToastIfAsked()
         secureInputTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-            Task { @MainActor in AppState.shared.secureInputOn = SecureInput.isEnabled }
+            Task { @MainActor in
+                let owner = SecureInput.owner
+                if owner != AppState.shared.secureInputOwner { AppState.shared.secureInputOwner = owner }
+                let missing = MissingPermission.first
+                if missing != AppState.shared.missingPermission { AppState.shared.missingPermission = missing }
+                var unavailable: SystemLanguageModel.Availability.UnavailableReason?
+                if case .unavailable(let reason) = PostProcessor.availability { unavailable = reason }
+                if unavailable != AppState.shared.modelUnavailable { AppState.shared.modelUnavailable = unavailable }
+            }
         }
-        // Touch the updater so Sparkle's scheduled check starts even if the menu
-        // has never been opened.
+        // Creating the updater checks for an update now and schedules the hourly check.
         _ = Updates.shared
         reconcileLaunchAtLogin()
     }
@@ -256,6 +292,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// `-previewToast "word,word"` shows the learned-words toast a moment
     /// after launch, for looking at it without dictating.
     private func previewToastIfAsked() {
+        // `-previewUpdate 1.2` shows the ready toast, the puff dot and the
+        // menu item as the dev build would never see them.
+        if let version = UserDefaults.standard.string(forKey: "previewUpdate"), !version.isEmpty {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1))
+                AppState.shared.updateReady = version
+                Pipeline.shared.showToast(.updateReady(version: version))
+            }
+        }
         guard let words = UserDefaults.standard.string(forKey: "previewToast"), !words.isEmpty else { return }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(1.5))
@@ -265,16 +310,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Windows
 
-    private func showGate(_ reason: SystemLanguageModel.Availability.UnavailableReason) {
-        let view = GateView(reason: reason)
-        let window = NSWindow(contentViewController: NSHostingController(rootView: view))
-        window.title = "Type Me It needs Apple Intelligence"
-        window.styleMask = [.titled, .closable]
+    /// A window sized once to its SwiftUI content. By default an
+    /// `NSHostingController` keeps resizing its window to the content's
+    /// preferred size from inside the window's own layout pass, and on
+    /// macOS 26 AppKit raises when that happens, which aborted the app on
+    /// launch with the welcome window up.
+    private static func fixedSizeWindow<V: View>(for view: V) -> NSWindow {
+        let hosting = NSHostingController(rootView: view)
+        hosting.sizingOptions = []
+        let size = hosting.view.fittingSize
+        let window = NSWindow(contentViewController: hosting)
         window.isReleasedWhenClosed = false
-        window.center()
-        gateWindow = window
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
+        window.setContentSize(size)
+        return window
     }
 
     func showOnboarding() {
@@ -286,44 +334,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } startRunning: { [weak self] in
             if AppState.shared.ready == false { self?.startRunning() }
         }
-        let window = NSWindow(contentViewController: NSHostingController(rootView: view))
+        let window = AppDelegate.fixedSizeWindow(for: view)
         window.title = "welcome"
         window.styleMask = [.titled, .closable, .miniaturizable]
-        window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 520, height: 560))
         window.center()
         onboardingWindow = window
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
 
-}
-
-struct GateView: View {
-    let reason: SystemLanguageModel.Availability.UnavailableReason
-
-    private var message: String {
-        switch reason {
-        case .deviceNotEligible: "This Mac cannot run Apple Intelligence."
-        case .appleIntelligenceNotEnabled: "Turn on Apple Intelligence in System Settings, then reopen Type Me It."
-        case .modelNotReady: "Apple Intelligence is still downloading. Try again in a few minutes."
-        @unknown default: "Apple Intelligence is not available right now."
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Type Me It needs Apple Intelligence").font(.title2.weight(.semibold))
-            Text(message).frame(maxWidth: 380, alignment: .leading)
-            HStack {
-                if case .appleIntelligenceNotEnabled = reason {
-                    Button("Open System Settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }
-                }
-                Spacer()
-                Button("Quit") { NSApp.terminate(nil) }.keyboardShortcut(.defaultAction)
-            }
-        }
-        .padding(24)
-        .frame(width: 440)
-    }
 }

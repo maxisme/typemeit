@@ -250,7 +250,8 @@ final class TextCleanupTests: XCTestCase {
     // MARK: - Stutters and whitespace
 
     func testFilterStutterCollapse() {
-        XCTAssertEqual(filterTranscriptionOutput("w wh wh wh wh wh wh wh wh wh why"), "w wh why")
+        // The leading "w" is a false start and is dropped before the stutter collapse.
+        XCTAssertEqual(filterTranscriptionOutput("w wh wh wh wh wh wh wh wh wh why"), "wh why")
     }
 
     func testFilterStutterShortWords() {
@@ -272,8 +273,24 @@ final class TextCleanupTests: XCTestCase {
         XCTAssertEqual(filterTranscriptionOutput("no no is fine"), "no no is fine")
     }
 
+    func testFalseStartDropsStrandedLowercaseLetter() {
+        XCTAssertEqual(
+            filterTranscriptionOutput("I don't f a little bit of a nit, but I don't think that's important"),
+            "I don't a little bit of a nit, but I don't think that's important"
+        )
+        XCTAssertEqual(TextCleanup.removeFalseStarts("so I w, we went"), "so I we went")
+        XCTAssertEqual(TextCleanup.removeFalseStarts("it was t. Then"), "it was Then")
+    }
+
+    func testFalseStartKeepsRealSingleLetterWords() {
+        XCTAssertEqual(TextCleanup.removeFalseStarts("a plan B, I think, o captain"), "a plan B, I think, o captain")
+        XCTAssertEqual(TextCleanup.removeFalseStarts("vitamin C and x? y!"), "vitamin C and x? y!")
+        XCTAssertEqual(TextCleanup.removeFalseStarts("(f) is the key"), "(f) is the key")
+        XCTAssertEqual(TextCleanup.removeFalseStarts("é is not ASCII"), "é is not ASCII")
+    }
+
     func testNormalizeTreatsAllUnicodeWhitespaceAsSeparators() {
-        XCTAssertEqual(TextCleanup.normalize("a\tb\t\tc  d\u{00A0}\u{00A0}e"), "a b c d e")
+        XCTAssertEqual(TextCleanup.normalize("ab\tcd\t\tef  gh\u{00A0}\u{00A0}ij"), "ab cd ef gh ij")
     }
 
     func testNormalizeOfWhitespaceOnlyIsEmpty() {

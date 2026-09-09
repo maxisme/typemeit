@@ -68,7 +68,7 @@ final class AudioCapture: @unchecked Sendable {
         let input = engine.inputNode
         let inFormat = input.outputFormat(forBus: 0)
         guard inFormat.sampleRate > 0, inFormat.channelCount > 0 else {
-            throw NSError(domain: "Type Me It.Audio", code: 1, userInfo: [NSLocalizedDescriptionKey: "No audio input device"])
+            throw NSError(domain: "type me it.Audio", code: 1, userInfo: [NSLocalizedDescriptionKey: "No audio input device"])
         }
         converter = AVAudioConverter(from: inFormat, to: AudioCapture.targetFormat)
         input.removeTap(onBus: 0)
@@ -173,7 +173,7 @@ final class AudioCapture: @unchecked Sendable {
             lastLevelAt = now
             let db = 20 * log10(max(peakSinceReport * 0.8, 1e-6))
             peakSinceReport = 0
-            let level = min(1, max(0, (db + 50) / 40))
+            let level = min(1, max(0, (db + 52) / 50))
             onLevel?(level)
         }
     }

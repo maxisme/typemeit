@@ -83,10 +83,8 @@ struct Summary: Encodable {
     var processCPUSeconds: Double
     var machineCPUBusyPercent: Double
     var passed: String
-    var longPassed: String
     var meanWallSeconds: Double
     var meanGenerationTokensPerSecond: Double
-    var longMeanWallSeconds: Double
 }
 
-struct Report: Encodable { var summary: Summary; var cases: [CaseResult]; var long: [CaseResult] }
+struct Report: Encodable { var summary: Summary; var cases: [CaseResult] }

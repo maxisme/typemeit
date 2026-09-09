@@ -1,3 +1,4 @@
+import FoundationModels
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
@@ -20,8 +21,12 @@ struct SettingsView: View {
     var body: some View {
         NavigationSplitView {
             VStack(alignment: .leading, spacing: 2) {
+                // Drawn as a template so it follows the appearance: the mark's
+                // own ink is fixed at the time it is rendered.
                 Image(nsImage: MenuBarIconRenderer.mark(side: 40))
+                    .renderingMode(.template)
                     .resizable()
+                    .foregroundStyle(DesignTokens.Colors.ink)
                     .frame(width: 40, height: 40)
                     .padding(.leading, 6)
                     .padding(.bottom, 8)
@@ -32,10 +37,10 @@ struct SettingsView: View {
                             Image(t.icon).resizable().frame(width: 14, height: 14)
                             Text(t.rawValue).font(DesignTokens.Fonts.ui.monospaced().weight(.semibold))
                         }
-                            .foregroundStyle(on ? DesignTokens.Colors.ink : DesignTokens.Colors.ink2)
+                            .foregroundStyle(on ? DesignTokens.Colors.onSlab : DesignTokens.Colors.ink2)
                             .padding(.horizontal, 10)
                             .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
-                            .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).fill(on ? DesignTokens.Colors.inkA08 : Color.clear))
+                            .background(Rectangle().fill(on ? DesignTokens.Colors.slab : Color.clear))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -43,6 +48,9 @@ struct SettingsView: View {
                 Spacer()
             }
             .padding(10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(DesignTokens.Colors.paper)
+            .toolbar(removing: .sidebarToggle)
             .navigationSplitViewColumnWidth(min: 150, ideal: 170, max: 220)
         } detail: {
             Group {
@@ -175,8 +183,8 @@ struct MainSettingsTab: View {
     /// Screen Recording is the only permission that lets the app read the
     /// screen, so the row says what is read and what it asks for.
     private var backdropSubtitle: String {
-        if settings.cloudMatchesBackdrop, !screenGranted { return "needs screen recording permissions, which are off" }
-        return "reads a few pixels under the cloud · needs screen recording permissions"
+        if settings.cloudMatchesBackdrop, !screenGranted { return "needs screen recording permissions" }
+        return "reads a few pixels under the cloud - needs screen recording permissions"
     }
 
     var body: some View {
@@ -232,18 +240,18 @@ struct MainSettingsTab: View {
                             ForEach(CloudPosition.allCases, id: \.self) { Text($0.label).tag($0) }
                         }.pickerStyle(.segmented).labelsHidden().fixedSize()
                     }
-                    SettingsRow(label: "sounds") {
+                    SettingsRow(label: "sounds", last: true) {
                         Toggle("", isOn: $settings.audioFeedback).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "offer to copy when nothing is focused", last: true) {
-                        Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
-                    }
                 }
-                SettingsGroup(title: "paste") {
-                    SettingsRow(label: "space after paste") {
+                SettingsGroup(title: "typing") {
+                    SettingsRow(label: "space after typing") {
                         Toggle("", isOn: $settings.appendTrailingSpace).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "key after paste", last: !settings.autoSubmit) {
+                    SettingsRow(label: "offer to copy when no text box is focused") {
+                        Toggle("", isOn: $settings.copyPromptEnabled).toggleStyle(.switch).labelsHidden()
+                    }
+                    SettingsRow(label: "key after typing", last: !settings.autoSubmit) {
                         Toggle("", isOn: $settings.autoSubmit).toggleStyle(.switch).labelsHidden()
                     }
                     if settings.autoSubmit {
@@ -258,8 +266,9 @@ struct MainSettingsTab: View {
                     SettingsRow(label: "open at login") {
                         Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "check for updates") {
-                        Toggle("", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.automaticallyChecks = $0 })).toggleStyle(.switch).labelsHidden()
+                    SettingsRow(label: "update automatically", subtitle: "otherwise updates wait for you below") {
+                        Toggle("", isOn: Binding(get: { updates.installsAutomatically }, set: { updates.installsAutomatically = $0 })).toggleStyle(.switch).labelsHidden()
+                            .disabled(Updates.isDevBuild)
                     }
                     SettingsRow(label: "dock icon") {
                         Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
@@ -272,9 +281,7 @@ struct MainSettingsTab: View {
                 }
                 SettingsGroup(title: "about") {
                     SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
-                        Button("check now") { updates.checkForUpdates() }
-                            .buttonStyle(InkButtonStyle())
-                            .disabled(!updates.canCheck)
+                        updateStatus
                     }
                     SettingsRow(label: "website", last: true) {
                         Link("typeme.it", destination: Fixed.websiteURL)
@@ -286,22 +293,73 @@ struct MainSettingsTab: View {
         }
         .onReceive(poll) { _ in screenGranted = CGPreflightScreenCaptureAccess() }
     }
+
+    /// Where the background update check got to. There is no button to check;
+    /// the only action is installing a version that is already downloaded.
+    @ViewBuilder
+    private var updateStatus: some View {
+        if Updates.isDevBuild {
+            statusText("dev build · never updates")
+        } else {
+            switch updates.state {
+            case .checking: statusText("checking for updates…")
+            case .upToDate: statusText("the latest version")
+            case .downloading(let v): statusText("downloading \(v)…")
+            case .readyToInstall(let v):
+                Button("install \(v)") { updates.install() }.buttonStyle(InkButtonStyle())
+            case .installing: statusText("installing…")
+            case .unreachable: statusText("can't reach the update server")
+            case .downloadFailed(let v): statusText("couldn't download \(v) · trying again later")
+            }
+        }
+    }
+
+    private func statusText(_ text: String) -> some View {
+        Text(text).font(.system(size: 11).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+    }
 }
 
 struct CleanupTab: View {
     @State private var settings = Settings.shared
     @State private var store = Store.shared
     @State private var newWord = ""
+    @State private var availability = PostProcessor.availability
+    /// Apple Intelligence is switched in System Settings, not in the app, so
+    /// it is re-read while the window is up.
+    private let poll = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+
+    private var modelAvailable: Bool {
+        if case .available = availability { return true }
+        return false
+    }
+
+    /// Why clean-up cannot run right now, or nil when it can.
+    private var unavailableSubtitle: String? {
+        guard case .unavailable(let reason) = availability else { return nil }
+        switch reason {
+        case .deviceNotEligible: return "this mac cannot run apple intelligence"
+        case .appleIntelligenceNotEnabled: return "apple intelligence is off - turn it on in system settings to clean up and learn from corrections"
+        case .modelNotReady: return "apple intelligence is still downloading - try again in a few minutes"
+        @unknown default: return "apple intelligence is not available right now"
+        }
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 SettingsGroup(title: "clean-up") {
-                    SettingsRow(label: "clean up with apple intelligence", subtitle: "on device") {
-                        Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
+                    SettingsRow(label: "clean up with apple intelligence", subtitle: unavailableSubtitle ?? "on device") {
+                        HStack(spacing: 8) {
+                            if case .unavailable(.appleIntelligenceNotEnabled) = availability {
+                                Button("system settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }.buttonStyle(InkButtonStyle())
+                            }
+                            Toggle("", isOn: $settings.postProcessingEnabled).toggleStyle(.switch).labelsHidden()
+                                .disabled(!modelAvailable)
+                        }
                     }
-                    SettingsRow(label: "learn from corrections", last: true) {
+                    SettingsRow(label: "learn from corrections", subtitle: modelAvailable ? nil : "needs apple intelligence", last: true) {
                         Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
+                            .disabled(!modelAvailable)
                     }
                 }
                 SettingsGroup(title: "custom words") {
@@ -341,11 +399,13 @@ struct CleanupTab: View {
             }
             .padding(20)
         }
+        .onAppear { availability = PostProcessor.availability }
+        .onReceive(poll) { _ in availability = PostProcessor.availability }
     }
 }
 
 /// A full-width row of resting puffs, one in each colour, each showing its
-/// own smoke; the chosen one sits in an ink ring.
+/// own smoke; the chosen one is drawn larger.
 struct CloudColorPalette: View {
     @Binding var selection: CloudColor
 
@@ -363,8 +423,8 @@ struct CloudColorPalette: View {
                     PuffView(level: 0, tint: Color(nsColor: c.color), timeOffset: Double(i) * 7.3)
                         .frame(width: CloudColorPalette.drawn, height: CloudColorPalette.drawn)
                         .frame(width: CloudColorPalette.side, height: CloudColorPalette.side)
-                        .clipShape(Circle())
-                        .overlay(Circle().strokeBorder(on ? DesignTokens.Colors.ink : .clear, lineWidth: 1.5).padding(2))
+                        .scaleEffect(on ? 1.5 : 1)
+                        .animation(.easeOut(duration: 0.18), value: on)
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)

@@ -68,6 +68,5 @@ jobs:
             --title "${GITHUB_REF_NAME}" \
             --generate-notes \
             build/TypeMeIt.dmg \
-            "build/Type Me It ${MARKETING_VERSION}.dmg" \
             build/updates/appcast.xml
 

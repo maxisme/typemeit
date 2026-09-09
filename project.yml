@@ -9,7 +9,15 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
-    CODE_SIGN_STYLE: Automatic
+    # Every build signs with the Developer ID certificate, and only that one.
+    # Automatic signing would also want an Apple Development certificate, and
+    # on CI, where each run starts with a keychain holding only Developer ID,
+    # it asks Apple for a new one every run until the account hits its cap.
+    # Debug builds gain from it too: macOS keys Input Monitoring and
+    # Microphone grants on the code signature, so a build keeps its grants from
+    # one build to the next instead of needing them again after every rebuild.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "Developer ID Application"
     ENABLE_HARDENED_RUNTIME: YES
     MACOSX_DEPLOYMENT_TARGET: "26.0"
     ARCHS: arm64
@@ -21,15 +29,6 @@ settings:
     # release looks like the same build and no update is ever offered.
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
-  configs:
-    # macOS keys Input Monitoring and Microphone grants on the code signature,
-    # and a Developer ID leaf is a different signature from an Apple
-    # Development one. Signing Debug builds with Developer ID too means a
-    # build keeps its grants from one build to the next, instead of needing
-    # them again after every rebuild.
-    Debug:
-      CODE_SIGN_STYLE: Manual
-      CODE_SIGN_IDENTITY: "Developer ID Application"
 packages:
   TranscribeCpp:
     path: Packages/TranscribeCpp
@@ -64,11 +63,13 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIconFile: "$(APP_ICON_FILE)"
         LSMinimumSystemVersion: "26.0"
-        NSMicrophoneUsageDescription: "Type Me It records your voice while you hold the Fn key so it can transcribe it."
+        NSMicrophoneUsageDescription: "type me it records your voice while you hold the Fn key so it can transcribe it."
         NSHumanReadableCopyright: ""
         NSPrincipalClass: NSApplication
         SUFeedURL: https://github.com/maxisme/typemeit/releases/latest/download/appcast.xml
         SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 3600
+        SUAutomaticallyUpdate: true
         SUPublicEDKey: WGBC31wJMt0uMIwvfVDsWaqVJL8ki+jRfdKACFhPEDw=
     entitlements:
       path: TypeMeIt/Support/TypeMeIt.entitlements
@@ -78,7 +79,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit
-        PRODUCT_NAME: Type Me It
+        PRODUCT_NAME: type me it
         PRODUCT_MODULE_NAME: TypeMeIt
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_OBJC_BRIDGING_HEADER: ""
@@ -90,7 +91,7 @@ targets:
         # release icon inverted and its menu bar puff is dashed.
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: it.typeme.typemeit.dev
-          PRODUCT_NAME: Type Me It Dev
+          PRODUCT_NAME: type me it dev
           APP_ICON_FILE: AppIcon-Dev
   TypeMeItTests:
     type: bundle.unit-test
@@ -105,7 +106,7 @@ targets:
       configs:
         # The host app has a different product name in Debug.
         Debug:
-          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Type Me It Dev.app/Contents/MacOS/Type Me It Dev"
+          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/type me it dev.app/Contents/MacOS/type me it dev"
           BUNDLE_LOADER: "$(TEST_HOST)"
 schemes:
   TypeMeIt:

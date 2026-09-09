@@ -1,8 +1,8 @@
-# Type Me It
+# type me it
 
 <img src="web/og.png" alt="the puff growing, in four steps" width="100%">
 
-Hold the fn key, speak, let go. The speech is transcribed on this Mac by Parakeet through transcribe.cpp, tidied up by Apple Intelligence, and pasted wherever the cursor is. It learns your vocabulary from the corrections you make afterwards, keeps a text-only history, and shows usage insights. Nothing leaves the computer.
+Hold the fn key, speak, let go. The speech is transcribed on this Mac by Parakeet through transcribe.cpp, tidied up by Apple Intelligence, and typed wherever the cursor is. It learns your vocabulary from the corrections you make afterwards, keeps a text-only history, and shows usage insights. Nothing leaves the computer.
 
 macOS 26 or newer, Apple silicon.
 
@@ -13,7 +13,7 @@ brew install xcodegen
 DEVELOPMENT_TEAM=Z28DW76Y3W xcodegen generate
 ```
 
-Debug builds are a separate app, `Type Me It Dev` with bundle id
+Debug builds are a separate app, `type me it dev` with bundle id
 `it.typeme.typemeit.dev`, signed with the Developer ID certificate. It runs
 beside the installed release with its own settings, and because the signature
 is stable across rebuilds, macOS keeps its Input Monitoring and Microphone
@@ -34,9 +34,9 @@ Microphone, Accessibility (pasting and reading corrections) and Input Monitoring
 
 ## Release
 
-A `v*` tag runs `.github/workflows/release.yml`, which calls `Scripts/release-dmg.sh`: plain `xcodebuild` and `notarytool`, runnable by hand with `DEVELOPMENT_TEAM`, `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_PATH` set. It builds with Developer ID, notarises and staples both the app and the DMG, verifies the result with `syspolicy_check distribution`, and signs a Sparkle appcast for it. The workflow attaches the DMG under two names, `TypeMeIt.dmg` and `Type Me It <version>.dmg`, plus `appcast.xml`, to a GitHub release.
+A `v*` tag runs `.github/workflows/release.yml`, which calls `Scripts/release-dmg.sh`: plain `xcodebuild` and `notarytool`, runnable by hand with `DEVELOPMENT_TEAM`, `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_PATH` set. It builds with Developer ID, notarises and staples both the app and the DMG, verifies the result with `syspolicy_check distribution`, and signs a Sparkle appcast for it. The workflow attaches `TypeMeIt.dmg` and `appcast.xml` to a GitHub release.
 
-`SUFeedURL` points at `/releases/latest/download/appcast.xml`, and the cloud on typeme.it falls back to `/releases/latest/download/TypeMeIt.dmg`. Both only resolve because the repository is public and that asset is named the same every release, so publishing the release is what ships the update, and Sparkle installs the same DMG a first-time visitor downloads. On a click the site first asks the GitHub API for the latest release and sends the visitor to the versioned copy, so the file they save says which version it is.
+`SUFeedURL` points at `/releases/latest/download/appcast.xml`, and typeme.it/download, a Worker in `worker.js` in front of the static site, streams `/releases/latest/download/TypeMeIt.dmg`. Both only resolve because the repository is public and that asset is named the same every release, so publishing the release is what ships the update, and Sparkle installs the same DMG a first-time visitor downloads. The Worker names the file `type me it.dmg` on the way through, because GitHub replaces spaces in asset names with dots.
 
 The appcast is signed with an EdDSA key. Its public half is `SUPublicEDKey` in `project.yml`; the private half lives in the login Keychain under the `typemeit` account locally, and in the `SPARKLE_ED_PRIVATE_KEY` repository secret for CI. Export it with Sparkle's own tool:
 

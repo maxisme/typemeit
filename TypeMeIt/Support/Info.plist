@@ -27,14 +27,18 @@
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Type Me It records your voice while you hold the Fn key so it can transcribe it.</string>
+	<string>type me it records your voice while you hold the Fn key so it can transcribe it.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUFeedURL</key>
 	<string>https://github.com/maxisme/typemeit/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>WGBC31wJMt0uMIwvfVDsWaqVJL8ki+jRfdKACFhPEDw=</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>3600</integer>
 </dict>
 </plist>
