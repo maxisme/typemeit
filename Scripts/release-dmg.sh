@@ -81,9 +81,10 @@ xcodebuild -exportArchive \
 VERSION="${MARKETING_VERSION:-$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")}"
 
 # The asset is named the same every release: /releases/latest/download/TypeMeIt.dmg
-# is what the appcast and the site's download Worker fetch, and that path only
-# resolves for a fixed name. GitHub replaces spaces in asset names with dots, so
-# the name a visitor saves ("type me it.dmg") is set by the Worker, not here.
+# is what the Worker fetches for /download, and that path only resolves for a
+# fixed name. The Worker serves updates under the same name too, so both routes
+# agree with what is uploaded here. GitHub replaces spaces in asset names with
+# dots, so the name a visitor saves ("type me it.dmg") is set by the Worker.
 DMG="$BUILD/TypeMeIt.dmg"
 
 # Notarization round-trips to Apple and takes minutes, so a binary that can never
@@ -179,11 +180,12 @@ cp "$DMG" "$UPDATES"
 GENERATE_APPCAST="$DERIVED/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast"
 [ -x "$GENERATE_APPCAST" ] || { echo "Sparkle's generate_appcast is missing from $DERIVED"; exit 1; }
 
-# Release assets live under the tag, not under `latest`, so the prefix carries
-# the tag being published. Only the appcast itself is fetched through
-# /releases/latest/download.
+# Enclosures point at the site, which proxies the asset from the GitHub release
+# (worker.js), so an update is fetched from the same host as the appcast. Release
+# assets live under the tag, not under `latest`, so the prefix carries the tag
+# being published. The EdDSA signature covers the DMG's bytes, not its URL.
 TAG="${RELEASE_TAG:-v$VERSION}"
-PREFIX="https://github.com/maxisme/typemeit/releases/download/$TAG/"
+PREFIX="https://typeme.it/download/$TAG/"
 
 if [ -n "${SPARKLE_ED_PRIVATE_KEY:-}" ]; then
   # CI has no login Keychain to read the key from. `--ed-key-file -` takes it on

@@ -1,5 +1,6 @@
-# Every request is served from ./web as a static file, except /download, which
-# worker.js answers by streaming the latest DMG from GitHub under its own name.
+# Every request is served from ./web as a static file, except the release assets
+# -- /download, /appcast.xml and /download/<tag>/TypeMeIt.dmg -- which worker.js
+# answers by streaming them from the GitHub release.
 name = "typemeit-web-dev"
 main = "worker.js"
 compatibility_date = "2026-07-01"

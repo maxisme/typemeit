@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   # A notarized, stapled DMG plus the Sparkle appcast, published as a GitHub
-  # Release. This is not cosmetic -- SUFeedURL is
-  # /releases/latest/download/appcast.xml, so shipping an update to existing
-  # users *is* creating this release.
+  # Release. This is not cosmetic -- the site's Worker serves SUFeedURL
+  # (typeme.it/appcast.xml) and the update DMG straight from this release, so
+  # shipping an update to existing users *is* creating it.
   release-macos:
     runs-on: macos-26
     environment: production

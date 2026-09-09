@@ -5,10 +5,12 @@ import Sparkle
 
 /// Sparkle's updater, wrapped so the rest of the app never imports Sparkle.
 ///
-/// The feed is the appcast attached to the latest GitHub release, signed with the
-/// EdDSA key whose public half is `SUPublicEDKey` in the Info.plist. Sparkle
-/// downloads the same notarized DMG the website hands out, so an update installs
-/// the artifact that was actually tested.
+/// The feed is `typeme.it/appcast.xml`, which the site's Worker serves from the
+/// appcast attached to the latest GitHub release, signed with the EdDSA key whose
+/// public half is `SUPublicEDKey` in the Info.plist. Its enclosures point back at
+/// the site too, so the only host the app talks to is its own. Sparkle downloads
+/// the same notarized DMG the website hands out, so an update installs the
+/// artifact that was actually tested.
 ///
 /// Sparkle never shows its own windows here. It checks on launch and then on its
 /// hourly timer, downloads whatever it finds, and reports where it got to through

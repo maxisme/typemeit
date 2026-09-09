@@ -35,7 +35,7 @@
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://github.com/maxisme/typemeit/releases/latest/download/appcast.xml</string>
+	<string>https://typeme.it/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>WGBC31wJMt0uMIwvfVDsWaqVJL8ki+jRfdKACFhPEDw=</string>
 	<key>SUScheduledCheckInterval</key>
