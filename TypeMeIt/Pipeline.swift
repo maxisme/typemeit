@@ -202,7 +202,6 @@ final class Pipeline {
     private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, entryId: UUID, recordingFile: String?, generation gen: Int) async {
         if ModelText.isBlank(raw) { finishIdle(discarding: recordingFile); return }
         let customWords = settings.customWords
-        let aliases = store.aliases(customWords: customWords)
         let requested = settings.postProcessingEnabled
         var finalText = raw
         var postProcessed: String?
@@ -213,7 +212,7 @@ final class Pipeline {
             shortcuts.setPhase(.cleaningUp)
             overlay.show(.cleaningUp)
             let start = ContinuousClock.now
-            postProcessed = await PostProcessor.shared.run(raw, customWords: customWords, aliases: aliases)
+            postProcessed = await PostProcessor.shared.run(raw, customWords: customWords)
             let ms = Pipeline.elapsedMs(since: start)
             postProcessMs = ms
             Log.postProcess.info("Post-processing took \(ms) ms (\(postProcessed == nil ? "no result, transcript typed as heard" : "applied"))")

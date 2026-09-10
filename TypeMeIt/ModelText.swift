@@ -3,13 +3,6 @@ import Foundation
 /// The two string operations that survive the model talking to us: reading its
 /// output, and deciding whether it rewrote rather than cleaned.
 enum ModelText {
-    /// A learned mishearing: `heard` is a form the speech model has produced
-    /// for `meant` before. Given to the model in its prompt.
-    struct Alias: Sendable, Equatable {
-        var heard: String
-        var meant: String
-    }
-
     /// Strips a leading `<think>...</think>` block. Some endpoints can't disable
     /// reasoning, and some local servers put the reasoning text into `content`
     /// instead of a separate field — without this the user would get the model's

@@ -184,12 +184,4 @@ final class Store {
         }
         if changed { save(learned, to: learnedURL) }
     }
-
-    /// (heard, meant) pairs still in force, for the fuzzy matcher.
-    func aliases(customWords: [String]) -> [ModelText.Alias] {
-        let custom = Set(customWords.map { $0.lowercased() })
-        return learned
-            .filter { !$0.undone && custom.contains($0.meant.lowercased()) }
-            .map { ModelText.Alias(heard: $0.heard, meant: $0.meant) }
-    }
 }

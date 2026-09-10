@@ -118,5 +118,47 @@
         "why": "an unknown product name need not be capitalised"
       }
     ]
+  },
+  {
+    "input": "can you check if whisper is still running",
+    "expected": "Can you check if wispr is still running?",
+    "customWords": [
+      "wispr"
+    ]
+  },
+  {
+    "input": "she said it in a whisper so nobody heard",
+    "expected": "She said it in a whisper so nobody heard.",
+    "customWords": [
+      "wispr"
+    ]
+  },
+  {
+    "input": "I'll send an app once it's merged",
+    "expected": "I'll send an ack once it's merged.",
+    "customWords": [
+      "ack"
+    ],
+    "alsoAccepted": [
+      {
+        "text": "I'll send an app once it's merged.",
+        "why": "a common English word is not rewritten on the strength of a spelling list; a wrong swap costs more than this miss"
+      }
+    ]
+  },
+  {
+    "input": "open the app and check the settings",
+    "expected": "Open the app and check the settings.",
+    "customWords": [
+      "ack"
+    ]
+  },
+  {
+    "input": "ping maxo about the blebird release",
+    "expected": "Ping Maxxo about the Bluebird release.",
+    "customWords": [
+      "Maxxo",
+      "Bluebird"
+    ]
   }
 ]
