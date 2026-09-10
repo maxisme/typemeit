@@ -15,7 +15,10 @@ import Sparkle
 /// `state`. Settings renders that as a line of text or an install button.
 @MainActor
 @Observable
-final class Updates: NSObject, SPUUpdaterDelegate {
+/// `@preconcurrency`: Sparkle calls its delegate on the main thread, so the
+/// on-quit hook below can be main-actor-isolated and keep the install handler
+/// it is given.
+final class Updates: NSObject, @preconcurrency SPUUpdaterDelegate {
     static let shared = Updates()
 
     enum State: Equatable {
@@ -36,22 +39,16 @@ final class Updates: NSObject, SPUUpdaterDelegate {
 
     private(set) var state: State = .checking
 
-    /// Install a downloaded update as soon as the app is idle, instead of
-    /// waiting for the button in Settings. Sparkle owns the storage.
-    var installsAutomatically: Bool {
-        get { updater?.automaticallyDownloadsUpdates ?? false }
-        set {
-            updater?.automaticallyDownloadsUpdates = newValue
-            if newValue { installWhenIdle() }
-        }
-    }
-
     @ObservationIgnored private var updater: SPUUpdater?
     @ObservationIgnored private let driver = SilentDriver()
+    /// Sparkle's install-and-relaunch handler for an update it downloaded in
+    /// the background and would otherwise only install when the app quits.
+    @ObservationIgnored private var immediateInstall: (() -> Void)?
     @ObservationIgnored private var idleTimer: Timer?
-    /// Versions already announced with a toast, so each is announced once
-    /// however many times the hourly check finds it again.
+    /// Versions whose toast is not to come back: a failed download is told
+    /// once, a ready update once the user has put it off.
     @ObservationIgnored private var announced: Set<String> = []
+    @ObservationIgnored private var retry: Timer?
 
     private override init() {
         super.init()
@@ -59,6 +56,9 @@ final class Updates: NSObject, SPUUpdaterDelegate {
         driver.owner = self
         let updater = SPUUpdater(hostBundle: .main, applicationBundle: .main, userDriver: driver, delegate: self)
         updater.automaticallyChecksForUpdates = true
+        // Always fetched in the background; the setting decides whether the
+        // install waits for a click.
+        updater.automaticallyDownloadsUpdates = true
         do {
             try updater.start()
             self.updater = updater
@@ -82,19 +82,37 @@ final class Updates: NSObject, SPUUpdaterDelegate {
         }
     }
 
+    /// Sparkle downloads automatically in the background and, left alone,
+    /// installs on quit; it tells the user driver nothing until a much later
+    /// check. Taking the handler here is what lets the app install as soon as
+    /// it is idle, or show the update as ready, instead of waiting for a
+    /// relaunch it never announced.
+    func updater(_ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem, immediateInstallationBlock immediateInstallHandler: @escaping () -> Void) -> Bool {
+        immediateInstall = immediateInstallHandler
+        set(.readyToInstall(version: item.displayVersionString))
+        installWhenIdle()
+        return true
+    }
+
     /// Installs the downloaded update and relaunches. Does nothing unless an
     /// update is ready.
     func install() {
-        guard case .readyToInstall = state, let reply = driver.installReply else { return }
-        driver.installReply = nil
-        state = .installing
-        reply(.install)
+        guard case .readyToInstall = state else { return }
+        if let reply = driver.installReply {
+            driver.installReply = nil
+            state = .installing
+            reply(.install)
+        } else if let go = immediateInstall {
+            immediateInstall = nil
+            state = .installing
+            go()
+        }
     }
 
     /// Installs a ready update once no dictation is in flight, so the relaunch
     /// never cuts off a recording or a paste.
     fileprivate func installWhenIdle() {
-        guard installsAutomatically, case .readyToInstall = state else { return }
+        guard !Settings.shared.askBeforeUpdating, case .readyToInstall = state else { return }
         idleTimer?.invalidate()
         if Pipeline.shared.phase == .idle { install(); return }
         idleTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { _ in
@@ -107,7 +125,7 @@ final class Updates: NSObject, SPUUpdaterDelegate {
         switch state {
         case .readyToInstall(let version):
             AppState.shared.updateReady = version
-            if !installsAutomatically { announce(version, toast: .updateReady(version: version)) }
+            if Settings.shared.askBeforeUpdating { announce(version, toast: .updateReady(version: version)) }
         case .downloadFailed(let version):
             AppState.shared.updateReady = nil
             announce(version, toast: .updateFailed(version: version))
@@ -116,12 +134,36 @@ final class Updates: NSObject, SPUUpdaterDelegate {
         }
     }
 
-    /// Shows a toast for `version` once, waiting for a moment when nothing
-    /// else is on screen.
+    /// The pipeline is idle again: a ready update the user has not put off
+    /// goes back on screen, since a recording takes the pill down.
+    func remind() {
+        guard Settings.shared.askBeforeUpdating, case .readyToInstall(let version) = state else { return }
+        announce(version, toast: .updateReady(version: version))
+    }
+
+    /// The pill's cross: the update stays in the menu and in Settings, but
+    /// the pill does not come back for this version.
+    func putOff(_ version: String) {
+        announced.insert(version)
+    }
+
+    /// The setting was switched: on, the pill comes up for a waiting update;
+    /// off, it installs as soon as the app is idle.
+    func askPreferenceChanged() {
+        if Settings.shared.askBeforeUpdating { remind() } else { installWhenIdle() }
+    }
+
+    /// Shows a toast for `version`, waiting for a moment when nothing else is
+    /// on screen. One retry at a time, so a reminder on every idle does not
+    /// stack timers.
     private func announce(_ version: String, toast: OverlayModel.State) {
         guard !announced.contains(version) else { return }
-        if Pipeline.shared.showToast(toast) { announced.insert(version); return }
-        Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { _ in
+        retry?.invalidate()
+        if Pipeline.shared.showToast(toast) {
+            if case .updateReady = toast {} else { announced.insert(version) }
+            return
+        }
+        retry = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { _ in
             Task { @MainActor in
                 guard Updates.shared.state == Updates.shared.stateMatching(toast) else { return }
                 Updates.shared.announce(version, toast: toast)

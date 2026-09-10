@@ -322,8 +322,8 @@ struct MainSettingsTab: View {
                     SettingsRow(label: "open at login") {
                         Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "update automatically", subtitle: "otherwise updates wait for you below") {
-                        Toggle("", isOn: Binding(get: { updates.installsAutomatically }, set: { updates.installsAutomatically = $0 })).toggleStyle(.switch).labelsHidden()
+                    SettingsRow(label: "ask before updating", subtitle: "otherwise it restarts itself when idle") {
+                        Toggle("", isOn: Binding(get: { settings.askBeforeUpdating }, set: { settings.askBeforeUpdating = $0; Updates.shared.askPreferenceChanged() })).toggleStyle(.switch).labelsHidden()
                             .disabled(Updates.isDevBuild)
                     }
                     SettingsRow(label: "dock icon") {
