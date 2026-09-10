@@ -51,8 +51,11 @@ actor PostProcessor {
 
     static var availability: SystemLanguageModel.Availability { SystemLanguageModel.default.availability }
 
-    static func prompt(for transcript: String, customWords: [String], screenTerms: [String] = []) -> String {
-        var t = template
+    /// The session instructions with the user's word lists appended. They go
+    /// here rather than after the transcript in the user message: put there,
+    /// the model returns the transcript untouched.
+    static func instructions(customWords: [String], screenTerms: [String] = []) -> String {
+        var t = instructions
         let words = customWords.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         if !words.isEmpty {
             t += "\n\nTerms this user says often, with their exact spelling:\n\(words.joined(separator: ", "))\n\nIf a word or phrase in the transcript is a mishearing of one of these terms, replace it with the exact spelling above. Do not change anything else because of this list."
@@ -60,7 +63,11 @@ actor PostProcessor {
         if !screenTerms.isEmpty {
             t += "\n\nNames and terms that were on the user's screen while they spoke, with their exact spelling:\n\(screenTerms.joined(separator: ", "))\n\nThe speech-to-text model does not know these terms, so it writes what they sound like, often as several ordinary words (\"cube control\" for kubectl, \"use state\" for useState, \"centrics\" for Zentryx). Where a word or run of words in the transcript sounds like one of these terms, replace it with the exact spelling above. Do not add a term the transcript does not say, and do not change anything else because of this list."
         }
-        return t.replacingOccurrences(of: "${output}", with: transcript)
+        return t
+    }
+
+    static func prompt(for transcript: String) -> String {
+        template.replacingOccurrences(of: "${output}", with: transcript)
     }
 
     /// Warms the on-device model so the first response is not slowed by loading.
@@ -75,8 +82,8 @@ actor PostProcessor {
         let model = self.model
         let task = Task<String?, Never> {
             guard case .available = model.availability else { return nil }
-            let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions)
-            let user = PostProcessor.prompt(for: transcript, customWords: customWords, screenTerms: screenTerms)
+            let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions(customWords: customWords, screenTerms: screenTerms))
+            let user = PostProcessor.prompt(for: transcript)
             do {
                 let r = try await session.respond(to: user, generating: CleanedTranscript.self, options: GenerationOptions(sampling: .greedy))
                 if Task.isCancelled { return nil }

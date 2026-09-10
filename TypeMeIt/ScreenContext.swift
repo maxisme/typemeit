@@ -71,11 +71,22 @@ enum ScreenContext {
         var counts: [String: (spelling: String, count: Int)] = [:]
         let excluded = Set(excluding.map { $0.lowercased() })
         for line in lines {
-            for raw in line.split(whereSeparator: { $0.isWhitespace }) {
-                guard let token = clean(String(raw)) else { continue }
+            // URLs and paths go before the code-punctuation split, or
+            // "https://x.dev/a" would yield "https".
+            let tokens = line.split(whereSeparator: \.isWhitespace)
+                .filter { !$0.contains("/") && !$0.contains("\\") }
+                .flatMap { $0.split(whereSeparator: { separators.contains($0) }) }
+                .compactMap { clean(String($0)) }
+            // A capitalised word after the first in a line is a name or a
+            // title far more often than a sentence start, so it is kept
+            // whether or not the dictionary knows it: "Tomasz", "Fathom". The
+            // first word joins in when the second is one, for "Tomasz Wieczorek".
+            func capitalised(_ t: String) -> Bool { t.first!.isUppercase && t.dropFirst().contains(where: \.isLowercase) }
+            for (i, token) in tokens.enumerated() {
                 let key = token.lowercased()
                 if excluded.contains(key) { continue }
-                guard isCandidate(token, isKnownWord: isKnownWord) else { continue }
+                let name = capitalised(token) && (i > 0 || (tokens.count > 1 && capitalised(tokens[1])))
+                guard name || isCandidate(token, isKnownWord: isKnownWord) else { continue }
                 if var existing = counts[key] {
                     existing.count += 1
                     counts[key] = existing
@@ -90,13 +101,17 @@ enum ScreenContext {
             .map(\.spelling)
     }
 
-    /// Strips surrounding punctuation and rejects tokens that are not words:
-    /// numbers, URLs, paths, single characters, long runs.
+    /// Code punctuation that glues identifiers to their neighbours:
+    /// "fetchUser(raw," is two tokens, not one.
+    static let separators: Set<Character> = ["(", ")", "[", "]", "{", "}", "<", ">", ",", ";", ":", "\"", "`", "|", "=", "+", "*", "!", "?", "&"]
+
+    /// Strips surrounding punctuation and a possessive, and rejects tokens
+    /// that are not words: numbers, domains, single characters, long runs.
     static func clean(_ raw: String) -> String? {
-        let trimmed = raw.trimmingCharacters(in: CharacterSet.punctuationCharacters.union(.symbols).subtracting(CharacterSet(charactersIn: "@#")))
+        var trimmed = raw.trimmingCharacters(in: CharacterSet.punctuationCharacters.union(.symbols).subtracting(CharacterSet(charactersIn: "@#")))
+        for suffix in ["'s", "\u{2019}s"] where trimmed.hasSuffix(suffix) { trimmed = String(trimmed.dropLast(2)) }
         guard trimmed.count >= 2, trimmed.count <= 30 else { return nil }
         guard trimmed.contains(where: \.isLetter) else { return nil }
-        if trimmed.contains("/") || trimmed.contains("://") || trimmed.contains("\\") { return nil }
         // "example.com" is a domain, not a term; "Node.js" is fine either way.
         if trimmed.filter({ $0 == "." }).count > 1 { return nil }
         return trimmed

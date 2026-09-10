@@ -5,8 +5,8 @@ guard args.count >= 3 else { print("usage: bench <repo-root> <model.gguf> ...");
 let root = URL(fileURLWithPath: args[1])
 let outDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 let cases = try Cases.load(repoRoot: root)
-let template = try Cases.template(repoRoot: root)
-let instructions = try Cases.instructions(repoRoot: root)
+let template = PostProcessor.template
+let instructions = PostProcessor.instructions
 
 func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, String) async throws -> LlamaEngine.Output) async throws -> Report {
     _ = try await run(instructions, template.replacingOccurrences(of: "${output}", with: "warm up"))
@@ -16,7 +16,9 @@ func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, Str
     var results: [CaseResult] = []
     for c in cases {
         let local = TextCleanup.run(c.input, customWords: [], aliases: []).text
-        var o = try await run(instructions, template.replacingOccurrences(of: "${output}", with: local))
+        // A case with screen text gets the same term list the app would send.
+        let terms = await MainActor.run { ScreenContext.terms(from: c.screen ?? [], excluding: []) }
+        var o = try await run(PostProcessor.instructions(customWords: [], screenTerms: terms), PostProcessor.prompt(for: local))
         // The app's guards: a rewrite or a lost opening falls back to the local text.
         if PostProcessor.looksLikeRewrite(transcript: local, output: o.text, template: template) || PostProcessor.lostOpening(transcript: local, output: o.text) { o.text = local }
         let ok = c.expected.contains { Cases.normalise(o.text) == Cases.normalise($0) }

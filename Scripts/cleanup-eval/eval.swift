@@ -4,13 +4,19 @@ import FoundationModels
 /// Runs the cases in cases.json through the app's own path: TextCleanup, then
 /// PostProcessor (prompt, guided generation, rewrite and opening guards), with
 /// local text as the fallback when the model's output is rejected. The sources
-/// are compiled in by run.sh, so this scores exactly what ships. A case passes
+/// are compiled in by run.sh, so this scores exactly what ships. A case with
+/// `screen`, lines of text standing in for the window the user dictates into,
+/// goes through ScreenContext's term filter first and the model is told the
+/// terms, the way the read-the-screen setting does; it is also run without
+/// them so the summary says whether the screen helped. A case passes
 /// when the output matches the expected text, or any entry in `alsoAccepted`,
 /// each of which says why it counts. Case and punctuation are ignored.
 struct Variant: Decodable { let text: String; let why: String }
 
 struct Case: Decodable {
     let input: String
+    /// Text on the window being dictated into, one line each, or nil for none.
+    let screen: [String]?
     /// The cleaned text wanted; `alsoAccepted` lists other outputs that count, each with why.
     let expected: String
     let alsoAccepted: [Variant]
@@ -18,10 +24,11 @@ struct Case: Decodable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         input = try c.decode(String.self, forKey: .input)
+        screen = try c.decodeIfPresent([String].self, forKey: .screen)
         expected = try c.decode(String.self, forKey: .expected)
         alsoAccepted = try c.decodeIfPresent([Variant].self, forKey: .alsoAccepted) ?? []
     }
-    enum CodingKeys: CodingKey { case input, expected, alsoAccepted }
+    enum CodingKeys: CodingKey { case input, screen, expected, alsoAccepted }
 }
 
 @main struct Eval {
@@ -34,15 +41,27 @@ struct Case: Decodable {
         let cases = try JSONDecoder().decode([Case].self, from: Data(contentsOf: dir.appendingPathComponent("cases.json")))
         guard case .available = PostProcessor.availability else { print("Apple Intelligence is not available on this Mac"); exit(2) }
         var failed = 0
+        var helped = 0, hurt = 0, screened = 0
         for c in cases {
             let local = TextCleanup.run(c.input, customWords: [], aliases: []).text
-            let out = await PostProcessor.shared.run(local, customWords: []) ?? local
+            let terms = await MainActor.run { ScreenContext.terms(from: c.screen ?? [], excluding: []) }
+            let out = await PostProcessor.shared.run(local, customWords: [], screenTerms: terms) ?? local
             let ok = c.accepted.contains { normalise(out) == normalise($0) }
             if !ok { failed += 1 }
             print("\(ok ? "PASS" : "FAIL")  \(c.input)")
             if !ok { print("      expected: \(c.accepted.joined(separator: "\n             or: "))\n      got:      \(out)") }
+            if c.screen != nil {
+                screened += 1
+                let blind = await PostProcessor.shared.run(local, customWords: []) ?? local
+                let blindOk = c.accepted.contains { normalise(blind) == normalise($0) }
+                if ok, !blindOk { helped += 1 }
+                if !ok, blindOk { hurt += 1 }
+                print("      screen terms: \(terms.joined(separator: ", "))")
+                if blind != out { print("      without screen: \(blind)") }
+            }
         }
         print("\n\(cases.count - failed)/\(cases.count) passed")
+        if screened > 0 { print("screen: \(screened) cases, helped \(helped), hurt \(hurt)") }
         exit(failed == 0 ? 0 : 1)
     }
 }

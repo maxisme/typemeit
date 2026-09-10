@@ -133,11 +133,13 @@ times slower and should not ship.
 
 ## Measured, September 2026
 
-`make bench MODELS="..."` runs the eleven cases in `Scripts/cleanup-eval/cases.json`
+`make bench MODELS="..."` runs the cases in `Scripts/cleanup-eval/cases.json`
 through each GGUF in-process via libllama with Metal, greedy sampling and a JSON grammar pinning the output
 to one field, which is the closest equivalent of guided generation. Machine: M4
-(base), 24 GB, macOS 26.6.1, llama.cpp 0.4.0, Q4_K_M weights. The prompt is read
-from `PostProcessor.swift`, so these are the app's live instructions.
+(base), 24 GB, macOS 26.6.1, llama.cpp 0.4.0, Q4_K_M weights. `PostProcessor.swift`
+is compiled in, so these are the app's live instructions. The table below is from
+the eleven original cases; the eleven with `screen` text, which stand in for the
+window being dictated into, were added later and are scored by `make eval`.
 
 | Engine | File | Load | Resident with weights | Cases | Mean case | Generation tok/s |
 |---|---|---|---|---|---|---|

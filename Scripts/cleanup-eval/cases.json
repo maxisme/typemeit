@@ -74,5 +74,193 @@
         "why": "both of the above"
       }
     ]
+  },
+  {
+    "screen": [
+      "#eng-platform",
+      "Priya Raghunathan  10:42",
+      "the Zentryx cluster is back on 1.29, staging rollout at 3",
+      "Tomasz Wieczorek  10:44",
+      "nice. can someone look at the Kavuu contract renewal before friday?",
+      "@maxisme  10:45",
+      "on it. PR-1234 has the fix for the enquiry dedupe",
+      "Priya Raghunathan  10:47",
+      "thanks! also ping ola about LottieHQ x Anthropic",
+      "Message #eng-platform"
+    ],
+    "input": "ping tomash about the kavu contract",
+    "expected": "Ping Tomasz about the Kavuu contract."
+  },
+  {
+    "screen": [
+      "#eng-platform",
+      "Priya Raghunathan  10:42",
+      "the Zentryx cluster is back on 1.29, staging rollout at 3",
+      "Tomasz Wieczorek  10:44",
+      "nice. can someone look at the Kavuu contract renewal before friday?",
+      "@maxisme  10:45",
+      "on it. PR-1234 has the fix for the enquiry dedupe",
+      "Priya Raghunathan  10:47",
+      "thanks! also ping ola about LottieHQ x Anthropic",
+      "Message #eng-platform"
+    ],
+    "input": "can you deploy centrix to staging",
+    "expected": "Can you deploy Zentryx to staging?",
+    "alsoAccepted": [
+      {
+        "text": "Can you deploy Centrix to staging?",
+        "why": "a first-letter change is beyond what the model will bridge from sound alone; the fuzzy matcher is the tool for this"
+      }
+    ]
+  },
+  {
+    "screen": [
+      "#eng-platform",
+      "Priya Raghunathan  10:42",
+      "the Zentryx cluster is back on 1.29, staging rollout at 3",
+      "Tomasz Wieczorek  10:44",
+      "nice. can someone look at the Kavuu contract renewal before friday?",
+      "@maxisme  10:45",
+      "on it. PR-1234 has the fix for the enquiry dedupe",
+      "Priya Raghunathan  10:47",
+      "thanks! also ping ola about LottieHQ x Anthropic",
+      "Message #eng-platform"
+    ],
+    "input": "lottie h q signed with anthropic yesterday",
+    "expected": "LottieHQ signed with Anthropic yesterday.",
+    "alsoAccepted": [
+      {
+        "text": "Lottie signed with Anthropic yesterday.",
+        "why": "TextCleanup's false-start pass deletes the stranded letters h and q before the model sees them, so the acronym cannot be recovered"
+      }
+    ]
+  },
+  {
+    "screen": [
+      "EXPLORER",
+      "  src/",
+      "    parse_config.ts",
+      "    fetchUser.ts",
+      "    useEnquiries.ts",
+      "parse_config.ts",
+      "1  import { useState } from 'react'",
+      "2  export const MAX_RETRIES = 3",
+      "3  export function parse_config(raw: string): Config {",
+      "4    const [state, setState] = useState<Config | null>(null)",
+      "5    return fetchUser(raw, MAX_RETRIES)",
+      "6  }",
+      "Ln 4, Col 12   TypeScript"
+    ],
+    "input": "the use state hook rerenders every time",
+    "expected": "The useState hook rerenders every time."
+  },
+  {
+    "screen": [
+      "EXPLORER",
+      "  src/",
+      "    parse_config.ts",
+      "    fetchUser.ts",
+      "    useEnquiries.ts",
+      "parse_config.ts",
+      "1  import { useState } from 'react'",
+      "2  export const MAX_RETRIES = 3",
+      "3  export function parse_config(raw: string): Config {",
+      "4    const [state, setState] = useState<Config | null>(null)",
+      "5    return fetchUser(raw, MAX_RETRIES)",
+      "6  }",
+      "Ln 4, Col 12   TypeScript"
+    ],
+    "input": "bump max retries to five in parse config",
+    "expected": "Bump MAX_RETRIES to 5 in parse_config.",
+    "alsoAccepted": [
+      {
+        "text": "Bump max retries to 5 in parse config.",
+        "why": "spoken words for a snake_case or ALLCAPS identifier are not fused today"
+      },
+      {
+        "text": "Bump MAX_RETRIES to five in parse config.",
+        "why": "the model fuses one identifier and leaves the rest of the sentence as spoken"
+      }
+    ]
+  },
+  {
+    "screen": [
+      "~/repos/hulk main $ kubectl get pods -n enquiry --context eu-west-2",
+      "NAME                          READY   STATUS    RESTARTS   AGE",
+      "enquiry-api-7d9f8b6c4-x2k9p   1/1     Running   0          3h",
+      "enquiry-worker-5c8d7f9b-q4m2n 1/1     Running   2          3h",
+      "~/repos/hulk main $ pnpm prisma migrate dev",
+      "~/repos/hulk main $ "
+    ],
+    "input": "run cube control get pods on staging",
+    "expected": "Run kubectl get pods on staging."
+  },
+  {
+    "screen": [
+      "~/repos/hulk main $ kubectl get pods -n enquiry --context eu-west-2",
+      "NAME                          READY   STATUS    RESTARTS   AGE",
+      "enquiry-api-7d9f8b6c4-x2k9p   1/1     Running   0          3h",
+      "enquiry-worker-5c8d7f9b-q4m2n 1/1     Running   2          3h",
+      "~/repos/hulk main $ pnpm prisma migrate dev",
+      "~/repos/hulk main $ "
+    ],
+    "input": "prisma migrate dev keeps failing um on the seed",
+    "expected": "Prisma migrate dev keeps failing on the seed."
+  },
+  {
+    "screen": [
+      "LOT-1482",
+      "Enquiry deduplication misses Fathom call summaries",
+      "Status  In Progress     Assignee  Max Mitchell     Project  Concierge",
+      "Description",
+      "Calls recorded through Fathom land twice when the caller's number is withheld.",
+      "Comments",
+      "Ola Nowakowska: reproduced on staging, see LOT-1471"
+    ],
+    "input": "link this to lot one four eight two",
+    "expected": "Link this to LOT-1482.",
+    "alsoAccepted": [
+      {
+        "text": "Link this to lot 1482.",
+        "why": "digits are written but the prefix is not recognised as the ticket key"
+      }
+    ]
+  },
+  {
+    "screen": [
+      "LOT-1482",
+      "Enquiry deduplication misses Fathom call summaries",
+      "Status  In Progress     Assignee  Max Mitchell     Project  Concierge",
+      "Description",
+      "Calls recorded through Fathom land twice when the caller's number is withheld.",
+      "Comments",
+      "Ola Nowakowska: reproduced on staging, see LOT-1471"
+    ],
+    "input": "fathom calls land twice when the number is withheld",
+    "expected": "Fathom calls land twice when the number is withheld."
+  },
+  {
+    "screen": [
+      "Ottolenghi's roast aubergine with za'atar and tahini",
+      "Serves 4 · 45 minutes",
+      "2 large aubergines",
+      "3 tbsp za'atar",
+      "100g tahini",
+      "Preheat the oven to 220°C."
+    ],
+    "input": "what time is the meeting on monday",
+    "expected": "What time is the meeting on Monday?"
+  },
+  {
+    "screen": [
+      "~/repos/hulk main $ kubectl get pods -n enquiry --context eu-west-2",
+      "NAME                          READY   STATUS    RESTARTS   AGE",
+      "enquiry-api-7d9f8b6c4-x2k9p   1/1     Running   0          3h",
+      "enquiry-worker-5c8d7f9b-q4m2n 1/1     Running   2          3h",
+      "~/repos/hulk main $ pnpm prisma migrate dev",
+      "~/repos/hulk main $ "
+    ],
+    "input": "send the invoice to the client please",
+    "expected": "Send the invoice to the client please."
   }
 ]

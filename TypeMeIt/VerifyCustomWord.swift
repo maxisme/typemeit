@@ -108,8 +108,8 @@ final class VerifyCustomWord {
         guard !source.isEmpty else { return nil }
         let model = SystemLanguageModel(guardrails: .permissiveContentTransformations)
         guard case .available = model.availability else { return nil }
-        let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions)
-        let prompt = PostProcessor.prompt(for: source, customWords: customWords)
+        let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions(customWords: customWords))
+        let prompt = PostProcessor.prompt(for: source)
         do {
             let r = try await session.respond(to: prompt,
                                               generating: PostProcessor.CleanedTranscript.self,
