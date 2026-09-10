@@ -9,4 +9,5 @@ build/
 
 # web
 web/node_modules/
+Scripts/cleanup-eval/eval
 .wrangler/
