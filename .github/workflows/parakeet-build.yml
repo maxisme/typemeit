@@ -1,0 +1,86 @@
+name: parakeet-build
+
+# Builds the GGUF the app downloads, from NVIDIA's checkpoint, and stores it.
+# Nothing here runs on a schedule: converting is what you do *after*
+# parakeet-watch tells you there is something worth converting.
+#
+# `publish: false` (the default) converts and keeps the result as an artifact,
+# which is how you check a new model without committing to it. `publish: true`
+# attaches it to a release, which is where ModelStore.swift points.
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "NVIDIA model to convert"
+        default: nvidia/parakeet-unified-en-0.6b
+      quant:
+        description: "F16, Q8_0, Q6_K, Q5_K_M or Q4_K_M"
+        default: Q8_0
+      publish:
+        description: "Attach it to a release as well as an artifact"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parakeet-build-${{ inputs.model }}-${{ inputs.quant }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write # only used when publish is true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+
+      # NeMo, torch, the checkpoint, the F32 reference and the quantised
+      # output all land on the same disk. Say what there is before starting,
+      # so running out is a legible failure rather than a confusing one.
+      - run: df -h /
+
+      - name: Convert and quantise
+        run: Scripts/convert-parakeet-gguf.sh "${{ inputs.model }}" "${{ inputs.quant }}"
+
+      - name: Record what was built
+        id: built
+        run: |
+          slug="$(basename "${{ inputs.model }}")"
+          gguf="build/parakeet-convert/models/$slug/$slug-${{ inputs.quant }}.gguf"
+          echo "gguf=$gguf" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$gguf")" >> "$GITHUB_OUTPUT"
+          echo "tag=model-$slug-$(echo "${{ inputs.quant }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          {
+            echo '```swift'
+            echo "    nonisolated static let fileName = \"$(basename "$gguf")\""
+            echo "    nonisolated static let expectedBytes: Int64 = $(wc -c < "$gguf" | tr -d ' ')"
+            echo "    nonisolated static let sha256 = \"$(sha256sum "$gguf" | cut -d' ' -f1)\""
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ steps.built.outputs.name }}
+          path: ${{ steps.built.outputs.gguf }}
+          retention-days: 7
+          compression-level: 0 # already quantised; zip only wastes runner time
+
+      - name: Publish it
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(sha256sum "${{ steps.built.outputs.gguf }}" | cut -d' ' -f1)"
+          gh release create "${{ steps.built.outputs.tag }}" \
+            --title "$(basename "${{ inputs.model }}") ${{ inputs.quant }}" \
+            --notes "${{ inputs.model }} converted from NVIDIA's checkpoint and quantised to ${{ inputs.quant }} by this workflow.
+
+              sha256  $sha
+              bytes   $(wc -c < "${{ steps.built.outputs.gguf }}" | tr -d ' ')
+
+          ModelStore.swift must pin this sha256 before the app can install it." \
+            "${{ steps.built.outputs.gguf }}"
