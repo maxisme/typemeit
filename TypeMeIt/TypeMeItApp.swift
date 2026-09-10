@@ -31,7 +31,6 @@ final class AppState {
     static let shared = AppState()
     /// Who holds Secure Input, or nil when it is off.
     var secureInputOwner: SecureInput.Owner?
-    var secureInputOn: Bool { secureInputOwner != nil }
     /// A permission revoked in System Settings since launch, or nil.
     var missingPermission: MissingPermission?
     /// Why Apple Intelligence cannot run since launch, or nil while it can.
@@ -46,7 +45,7 @@ final class AppState {
     var settingsTab: SettingsTab?
 
     var menuBarImage: NSImage {
-        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, struck: secureInputOn || missingPermission != nil, updateReady: updateReady != nil)
+        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, struck: missingPermission != nil, updateReady: updateReady != nil)
     }
 }
 
@@ -93,7 +92,7 @@ struct MenuContent: View {
                 Text("type me it will not be functioning properly. lock and unlock the mac to clear it.")
             } else {
                 Text("secure input is on in \(owner.name)")
-                Text("fn works, but esc, space and the copy shortcut do not until \(owner.name) releases it.")
+                Text("fn and clicking the cloud work. space to pin, esc and the copy shortcut do not until \(owner.name) releases it.")
             }
             Divider()
         }

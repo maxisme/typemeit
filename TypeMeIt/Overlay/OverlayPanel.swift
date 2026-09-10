@@ -9,7 +9,7 @@ import SwiftUI
 @MainActor
 final class OverlayPanel {
     let model = OverlayModel()
-    private let panel: NSPanel
+    private let panel: UnconstrainedPanel
 
     static let size = NSSize(width: 460, height: 260)
     /// How far the cloud's centre sits in from the screen edge at a side.
@@ -20,7 +20,7 @@ final class OverlayPanel {
     static let topInset: CGFloat = 20
 
     init() {
-        panel = NSPanel(contentRect: NSRect(origin: .zero, size: OverlayPanel.size),
+        panel = UnconstrainedPanel(contentRect: NSRect(origin: .zero, size: OverlayPanel.size),
                         styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
         panel.level = .statusBar
         panel.isOpaque = false
@@ -143,6 +143,13 @@ final class OverlayPanel {
         let centre = NSPoint(x: panel.frame.midX, y: panel.frame.minY + CloudView.restHeight)
         return NSRect(x: centre.x - diameter / 2, y: centre.y - diameter / 2, width: diameter, height: diameter)
     }
+}
+
+/// AppKit keeps a window's top edge under the menu bar whenever its frame is
+/// set. The cloud at the top has to sit over the menu bar, and at a side it
+/// hangs partly off the screen, so this panel takes the frame it is given.
+private final class UnconstrainedPanel: NSPanel {
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
 }
 
 private struct OverlayRoot: View {
