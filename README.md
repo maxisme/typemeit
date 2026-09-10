@@ -32,18 +32,6 @@ Dependencies are the transcribe.cpp XCFramework, fetched by SwiftPM from the ups
 
 Microphone, Accessibility (pasting and reading corrections) and Input Monitoring (the fn key). Grants are keyed to the code signature, so run a Developer ID signed build from `/Applications` or expect to re-grant after each rebuild.
 
-## Release
-
-A `v*` tag runs `.github/workflows/release.yml`, which calls `Scripts/release-dmg.sh`: plain `xcodebuild` and `notarytool`, runnable by hand with `DEVELOPMENT_TEAM`, `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_PATH` set. It builds with Developer ID, notarises and staples both the app and the DMG, verifies the result with `syspolicy_check distribution`, and signs a Sparkle appcast for it. The workflow attaches `TypeMeIt.dmg` and `appcast.xml` to a GitHub release.
-
-`SUFeedURL` points at `/releases/latest/download/appcast.xml`, and typeme.it/download, a Worker in `worker.js` in front of the static site, streams `/releases/latest/download/TypeMeIt.dmg`. Both only resolve because the repository is public and that asset is named the same every release, so publishing the release is what ships the update, and Sparkle installs the same DMG a first-time visitor downloads. The Worker names the file `type me it.dmg` on the way through, because GitHub replaces spaces in asset names with dots.
-
-The appcast is signed with an EdDSA key. Its public half is `SUPublicEDKey` in `project.yml`; the private half lives in the login Keychain under the `typemeit` account locally, and in the `SPARKLE_ED_PRIVATE_KEY` repository secret for CI. Export it with Sparkle's own tool:
-
-```
-build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x sparkle-private-key.txt --account typemeit
-```
-
 ## Layout
 
 - `TypeMeIt/` app sources, one file per module
