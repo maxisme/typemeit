@@ -29,3 +29,13 @@ The settings window opens from the menu bar puff → "type me it"; the app menu 
 settings item. Opening the build path again on a running instance also reopens it.
 Avoid `open -a "type me it dev"`: with several worktree builds registered, Launch
 Services may start another worktree's copy.
+
+## Copy: less is more
+
+Every string the user sees — group titles, row labels, captions, empty states,
+menu items — is written short. Cut hedging and cut throat-clearing before you
+cut information; a one-word title beats a three-word one whenever the row it
+sits over already tells the reader what the numbers are. When you find yourself
+writing an explainer inside a label, the label is wrong. This rule holds even
+when a longer version scans fine on its own: on a page of short strings a long
+one snags, and the page reads as noisier than it is.

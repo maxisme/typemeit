@@ -395,4 +395,24 @@ final class TextCleanupTests: XCTestCase {
         XCTAssertFalse(TextCleanup.soundex("pfister", "bfister"))
         XCTAssertFalse(TextCleanup.soundex("a", "e"))
     }
+
+    // MARK: stripTrailingFullStop
+
+    func testStripsASingleTrailingFullStop() {
+        XCTAssertEqual(TextCleanup.stripTrailingFullStop("hello."), "hello")
+        XCTAssertEqual(TextCleanup.stripTrailingFullStop("hello.  "), "hello")
+        XCTAssertEqual(TextCleanup.stripTrailingFullStop("hello. world."), "hello. world")
+    }
+
+    func testKeepsQuestionAndExclamationAndEllipses() {
+        XCTAssertEqual(TextCleanup.stripTrailingFullStop("who?"), "who?")
+        XCTAssertEqual(TextCleanup.stripTrailingFullStop("wow!"), "wow!")
+        XCTAssertEqual(TextCleanup.stripTrailingFullStop("well..."), "well...")
+    }
+
+    func testLeavesEmptyAndUnpunctuatedTextAlone() {
+        XCTAssertEqual(TextCleanup.stripTrailingFullStop(""), "")
+        XCTAssertEqual(TextCleanup.stripTrailingFullStop("hello"), "hello")
+    }
 }
+

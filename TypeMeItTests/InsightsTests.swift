@@ -183,6 +183,35 @@ final class InsightsTests: XCTestCase {
         XCTAssertEqual(stats.wordsPerMinute, 150.0)
     }
 
+    func testStageSpeedsAreMediansAndRealtimeIsOverTheAudioItTimed() {
+        var a = row(day(2026, 9, 3), "one")
+        a.durationMs = 4_000
+        a.transcribeMs = 200
+        a.postProcessRequested = true
+        a.postProcessMs = 900
+        var b = row(day(2026, 9, 3), "two")
+        b.durationMs = 6_000
+        b.transcribeMs = 300
+        b.postProcessRequested = true
+        b.postProcessMs = 1_100
+        var slow = row(day(2026, 9, 3), "three")
+        slow.transcribeMs = 5_000
+        // Not requested, so its time is not a clean-up time.
+        slow.postProcessMs = 9_000
+        let stats = compute([a, b, slow], today: day(2026, 9, 3))
+        XCTAssertEqual(stats.transcribeMedianMs, 300)
+        XCTAssertEqual(stats.cleanUpMedianMs, 1_000)
+        // Only a and b timed their audio: 500 ms of transcribing over 10 s.
+        XCTAssertEqual(stats.transcribeRealtime, 0.05)
+    }
+
+    func testStageSpeedsAreNilWithoutTimings() {
+        let stats = compute([row(day(2026, 9, 3), "nothing timed")], today: day(2026, 9, 3))
+        XCTAssertNil(stats.transcribeMedianMs)
+        XCTAssertNil(stats.transcribeRealtime)
+        XCTAssertNil(stats.cleanUpMedianMs)
+    }
+
     func testFixesComeFromTheDictionaryCounterAndPostProcessingDiffs() {
         var a = row(day(2026, 9, 3), "we shipped handy today")
         a.dictionaryFixes = 2
