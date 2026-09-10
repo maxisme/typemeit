@@ -91,8 +91,7 @@ struct MenuContent: View {
                 Text("secure input is stuck on from the lock screen")
                 Text("type me it will not be functioning properly. lock and unlock the mac to clear it.")
             } else {
-                Text("secure input is on in \(owner.name)")
-                Text("fn and clicking the cloud work. space to pin, esc and the copy shortcut do not until \(owner.name) releases it.")
+                Text("secure input is on in \(owner.name), so shortcuts do not work")
             }
             Divider()
         }
