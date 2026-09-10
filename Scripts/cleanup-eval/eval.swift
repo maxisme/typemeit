@@ -1,9 +1,9 @@
 import Foundation
 import FoundationModels
 
-/// Runs the cases in cases.json through the app's own path: TextCleanup, then
-/// PostProcessor (prompt, guided generation, rewrite and opening guards), with
-/// local text as the fallback when the model's output is rejected. The sources
+/// Runs the cases in cases.json through the app's own path: PostProcessor
+/// (prompt, guided generation, rewrite and opening guards), with the raw
+/// transcript as the fallback when the model's output is rejected. The sources
 /// are compiled in by run.sh, so this scores exactly what ships. A case passes
 /// when the output matches the expected text, or any entry in `alsoAccepted`,
 /// each of which says why it counts. Case and punctuation are ignored.
@@ -38,8 +38,7 @@ struct Case: Decodable {
         guard case .available = PostProcessor.availability else { print("Apple Intelligence is not available on this Mac"); exit(2) }
         var failed = 0
         for c in cases {
-            let local = TextCleanup.run(c.input, customWords: c.customWords, aliases: []).text
-            let out = await PostProcessor.shared.run(local, customWords: c.customWords) ?? local
+            let out = await PostProcessor.shared.run(c.input, customWords: c.customWords) ?? c.input
             let ok = c.accepted.contains { normalise(out) == normalise($0) }
             if !ok { failed += 1 }
             print("\(ok ? "PASS" : "FAIL")  \(c.input)")

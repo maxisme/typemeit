@@ -6,6 +6,7 @@
 #   make model-verify       check the built GGUF against what ModelStore.swift pins
 #   make model-publish      attach that GGUF to a GitHub release and print its URL
 #   make model-verify-url   re-download the published asset and hash it
+#   make eval               score the clean-up prompt against Apple Intelligence
 #   make eval               score the clean-up prompt on Apple Intelligence
 #   make bench MODELS=...   score the same cases on local GGUF models
 
@@ -29,7 +30,7 @@ PINNED_SHA := $(shell sed -n 's/.*let sha256 = "\([0-9a-f]*\)".*/\1/p' $(STORE))
 PINNED_BYTES := $(shell sed -n 's/.*let expectedBytes: Int64 = \([0-9_]*\).*/\1/p' $(STORE) | tr -d _)
 
 .DEFAULT_GOAL := help
-.PHONY: help model model-sums model-verify model-publish model-verify-url eval bench
+.PHONY: help model model-sums model-verify model-publish model-verify-url eval eval bench
 
 help:
 	@sed -n 's/^#   //p' Makefile
@@ -88,3 +89,6 @@ eval:
 # The same cases on local GGUF models, e.g. make bench MODELS="a.gguf b.gguf".
 bench:
 	Scripts/llm-bench/run.sh $(MODELS)
+
+eval:
+	Scripts/cleanup-eval/run.sh
