@@ -77,7 +77,7 @@ struct InsightsTab: View {
     private func speed(_ s: InsightsStats) -> some View {
         VStack(spacing: 0) {
             speedRow("parakeet", s.transcribeMedianMs.map(InsightsTab.duration),
-                     detail: s.transcribeRealtime.map { String(format: "%.2f× the length of the audio", $0) })
+                     detail: s.transcribeRealtime.flatMap { $0 > 0 ? String(format: "%.0f× faster than the audio", 1 / $0) : nil })
             RowRule()
             speedRow("apple intelligence", s.cleanUpMedianMs.map(InsightsTab.duration),
                      detail: s.cleanUpMedianMs == nil ? "no clean-ups yet" : nil, last: true)
