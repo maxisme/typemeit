@@ -200,23 +200,11 @@ final class Pipeline {
     }
 
     private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, entryId: UUID, recordingFile: String?, generation gen: Int) async {
-        if TextCleanup.isBlank(raw) { finishIdle(discarding: recordingFile); return }
+        if ModelText.isBlank(raw) { finishIdle(discarding: recordingFile); return }
         let customWords = settings.customWords
         let aliases = store.aliases(customWords: customWords)
         let requested = settings.postProcessingEnabled
-        // The LLM sees the user's custom-words list in its own prompt and can
-        // decide in context; the fuzzy pass matches by sound alone and swaps
-        // in common words for rare ones ("make" → "Maxxo"). Skip it when the
-        // LLM is going to run, keep it for the local-only path.
-        let willTryLLM: Bool = requested && {
-            if case .available = PostProcessor.availability { return true } else { return false }
-        }()
-        var cleaned = willTryLLM
-            ? TextCleanup.run(raw, customWords: [], aliases: [], threshold: Fixed.wordCorrectionThreshold)
-            : TextCleanup.run(raw, customWords: customWords, aliases: aliases, threshold: Fixed.wordCorrectionThreshold)
-        // Fillers alone ("um", "uh") clean down to nothing; that is silence, not a dictation.
-        if TextCleanup.isBlank(cleaned.text) { finishIdle(discarding: recordingFile); return }
-        var finalText = cleaned.text
+        var finalText = raw
         var postProcessed: String?
         var postProcessMs: Int?
 
@@ -225,23 +213,13 @@ final class Pipeline {
             shortcuts.setPhase(.cleaningUp)
             overlay.show(.cleaningUp)
             let start = ContinuousClock.now
-            postProcessed = await PostProcessor.shared.run(cleaned.text, customWords: customWords)
+            postProcessed = await PostProcessor.shared.run(raw, customWords: customWords, aliases: aliases)
             let ms = Pipeline.elapsedMs(since: start)
             postProcessMs = ms
-            Log.postProcess.info("Post-processing took \(ms) ms (\(postProcessed == nil ? "fell back to local cleanup" : "applied"))")
+            Log.postProcess.info("Post-processing took \(ms) ms (\(postProcessed == nil ? "no result, transcript typed as heard" : "applied"))")
             guard gen == generation else { return }
-            if let postProcessed {
-                finalText = postProcessed
-            } else if willTryLLM {
-                // The LLM was available and did not deliver; run the fuzzy pass now
-                // so the fallback still applies the user's custom words.
-                let fuzzy = TextCleanup.run(raw, customWords: customWords, aliases: aliases, threshold: Fixed.wordCorrectionThreshold)
-                if !TextCleanup.isBlank(fuzzy.text) {
-                    cleaned = fuzzy
-                    finalText = fuzzy.text
-                }
-            }
-            finalText = TextCleanup.stripTrailingFullStop(finalText)
+            if let postProcessed { finalText = postProcessed }
+            finalText = ModelText.stripTrailingFullStop(finalText)
         }
 
         if settings.appendTrailingSpace { finalText += " " }
@@ -250,9 +228,9 @@ final class Pipeline {
         guard gen == generation else { return }
 
         let entry = HistoryEntry(
-            id: entryId, timestamp: Date(), transcript: cleaned.text, postProcessed: postProcessed, postProcessRequested: requested,
+            id: entryId, timestamp: Date(), transcript: raw, postProcessed: postProcessed, postProcessRequested: requested,
             durationMs: durationMs, transcribeMs: transcribeMs, postProcessMs: postProcessMs, appId: target?.appId, appName: target?.appName, windowTitle: target?.windowTitle,
-            dictionaryFixes: cleaned.dictionaryFixes, recordingFile: recordingFile)
+            dictionaryFixes: 0, recordingFile: recordingFile)
         store.append(entry, limit: settings.historyLimit)
 
         phase = .idle

@@ -51,11 +51,15 @@ actor PostProcessor {
 
     static var availability: SystemLanguageModel.Availability { SystemLanguageModel.default.availability }
 
-    static func prompt(for transcript: String, customWords: [String]) -> String {
+    static func prompt(for transcript: String, customWords: [String], aliases: [ModelText.Alias] = []) -> String {
         var t = template
         let words = customWords.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         if !words.isEmpty {
             t += "\n\nTerms this user says often, with their exact spelling:\n\(words.joined(separator: ", "))\n\nIf a word or phrase in the transcript is a mishearing of one of these terms, replace it with the exact spelling above. Do not change anything else because of this list."
+        }
+        if !aliases.isEmpty {
+            let pairs = aliases.map { "\($0.heard) -> \($0.meant)" }.joined(separator: "\n")
+            t += "\n\nMishearings this user has corrected before:\n\(pairs)\n\nApply one only where the transcript means that term. A word that genuinely is the left-hand spelling stays as it is."
         }
         return t.replacingOccurrences(of: "${output}", with: transcript)
     }
@@ -67,17 +71,17 @@ actor PostProcessor {
     }
 
     /// nil means: use the locally cleaned transcript (cancelled, rejected, unavailable or failed).
-    func run(_ transcript: String, customWords: [String]) async -> String? {
+    func run(_ transcript: String, customWords: [String], aliases: [ModelText.Alias] = []) async -> String? {
         current?.cancel()
         let model = self.model
         let task = Task<String?, Never> {
             guard case .available = model.availability else { return nil }
             let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions)
-            let user = PostProcessor.prompt(for: transcript, customWords: customWords)
+            let user = PostProcessor.prompt(for: transcript, customWords: customWords, aliases: aliases)
             do {
                 let r = try await session.respond(to: user, generating: CleanedTranscript.self, options: GenerationOptions(sampling: .greedy))
                 if Task.isCancelled { return nil }
-                var out = TextCleanup.stripThinkBlock(r.content.cleanedText).trimmingCharacters(in: .whitespacesAndNewlines)
+                var out = ModelText.stripThinkBlock(r.content.cleanedText).trimmingCharacters(in: .whitespacesAndNewlines)
                 if out.isEmpty { return nil }
                 if PostProcessor.looksLikeRewrite(transcript: transcript, output: out, template: PostProcessor.template) {
                     Log.postProcess.notice("Rejected post-processing output as a rewrite")
@@ -119,7 +123,7 @@ actor PostProcessor {
         let first = transcript.lowercased().split { !$0.isLetter && !$0.isNumber }.first.map(String.init)
         guard let first else { return false }
         let outWords = output.lowercased().split { !$0.isLetter && !$0.isNumber }.prefix(2).map(String.init)
-        return !outWords.contains { $0 == first || ($0.first == first.first && TextCleanup.levenshtein($0, first) <= 2) }
+        return !outWords.contains { $0 == first || ($0.first == first.first && ModelText.levenshtein($0, first) <= 2) }
     }
 
     // MARK: Rewrite guard

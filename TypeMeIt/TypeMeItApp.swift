@@ -193,6 +193,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppDelegate.shared = self
     }
 
+    private var gateWindow: NSWindow?
     private var onboardingWindow: NSWindow?
     private var secureInputTimer: Timer?
 
@@ -201,6 +202,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = Store.shared
         applyDockIcon()
         applyAppearance()
+        // Clean-up is the only clean-up there is, so anything that stops the
+        // model running stops the app: an ineligible Mac, Apple Intelligence
+        // switched off, or the model still downloading.
+        if case .unavailable(let reason) = PostProcessor.availability {
+            showGate(reason)
+            return
+        }
         if Settings.shared.onboardingComplete, ModelStore.isInstalled, OnboardingView.permissionsGranted {
             startRunning()
         } else {
@@ -220,7 +228,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if onboardingWindow?.isVisible == true {
             onboardingWindow?.makeKeyAndOrderFront(nil)
-        } else {
+        } else if gateWindow?.isVisible != true {
             NotificationCenter.default.post(name: MenuBarLabel.openSettings, object: nil)
         }
         return false
@@ -315,6 +323,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// preferred size from inside the window's own layout pass, and on
     /// macOS 26 AppKit raises when that happens, which aborted the app on
     /// launch with the welcome window up.
+    private func showGate(_ reason: SystemLanguageModel.Availability.UnavailableReason) {
+        let view = GateView(reason: reason)
+        let window = AppDelegate.fixedSizeWindow(for: view)
+        window.title = "type me it needs Apple Intelligence"
+        window.styleMask = [.titled, .closable]
+        window.center()
+        gateWindow = window
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+    }
+
     private static func fixedSizeWindow<V: View>(for view: V) -> NSWindow {
         let hosting = NSHostingController(rootView: view)
         hosting.sizingOptions = []
@@ -343,4 +362,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
     }
 
+}
+
+struct GateView: View {
+    let reason: SystemLanguageModel.Availability.UnavailableReason
+
+    private var message: String {
+        switch reason {
+        case .deviceNotEligible: "This Mac cannot run Apple Intelligence."
+        case .appleIntelligenceNotEnabled: "Turn on Apple Intelligence in System Settings, then reopen type me it."
+        case .modelNotReady: "Apple Intelligence is still downloading. Try again in a few minutes."
+        @unknown default: "Apple Intelligence is not available right now."
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("type me it needs Apple Intelligence").font(.title2.weight(.semibold))
+            Text(message).fixedSize(horizontal: false, vertical: true).frame(maxWidth: 380, alignment: .leading)
+            HStack {
+                if case .appleIntelligenceNotEnabled = reason {
+                    Button("Open System Settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }
+                }
+                Spacer()
+                Button("Quit") { NSApp.terminate(nil) }.keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(24)
+        .frame(width: 440)
+    }
 }

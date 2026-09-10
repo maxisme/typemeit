@@ -114,7 +114,7 @@ final class VerifyCustomWord {
             let r = try await session.respond(to: prompt,
                                               generating: PostProcessor.CleanedTranscript.self,
                                               options: GenerationOptions(sampling: .greedy))
-            let out = TextCleanup.stripThinkBlock(r.content.cleanedText).trimmingCharacters(in: .whitespacesAndNewlines)
+            let out = ModelText.stripThinkBlock(r.content.cleanedText).trimmingCharacters(in: .whitespacesAndNewlines)
             return out.isEmpty ? nil : out
         } catch {
             return nil

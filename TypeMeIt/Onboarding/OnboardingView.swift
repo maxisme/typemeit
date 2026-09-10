@@ -59,10 +59,6 @@ struct OnboardingView: View {
                     Button("skip") { finished() }
                         .buttonStyle(InkButtonStyle(quiet: true))
                 }
-                if step == .cleanup, !canContinue {
-                    Button("skip") { advance() }
-                        .buttonStyle(InkButtonStyle(quiet: true))
-                }
                 Button(step == .tryIt ? "finish" : "continue") { advance() }
                     .buttonStyle(InkButtonStyle(primary: true))
                     .keyboardShortcut(.defaultAction)

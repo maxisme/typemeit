@@ -163,7 +163,6 @@ enum AppVersion {
 enum Fixed {
     static let websiteURL = URL(string: "https://typeme.it")!
     static let holdThresholdMs = 300
-    static let wordCorrectionThreshold = 0.18
     static let pasteDelayBeforeMs = 60
     static let pasteDelayAfterMs = 60
     static let autoSubmitDelayMs = 50
