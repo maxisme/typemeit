@@ -43,22 +43,47 @@ enum Focus {
     }
 
     /// `true` when the focused element takes text input, `false` when it
-    /// definitely does not (including "nothing is focused"), `nil` when
-    /// Accessibility is not granted or the focused element cannot be read.
+    /// definitely does not, `nil` when Accessibility is not granted or no
+    /// focused element can be read.
+    ///
+    /// The system-wide element is asked first. On some Macs it answers that
+    /// nothing is focused while the frontmost app, asked directly, names the
+    /// field that then receives the paste, so the app is the fallback. With
+    /// no element from either, the answer is unknown rather than "no text
+    /// box": the paste has already landed somewhere.
     static func focusedElementIsTextInput() -> Bool? {
         let systemWide = AXUIElementCreateSystemWide()
         systemWide.applyMessagingTimeout()
 
-        let focused: AXUIElement
+        var focused: AXUIElement?
+        var source = "system"
         switch systemWide.copyAttribute(kAXFocusedUIElementAttribute) {
         case .success(let value):
-            guard let element = AX.element(value) else { return nil }
-            focused = element
+            focused = AX.element(value)
         case .failure(let error) where error.code == .noValue:
-            Log.output.notice("Focus check: no focused element")
-            return false
+            break
         case .failure(let error):
             Log.output.notice("Focus check: focused element unavailable (AXError \(error.code.rawValue))")
+            return nil
+        }
+
+        if focused == nil, let front = NSWorkspace.shared.frontmostApplication {
+            source = "app"
+            let app = AXUIElementCreateApplication(front.processIdentifier)
+            app.applyMessagingTimeout()
+            switch app.copyAttribute(kAXFocusedUIElementAttribute) {
+            case .success(let value):
+                focused = AX.element(value)
+            case .failure(let error) where error.code == .noValue:
+                break
+            case .failure(let error):
+                Log.output.notice("Focus check: \(front.localizedName ?? "app", privacy: .public) focused element unavailable (AXError \(error.code.rawValue))")
+                return nil
+            }
+        }
+
+        guard let focused else {
+            Log.output.notice("Focus check: no focused element from system or app")
             return nil
         }
         focused.applyMessagingTimeout()
@@ -73,7 +98,7 @@ enum Focus {
         AXUIElementGetPid(focused, &pid)
         let owner = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "pid \(pid)"
         let isText = classifyRole(role, valueSettable: valueSettable)
-        Log.output.notice("Focus check: \(owner, privacy: .public) role \(role, privacy: .public) subrole \(subrole, privacy: .public) valueSettable \(valueSettable) -> \(isText ? "text input" : "not text input", privacy: .public)")
+        Log.output.notice("Focus check (\(source, privacy: .public)): \(owner, privacy: .public) role \(role, privacy: .public) subrole \(subrole, privacy: .public) valueSettable \(valueSettable) -> \(isText ? "text input" : "not text input", privacy: .public)")
         return isText
     }
 }
