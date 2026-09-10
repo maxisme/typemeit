@@ -22,9 +22,13 @@ final class Pipeline {
     private var copyPromptTask: Task<Void, Never>?
     private var toastTask: Task<Void, Never>?
     private var lastRecordingFirstBuffer = false
-    /// Screen text read while the user is still speaking, so it costs
-    /// nothing after the recording ends.
-    private var screenContextTask: Task<[String], Never>?
+    /// Screen terms for the dictation in progress: nil until the read
+    /// finishes. The read starts with the recording and is never waited
+    /// for; a dictation shorter than the read goes without.
+    private var screenTerms: [String]?
+    /// The last read, reused when the next dictation goes into the same
+    /// window soon after, so a run of short dictations is not a run of reads.
+    private var lastScreen: (pid: pid_t, title: String?, at: ContinuousClock.Instant, terms: [String])?
 
     private init() {
         shortcuts.onEvent = { [weak self] event in self?.handle(event) }
@@ -124,17 +128,10 @@ final class Pipeline {
             return
         }
         overlay.show(.arming)
-        screenContextTask?.cancel()
-        screenContextTask = nil
+        screenTerms = nil
         if settings.postProcessingEnabled {
             Task { await PostProcessor.shared.prewarm() }
-            if settings.screenContextEnabled, let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier {
-                let customWords = settings.customWords
-                screenContextTask = Task {
-                    let lines = await ScreenContext.captureLines(pid: pid)
-                    return await ScreenContext.terms(from: lines, excluding: customWords)
-                }
-            }
+            if settings.screenContextEnabled { readScreen(generation: generation) }
         }
         Task { await Transcriber.shared.preload() }
     }
@@ -200,6 +197,25 @@ final class Pipeline {
         }
     }
 
+    /// Reads the frontmost window in the background and stores the terms
+    /// for dictation `gen`, unless the same window was read within
+    /// `Fixed.screenReadReuse`, in which case that read is used as is.
+    private func readScreen(generation gen: Int) {
+        guard let target = Frontmost.capture(), let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier else { return }
+        if let last = lastScreen, last.pid == pid, last.title == target.windowTitle, ContinuousClock.now - last.at < Fixed.screenReadReuse {
+            screenTerms = last.terms
+            return
+        }
+        let customWords = settings.customWords
+        Task { [weak self] in
+            let lines = await ScreenContext.captureLines(pid: pid)
+            let terms = await ScreenContext.terms(from: lines, excluding: customWords)
+            guard let self else { return }
+            self.lastScreen = (pid, target.windowTitle, ContinuousClock.now, terms)
+            if self.generation == gen { self.screenTerms = terms }
+        }
+    }
+
     /// Returns to idle as if the dictation never happened. A recording saved
     /// for it would otherwise sit in the archive with no history entry.
     private func finishIdle(discarding recordingFile: String? = nil) {
@@ -239,8 +255,8 @@ final class Pipeline {
             phase = .cleaningUp
             shortcuts.setPhase(.cleaningUp)
             overlay.show(.cleaningUp)
-            let screenTerms = await screenContextTask?.value ?? []
-            screenContextTask = nil
+            let screenTerms = self.screenTerms ?? []
+            if self.screenTerms == nil, settings.screenContextEnabled { Log.screenContext.info("Screen read not finished; cleaning up without it") }
             if !screenTerms.isEmpty { Log.screenContext.info("Screen terms: \(screenTerms.joined(separator: ", "), privacy: .private)") }
             let start = ContinuousClock.now
             postProcessed = await PostProcessor.shared.run(cleaned.text, customWords: customWords, screenTerms: screenTerms)

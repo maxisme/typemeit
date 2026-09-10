@@ -174,6 +174,8 @@ enum Fixed {
     static let modelUnloadIdle: Duration = .seconds(5 * 60)
     static let copyPromptTimeout: Duration = .seconds(8)
     static let minimumRecordingSeconds = 0.3
+    /// A screen read serves every dictation into the same window this long.
+    static let screenReadReuse: Duration = .seconds(60)
     static let silencePeak: Float = 0.01
     static let learningAppDenylist: Set<String> = [
         "com.1password.1password", "com.agilebits.onepassword7", "com.bitwarden.desktop",
