@@ -88,24 +88,11 @@ final class AudioCapture: @unchecked Sendable {
     }
 
     private var lastUID: String?
-    private var alwaysOn = false
 
     private func restartIfRunning() {
         guard engineRunning else { return }
         stopEngine()
         try? ensureEngine(uid: lastUID)
-    }
-
-    /// Opens the engine ahead of time (always-on microphone).
-    func warmUp(uid: String?) {
-        lastUID = uid
-        alwaysOn = true
-        try? ensureEngine(uid: uid)
-    }
-
-    func coolDown() {
-        alwaysOn = false
-        if !recording { stopEngine() }
     }
 
     func start(uid: String?) throws {
@@ -126,7 +113,7 @@ final class AudioCapture: @unchecked Sendable {
         let out = samples
         samples.removeAll(keepingCapacity: true)
         lock.unlock()
-        if !alwaysOn { stopEngine() }
+        stopEngine()
         return out
     }
 
@@ -135,7 +122,7 @@ final class AudioCapture: @unchecked Sendable {
         recording = false
         samples.removeAll(keepingCapacity: true)
         lock.unlock()
-        if !alwaysOn { stopEngine() }
+        stopEngine()
     }
 
     private func consume(_ buffer: AVAudioPCMBuffer) {
