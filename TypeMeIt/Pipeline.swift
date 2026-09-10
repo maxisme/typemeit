@@ -59,11 +59,6 @@ final class Pipeline {
         if !shortcuts.install() {
             Log.app.error("Shortcuts not installed; Input Monitoring is missing")
         }
-        if settings.alwaysOnMicrophone { capture.warmUp(uid: settings.microphoneUID) }
-    }
-
-    func applyMicrophoneSettings() {
-        if settings.alwaysOnMicrophone { capture.warmUp(uid: settings.microphoneUID) } else { capture.coolDown() }
     }
 
     var isBusy: Bool { phase != .idle }

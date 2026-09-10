@@ -15,10 +15,7 @@ import Sparkle
 /// `state`. Settings renders that as a line of text or an install button.
 @MainActor
 @Observable
-/// `@preconcurrency`: Sparkle calls its delegate on the main thread, so the
-/// on-quit hook below can be main-actor-isolated and keep the install handler
-/// it is given.
-final class Updates: NSObject, @preconcurrency SPUUpdaterDelegate {
+final class Updates: NSObject, SPUUpdaterDelegate {
     static let shared = Updates()
 
     enum State: Equatable {
@@ -41,9 +38,6 @@ final class Updates: NSObject, @preconcurrency SPUUpdaterDelegate {
 
     @ObservationIgnored private var updater: SPUUpdater?
     @ObservationIgnored private let driver = SilentDriver()
-    /// Sparkle's install-and-relaunch handler for an update it downloaded in
-    /// the background and would otherwise only install when the app quits.
-    @ObservationIgnored private var immediateInstall: (() -> Void)?
     @ObservationIgnored private var idleTimer: Timer?
     /// Versions whose toast is not to come back: a failed download is told
     /// once, a ready update once the user has put it off.
@@ -82,31 +76,26 @@ final class Updates: NSObject, @preconcurrency SPUUpdaterDelegate {
         }
     }
 
-    /// Sparkle downloads automatically in the background and, left alone,
-    /// installs on quit; it tells the user driver nothing until a much later
-    /// check. Taking the handler here is what lets the app install as soon as
-    /// it is idle, or show the update as ready, instead of waiting for a
-    /// relaunch it never announced.
-    func updater(_ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem, immediateInstallationBlock immediateInstallHandler: @escaping () -> Void) -> Bool {
-        immediateInstall = immediateInstallHandler
-        set(.readyToInstall(version: item.displayVersionString))
-        installWhenIdle()
+    /// With automatic updates on, Sparkle downloads and stages the update without
+    /// telling the user driver, then waits for the app to quit. Taking over here
+    /// puts the install button in Settings and lets the idle timer relaunch.
+    nonisolated func updater(_ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem, immediateInstallationBlock immediateInstallHandler: @escaping @Sendable () -> Void) -> Bool {
+        let version = item.displayVersionString
+        MainActor.assumeIsolated {
+            driver.installReply = { _ in immediateInstallHandler() }
+            set(.readyToInstall(version: version))
+            installWhenIdle()
+        }
         return true
     }
 
     /// Installs the downloaded update and relaunches. Does nothing unless an
     /// update is ready.
     func install() {
-        guard case .readyToInstall = state else { return }
-        if let reply = driver.installReply {
-            driver.installReply = nil
-            state = .installing
-            reply(.install)
-        } else if let go = immediateInstall {
-            immediateInstall = nil
-            state = .installing
-            go()
-        }
+        guard case .readyToInstall = state, let reply = driver.installReply else { return }
+        driver.installReply = nil
+        state = .installing
+        reply(.install)
     }
 
     /// Installs a ready update once no dictation is in flight, so the relaunch

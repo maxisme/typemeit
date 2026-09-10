@@ -81,7 +81,6 @@ final class Settings {
     private let defaults = UserDefaults.standard
 
     var microphoneUID: String? { didSet { defaults.set(microphoneUID, forKey: "microphoneUID") } }
-    var alwaysOnMicrophone: Bool { didSet { defaults.set(alwaysOnMicrophone, forKey: "alwaysOnMicrophone") } }
     var muteWhileRecording: Bool { didSet { defaults.set(muteWhileRecording, forKey: "muteWhileRecording") } }
     var audioFeedback: Bool { didSet { defaults.set(audioFeedback, forKey: "audioFeedback") } }
     var copyPromptEnabled: Bool { didSet { defaults.set(copyPromptEnabled, forKey: "copyPromptEnabled") } }
@@ -119,7 +118,6 @@ final class Settings {
         let d = UserDefaults.standard
         func bool(_ key: String, _ fallback: Bool) -> Bool { d.object(forKey: key) == nil ? fallback : d.bool(forKey: key) }
         microphoneUID = d.string(forKey: "microphoneUID")
-        alwaysOnMicrophone = bool("alwaysOnMicrophone", false)
         muteWhileRecording = bool("muteWhileRecording", true)
         audioFeedback = bool("audioFeedback", true)
         copyPromptEnabled = bool("copyPromptEnabled", true)
