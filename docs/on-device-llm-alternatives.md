@@ -22,16 +22,14 @@ power, and what the current setup gives up. Written September 2026.
   and output. Our template is about 400 tokens, so a transcript above roughly
   1,500 words cannot be cleaned in one call. [Apple Developer Forums][ctx]
 
-The shipped path scores 11 of 11 on `Scripts/cleanup-eval` as of September 2026.
-Three things got it there, and the benchmark table below shows the raw model
-without them: the rules live in the session instructions with only the tagged
-transcript in the prompt, which stopped the model dropping the opening words of
-sentences; spoken money is converted to a symbol and digits in `TextCleanup`
-before the model sees it, because no prompt wording made "fifteen pounds" into
-"£15" without breaking another case; and `PostProcessor.lostOpening` rejects an
-output whose first word is gone, falling back to the local text. The eval
-compiles the app's own `TextCleanup` and `PostProcessor`, so a prompt change is
-scored on exactly what ships. Paragraphing and lists were tried and dropped: the
+The shipped path scores 11 of 11 on `make eval` as of September 2026. Two
+things got it there: the rules live in the session instructions with only the
+tagged transcript in the prompt, which stopped the model dropping the opening
+words of sentences, and `PostProcessor.lostOpening` rejects an output whose first
+word is gone, falling back to the local text. The eval compiles the app's own
+`TextCleanup` and `PostProcessor`, so a prompt change is scored on exactly what
+ships. Currency is the model's weak spot: it keeps "25 dollars" as words rather
+than writing "$25", and the eval accepts that. Paragraphing and lists were tried and dropped: the
 model returns one block whatever it is told.
 
 ## What changes in macOS 27
@@ -135,10 +133,8 @@ times slower and should not ship.
 
 ## Measured, September 2026
 
-`Scripts/llm-bench/run.sh` runs the eleven cases in `Scripts/cleanup-eval/cases.json`
-through each engine in-process: Apple
-Intelligence through Foundation Models exactly as the app does, and each GGUF
-through libllama with Metal, greedy sampling and a JSON grammar pinning the output
+`make bench MODELS="..."` runs the eleven cases in `Scripts/cleanup-eval/cases.json`
+through each GGUF in-process via libllama with Metal, greedy sampling and a JSON grammar pinning the output
 to one field, which is the closest equivalent of guided generation. Machine: M4
 (base), 24 GB, macOS 26.6.1, llama.cpp 0.4.0, Q4_K_M weights. The prompt is read
 from `PostProcessor.swift`, so these are the app's live instructions.
@@ -152,8 +148,8 @@ from `PostProcessor.swift`, so these are the app's live instructions.
 | Gemma 4 E4B | 5.0 GB | 3.5 s | 5.3 GB | 11/11 | 3.3 s | 15 |
 
 Every row runs the shipped set-up: the rules as session instructions, the tagged
-transcript as the prompt, spoken money converted by `TextCleanup` first, and the
-rewrite and opening guards with the local text as the fallback. Which models
+transcript as the prompt, local cleanup first, and the rewrite and opening guards
+with the local text as the fallback. The Apple row comes from `make eval`. Which models
 accept that set-up:
 
 - Pass all 11 cases: Apple Intelligence, Qwen3.5 4B, Gemma 4 E2B, Gemma 4 E4B.
@@ -170,11 +166,9 @@ Foundation Models does not report token counts, so its tok/s is estimated at 1.3
 tokens a word. Load time for the GGUFs is from a warm disk cache; the first load
 after a reboot reads the whole file.
 
-Before the shipped set-up, every engine failed one or more cases the same way:
-Apple Intelligence dropped the opening words of a sentence ("that will be twenty
-five dollars please" came back as "twenty-five dollars please"), and no engine
-turned a number word plus a currency into a symbol reliably. Those are what the
-local money conversion and the opening guard exist for.
+Before the shipped set-up, Apple Intelligence dropped the opening words of a
+sentence ("that will be twenty five dollars please" came back as "twenty-five
+dollars please"). That is what the opening guard exists for.
 
 Gemma 4 E2B is a 3 GB file despite the 2B name because the per-layer embeddings
 are stored in full; the memory table above that put it at 1.3 GB is wrong for

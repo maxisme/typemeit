@@ -1,7 +1,7 @@
 import Foundation
 
 let args = CommandLine.arguments
-guard args.count >= 3 else { print("usage: bench <repo-root> apple | <model.gguf> ..."); exit(64) }
+guard args.count >= 3 else { print("usage: bench <repo-root> <model.gguf> ..."); exit(64) }
 let root = URL(fileURLWithPath: args[1])
 let outDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 let cases = try Cases.load(repoRoot: root)
@@ -42,18 +42,10 @@ func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, Str
 
 let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
 for arg in args[2...] {
-    let report: Report
-    if arg == "apple" {
-        print("== Apple Intelligence")
-        let e = AppleEngine()
-        report = try await bench(name: "Apple Intelligence", fileGB: nil, loadSeconds: 0) { try await e.run(system: $0, user: $1) }
-    } else {
-        print("== \(URL(fileURLWithPath: arg).lastPathComponent)")
-        let e = try LlamaEngine(path: arg)
-        let size = (try? FileManager.default.attributesOfItem(atPath: arg)[.size] as? Int).map { (Double($0) / 1e7).rounded() / 100 }
-        report = try await bench(name: URL(fileURLWithPath: arg).lastPathComponent, fileGB: size, loadSeconds: e.loadSeconds) { try e.run(system: $0, user: $1) }
-    }
-    let name = report.summary.engine.replacingOccurrences(of: " ", with: "-")
-    try encoder.encode(report).write(to: outDir.appendingPathComponent("result-\(name).json"))
+    print("== \(URL(fileURLWithPath: arg).lastPathComponent)")
+    let e = try LlamaEngine(path: arg)
+    let size = (try? FileManager.default.attributesOfItem(atPath: arg)[.size] as? Int).map { (Double($0) / 1e7).rounded() / 100 }
+    let report = try await bench(name: URL(fileURLWithPath: arg).lastPathComponent, fileGB: size, loadSeconds: e.loadSeconds) { try e.run(system: $0, user: $1) }
+    try encoder.encode(report).write(to: outDir.appendingPathComponent("result-\(report.summary.engine).json"))
     print(String(decoding: try encoder.encode(report.summary), as: UTF8.self))
 }

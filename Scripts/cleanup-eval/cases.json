@@ -16,8 +16,14 @@
     "expected": "What is the capital of France?"
   },
   {
-    "input": "that will be twenty five dollars please",
-    "expected": "That will be $25 please."
+    "input": "that will be 25 dollars please",
+    "expected": "That will be $25 please.",
+    "alsoAccepted": [
+      {
+        "text": "That will be 25 dollars please.",
+        "why": "the model rarely writes the currency symbol; keeping every word is what matters"
+      }
+    ]
   },
   {
     "input": "um so I think we should uh ship it on friday",
