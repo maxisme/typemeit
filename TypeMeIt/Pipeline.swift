@@ -9,8 +9,7 @@ final class Pipeline {
     static let shared = Pipeline()
 
     enum Phase: Equatable { case idle, recording, transcribing, cleaningUp }
-    private(set) var phase: Phase = .idle
-
+    private(set) var phase: Phase = .idle { didSet { if phase == .idle { Updates.shared.remind() } } }
     let shortcuts = Shortcuts()
     let overlay = OverlayPanel()
     let capture = AudioCapture()
@@ -329,6 +328,9 @@ final class Pipeline {
         guard phase == .idle, overlay.model.state == .hidden else { return false }
         overlay.show(state)
         toastTask?.cancel()
+        // A ready update stays up until it is installed or put off; the
+        // buttons are the only way it leaves.
+        if case .updateReady = state { return true }
         toastTask = Task { [weak self] in
             var remaining = ToastTiming.timeout
             let step: Duration = .milliseconds(100)
@@ -346,6 +348,7 @@ final class Pipeline {
 
     private func keepLearned() {
         toastTask?.cancel()
+        if case .updateReady(let version) = overlay.model.state { Updates.shared.putOff(version) }
         overlay.hide()
     }
 
