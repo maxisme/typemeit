@@ -115,7 +115,7 @@ struct MenuContent: View {
         default:
             EmptyView()
         }
-        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(AttributedString("Open ") + MenuContent.bold("type me it")) }
+        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text("Open type me it") }
             .keyboardShortcut(",", modifiers: .command)
         if let version = appState.updateReady {
             Button("Install Update \(version)") { Updates.shared.install() }
@@ -153,15 +153,8 @@ struct MenuContent: View {
         Button("Quit type me it") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
     }
 
-    /// Bold through an attributed string: the menu turns a font modifier
+    /// Italic through an attributed string: the menu turns a font modifier
     /// into nothing, but carries an attributed title across.
-    static func bold(_ text: String) -> AttributedString {
-        var title = AttributedString(text)
-        title.font = .body.bold()
-        title.inlinePresentationIntent = .stronglyEmphasized
-        return title
-    }
-
     static func italic(_ text: String) -> AttributedString {
         var title = AttributedString(text)
         title.font = .body.italic()
