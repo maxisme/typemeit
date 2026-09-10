@@ -459,9 +459,8 @@ struct IntelligenceTab: View {
     /// Screen Recording is granted in System Settings too; the poll above re-reads it.
     @State private var screenGranted = CGPreflightScreenCaptureAccess()
 
-    private var screenSubtitle: String {
-        if settings.screenContextEnabled, !screenGranted { return "needs screen recording permissions" }
-        return "spells names the way the window you dictate into does · needs screen recording"
+    private var screenSubtitle: String? {
+        settings.screenContextEnabled && !screenGranted ? "needs screen recording permissions" : nil
     }
 
     /// Why clean-up cannot run right now, or nil when it can.
