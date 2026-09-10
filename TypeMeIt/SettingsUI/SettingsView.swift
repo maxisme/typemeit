@@ -123,6 +123,11 @@ private struct PageHeader: View {
 
 /// The design system's button: mono label, ink outline, inverts when primary,
 /// loses its outline when quiet. Disabled drops to ink-3 on a rule border.
+///
+/// The pointer states are the ones `web/styles/app.css` gives `.btn-*`: an
+/// outlined button takes an ink-a04 wash and a primary one eases off its slab
+/// to ink-a88, and both go a step further while held. A disabled button
+/// answers neither.
 struct InkButtonStyle: ButtonStyle {
     var primary = false
     var quiet = false
@@ -135,6 +140,8 @@ struct InkButtonStyle: ButtonStyle {
         let primary: Bool
         let quiet: Bool
         @Environment(\.isEnabled) private var enabled
+        @State private var hovering = false
+        private var hot: Bool { hovering && enabled }
 
         var body: some View {
             configuration.label
@@ -142,25 +149,86 @@ struct InkButtonStyle: ButtonStyle {
                 .foregroundStyle(foreground)
                 .padding(.horizontal, 10)
                 .frame(height: 26)
-                .background(background)
+                .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).fill(background))
                 .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(border, lineWidth: DesignTokens.hairline))
-                .opacity(configuration.isPressed ? 0.6 : 1)
+                .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm))
+                .onHover { hovering = $0 }
+                .animation(.easeOut(duration: DesignTokens.Duration.n1), value: hot)
         }
 
         private var foreground: Color {
             if !enabled { return DesignTokens.Colors.ink3 }
             if primary { return DesignTokens.Colors.onSlab }
-            return quiet ? DesignTokens.Colors.ink2 : DesignTokens.Colors.ink
+            if quiet { return hot ? DesignTokens.Colors.ink : DesignTokens.Colors.ink2 }
+            return DesignTokens.Colors.ink
         }
 
         private var background: Color {
-            guard primary else { return .clear }
-            return enabled ? DesignTokens.Colors.slab : DesignTokens.Colors.inkA12
+            if primary {
+                guard enabled else { return DesignTokens.Colors.inkA12 }
+                if configuration.isPressed { return DesignTokens.Colors.inkA64 }
+                return hot ? DesignTokens.Colors.inkA88 : DesignTokens.Colors.slab
+            }
+            guard enabled else { return .clear }
+            if configuration.isPressed { return DesignTokens.Colors.inkA08 }
+            return hot ? DesignTokens.Colors.inkA04 : .clear
         }
 
         private var border: Color {
             if primary || quiet { return .clear }
             return enabled ? DesignTokens.Colors.ink : DesignTokens.Colors.rule
+        }
+    }
+}
+
+/// The design system's plain button: no outline and no fill of its own, an
+/// ink-a04 wash and full-strength ink under the pointer, a step darker while
+/// held. It is what `.btn-quiet` is on the web, and it is the style for every
+/// button that draws its own label — the icon buttons, the sidebar tabs, the
+/// crosses that dismiss things.
+struct QuietButtonStyle: ButtonStyle {
+    /// A square target for icon buttons, so a 10pt glyph still gets something
+    /// worth hovering. Nil leaves the label at the size it drew itself.
+    var side: CGFloat?
+    var radius: CGFloat = DesignTokens.Radius.sm
+    /// A selected button is inverted outright and stops answering the pointer,
+    /// being already the thing a click would ask for.
+    var selected = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        QuietButtonLabel(configuration: configuration, side: side, radius: radius, selected: selected)
+    }
+
+    private struct QuietButtonLabel: View {
+        let configuration: Configuration
+        let side: CGFloat?
+        let radius: CGFloat
+        let selected: Bool
+        @Environment(\.isEnabled) private var enabled
+        @State private var hovering = false
+        private var hot: Bool { hovering && enabled && !selected }
+
+        var body: some View {
+            configuration.label
+                .foregroundStyle(foreground)
+                .frame(width: side, height: side)
+                .background(RoundedRectangle(cornerRadius: radius).fill(background))
+                .contentShape(RoundedRectangle(cornerRadius: radius))
+                .onHover { hovering = $0 }
+                .animation(.easeOut(duration: DesignTokens.Duration.n1), value: hot)
+        }
+
+        private var foreground: Color {
+            if selected { return DesignTokens.Colors.onSlab }
+            if !enabled { return DesignTokens.Colors.ink3 }
+            return hot ? DesignTokens.Colors.ink : DesignTokens.Colors.ink2
+        }
+
+        private var background: Color {
+            if selected { return DesignTokens.Colors.slab }
+            guard enabled else { return .clear }
+            if configuration.isPressed { return DesignTokens.Colors.inkA08 }
+            return hot ? DesignTokens.Colors.inkA04 : .clear
         }
     }
 }
@@ -438,7 +506,9 @@ struct CleanupTab: View {
                                             settings.removeCustomWord(word)
                                         } label: {
                                             Image("akar-cross").resizable().frame(width: 8, height: 8)
-                                        }.buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
+                                        }
+                                        .buttonStyle(QuietButtonStyle(side: 16, radius: DesignTokens.Radius.full))
+                                        .help("forget \(word)")
                                     }
                                     .padding(.leading, learned == nil ? 9 : 7).padding(.trailing, 6)
                                     .frame(height: 22)
@@ -524,7 +594,7 @@ struct CleanupTab: View {
                     } label: {
                         Image(on ? "akar-stop" : "akar-play").resizable().frame(width: 11, height: 11)
                     }
-                    .buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
+                    .buttonStyle(QuietButtonStyle(side: 20))
                     .help(on ? "stop" : "play the audio")
                 }
             }
@@ -542,6 +612,7 @@ struct CleanupTab: View {
 /// own smoke; the chosen one is drawn larger.
 struct CloudColorPalette: View {
     @Binding var selection: CloudColor
+    @State private var hovered: CloudColor?
 
     /// The cell each puff sits in, and the larger square it is drawn in, so
     /// the cloud fills the cell rather than resting a quarter of the way
@@ -553,15 +624,19 @@ struct CloudColorPalette: View {
         HStack(spacing: 0) {
             ForEach(Array(CloudColor.allCases.enumerated()), id: \.element) { i, c in
                 let on = c == selection
+                // Chosen is 1.5; the pointer takes an unchosen puff part of
+                // the way there, so the row answers before it is clicked.
+                let scale = on ? 1.5 : (hovered == c ? 1.25 : 1.0)
                 Button { selection = c } label: {
                     PuffView(level: 0, tint: Color(nsColor: c.color), timeOffset: Double(i) * 7.3)
                         .frame(width: CloudColorPalette.drawn, height: CloudColorPalette.drawn)
                         .frame(width: CloudColorPalette.side, height: CloudColorPalette.side)
-                        .scaleEffect(on ? 1.5 : 1)
-                        .animation(.easeOut(duration: 0.18), value: on)
+                        .scaleEffect(scale)
+                        .animation(.easeOut(duration: 0.18), value: scale)
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .onHover { hovered = $0 ? c : (hovered == c ? nil : hovered) }
                 .help(c.label)
                 .accessibilityLabel(c.label)
                 .accessibilityAddTraits(on ? .isSelected : [])
@@ -578,6 +653,7 @@ struct ShortcutRecorder: View {
     @Binding var combo: KeyCombo?
     @State private var recording = false
     @State private var monitor: Any?
+    @State private var hovering = false
 
     var body: some View {
         HStack(spacing: 6) {
@@ -591,18 +667,23 @@ struct ShortcutRecorder: View {
                 } else if let combo {
                     HStack(spacing: 4) { ForEach(combo.caps, id: \.self) { Keycap($0) } }
                 } else {
-                    Text("set shortcut").font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+                    // An empty outline is easy to read as furniture, so the
+                    // pointer brings it up to a real edge and full ink.
+                    Text("set shortcut").font(.system(size: 12).monospaced())
+                        .foregroundStyle(hovering ? DesignTokens.Colors.ink : DesignTokens.Colors.ink2)
                         .frame(height: 22).padding(.horizontal, 8)
-                        .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(DesignTokens.Colors.inkA20, lineWidth: 0.5))
+                        .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(hovering ? DesignTokens.Colors.ink : DesignTokens.Colors.inkA20, lineWidth: 0.5))
                 }
             }
             .buttonStyle(.plain)
+            .onHover { hovering = $0 }
+            .animation(.easeOut(duration: DesignTokens.Duration.n1), value: hovering)
             .help(recording ? "esc to cancel, ⌫ to clear" : "click, then press the keys")
             if combo != nil, !recording {
                 Button { combo = nil } label: {
                     Image("akar-cross").resizable().frame(width: 8, height: 8)
                 }
-                .buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
+                .buttonStyle(QuietButtonStyle(side: 18, radius: DesignTokens.Radius.full))
                 .help("clear")
                 .accessibilityLabel("clear shortcut")
             }

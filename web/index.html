@@ -131,11 +131,16 @@ document.getElementById("download").addEventListener("mousedown", (ev) => ev.pre
 // do nothing until the page is loaded again.
 // Armed is read by hoverAmount below: while the button waits for its second
 // click the cloud holds the green it takes under the pointer, so the page
-// looks as ready as it is even after the mouse has wandered off.
+// looks as ready as it is even after the mouse has wandered off. The red is
+// kept for the click that actually downloads, so the two clicks do not look
+// alike.
 let armed = false;
+// Once the DMG is on its way the puff stops answering the pointer at all, so
+// the red it flushes on that last click is not tinted green by a mouse still
+// sitting over the cloud.
+let downloaded = false;
 {
   const hint = document.getElementById("hint");
-  let downloaded = false;
   document.getElementById("download").addEventListener("click", () => {
     if (downloaded) return;
     if (!isMac()) {
@@ -151,9 +156,10 @@ let armed = false;
     }
     downloaded = true;
     // Nothing is waiting on a click any more, so the green fades out with the
-    // note: the browser's own download shows itself, and the puff is left
-    // alone again.
+    // note and the puff flushes red instead: the browser's own download shows
+    // itself, and the puff is left alone again.
     armed = false;
+    blush = performance.now();
     hint.textContent = "";
     location.href = DMG;
   });
@@ -272,19 +278,19 @@ addEventListener("pointermove", (ev) => {
 });
 addEventListener("pointerdown", (ev) => {
   pointer.pressed = performance.now();
-  // A click on the puff itself flushes it red; a click on empty page toggles
-  // the inversion. The links at the bottom do neither.
+  // A click on the puff itself sends lightning through it; a click on empty
+  // page toggles the inversion. The links at the bottom do neither.
   const d = Math.hypot(ev.clientX - innerWidth / 2, ev.clientY - innerHeight / 2);
-  if (d < HOVER_RADIUS) { blush = performance.now(); strike = (performance.now() - start) / 1000; }
+  if (d < HOVER_RADIUS) { strike = (performance.now() - start) / 1000; }
   else if (ev.target === canvas || ev.target === document.body) inverted = !inverted;
 });
 
 // A click on the puff also sends lightning through it, in the shader's clock.
 let strike = -1;
 
-// A click on the puff flushes it red, easing back over BLUSH seconds. A click
-// on empty page toggles the inversion outright: white paper, black cloud,
-// with no fade. The smoke tint is the product of the two.
+// The click that downloads flushes the puff red, easing back over BLUSH
+// seconds. A click on empty page toggles the inversion outright: white paper,
+// black cloud, with no fade. The smoke tint is the product of the two.
 const BLUSH = 4.0;
 const BLUSH_TINT = [1.0, 0.25, 0.22];
 const DARK = { paper: "#0e0e0e", ink: "#f0f0f0", tint: [1.0, 1.0, 1.0] };
@@ -298,7 +304,8 @@ let shownInverted = null;
 // lingers. Hover is a distance test on the pointer against the same circle
 // as the #download button, so the green and the hand agree. Touch devices
 // never hover, and neither does a page the mouse has not moved over yet — but
-// an armed button holds the green either way until its second click.
+// an armed button holds the green either way until its second click, and a
+// spent one holds none.
 const HOVER_TINT = [0.45, 0.9, 0.5];
 const HOVER_RADIUS = 90;
 const HOVER_IN = 0.6, HOVER_OUT = 0.45;
@@ -307,7 +314,7 @@ let hover = 0, hoverAt = null;
 
 function hoverAmount(nowMs) {
   const d = Math.hypot(pointer.x - innerWidth / 2, pointer.y - innerHeight / 2);
-  const hovering = armed || (canHover && pointer.seen && d < HOVER_RADIUS);
+  const hovering = !downloaded && (armed || (canHover && pointer.seen && d < HOVER_RADIUS));
   const dt = hoverAt === null ? 0 : Math.min((nowMs - hoverAt) / 1000, 0.1);
   hoverAt = nowMs;
   const target = hovering ? 1 : 0;
