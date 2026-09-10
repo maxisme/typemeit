@@ -31,7 +31,6 @@ final class AppState {
     static let shared = AppState()
     /// Who holds Secure Input, or nil when it is off.
     var secureInputOwner: SecureInput.Owner?
-    var secureInputOn: Bool { secureInputOwner != nil }
     /// A permission revoked in System Settings since launch, or nil.
     var missingPermission: MissingPermission?
     /// Why Apple Intelligence cannot run since launch, or nil while it can.
@@ -46,7 +45,7 @@ final class AppState {
     var settingsTab: SettingsTab?
 
     var menuBarImage: NSImage {
-        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, struck: secureInputOn || missingPermission != nil, updateReady: updateReady != nil)
+        MenuBarIconRenderer.puff(recording: recording, transcribing: transcribing, struck: missingPermission != nil, updateReady: updateReady != nil)
     }
 }
 
@@ -92,8 +91,7 @@ struct MenuContent: View {
                 Text("secure input is stuck on from the lock screen")
                 Text("type me it will not be functioning properly. lock and unlock the mac to clear it.")
             } else {
-                Text("secure input is on in \(owner.name)")
-                Text("fn works, but esc, space and the copy shortcut do not until \(owner.name) releases it.")
+                Text("secure input is on in \(owner.name) - shortcuts might not work as expected")
             }
             Divider()
         }
@@ -117,7 +115,7 @@ struct MenuContent: View {
         default:
             EmptyView()
         }
-        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text(AttributedString("Open ") + MenuContent.bold("type me it")) }
+        Button { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) } label: { Text("Open type me it") }
             .keyboardShortcut(",", modifiers: .command)
         if let version = appState.updateReady {
             Button("Install Update \(version)") { Updates.shared.install() }
@@ -133,7 +131,6 @@ struct MenuContent: View {
             Button("Cancel Recording") { Pipeline.shared.shortcuts.cancelFromOverlay() }
         }
         Divider()
-        Text("Last five transcripts")
         if recentTranscripts.isEmpty {
             Text("No transcripts yet").disabled(true)
         }
@@ -156,15 +153,8 @@ struct MenuContent: View {
         Button("Quit type me it") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
     }
 
-    /// Bold through an attributed string: the menu turns a font modifier
+    /// Italic through an attributed string: the menu turns a font modifier
     /// into nothing, but carries an attributed title across.
-    static func bold(_ text: String) -> AttributedString {
-        var title = AttributedString(text)
-        title.font = .body.bold()
-        title.inlinePresentationIntent = .stronglyEmphasized
-        return title
-    }
-
     static func italic(_ text: String) -> AttributedString {
         var title = AttributedString(text)
         title.font = .body.italic()
