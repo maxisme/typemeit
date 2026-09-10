@@ -108,7 +108,7 @@ struct HistoryTab: View {
                         if e.recordingFile != nil {
                             stages(e)
                         } else if expanded.contains(e.id) {
-                            stage("heard", e.transcript)
+                            stage("heard", heard: e.transcript, typed: e.displayText)
                         }
                     }
                 }
@@ -152,16 +152,16 @@ struct HistoryTab: View {
             }
             .buttonStyle(.plain)
             .help(open ? "hide what was heard" : "show what was heard before clean-up")
-            if open { stage(nil, e.transcript) }
+            if open { stage(nil, heard: e.transcript, typed: e.displayText) }
         }
         .background(Rectangle().fill(DesignTokens.Colors.inkA04))
         .animation(.easeOut(duration: 0.15), value: open)
     }
 
-    private func stage(_ label: String?, _ text: String) -> some View {
+    private func stage(_ label: String?, heard: String, typed: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             if let label { Text(label).font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink3) }
-            Text(text).font(.system(size: 12)).textSelection(.enabled)
+            TranscriptDiff(heard: heard, typed: typed)
         }
         .foregroundStyle(DesignTokens.Colors.ink2)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -225,5 +225,63 @@ struct HistoryTab: View {
         }
         .buttonStyle(.plain)
         .help(help)
+    }
+}
+
+/// What was heard against what was typed, a word at a time: words the
+/// clean-up dropped are struck through in red, the words it put in their
+/// place are green, and the rest reads as the transcript did.
+private struct TranscriptDiff: View {
+    let heard: String
+    let typed: String
+
+    private enum Change { case same, added, removed }
+
+    var body: some View {
+        text.font(.system(size: 12)).textSelection(.enabled)
+    }
+
+    private var text: Text {
+        var out = Text("")
+        for (i, run) in runs.enumerated() {
+            if i > 0 { out = out + Text(" ") }
+            switch run.change {
+            case .same: out = out + Text(run.words).foregroundColor(DesignTokens.Colors.ink2)
+            case .added: out = out + Text(run.words).foregroundColor(DesignTokens.Colors.diffAdd).fontWeight(.semibold)
+            case .removed: out = out + Text(run.words).foregroundColor(DesignTokens.Colors.diffRemove).strikethrough()
+            }
+        }
+        return out
+    }
+
+    /// The two texts merged back into one reading order. Removals are offsets
+    /// into what was heard and insertions offsets into what was typed, so the
+    /// two walks advance together and every word lands once.
+    private var runs: [(change: Change, words: String)] {
+        let old = heard.split(whereSeparator: \.isWhitespace).map(String.init)
+        let new = typed.split(whereSeparator: \.isWhitespace).map(String.init)
+        var removed: Set<Int> = []
+        var inserted: [Int: String] = [:]
+        for change in new.difference(from: old) {
+            switch change {
+            case .remove(let offset, _, _): removed.insert(offset)
+            case .insert(let offset, let word, _): inserted[offset] = word
+            }
+        }
+        var out: [(change: Change, words: String)] = []
+        var o = 0, n = 0
+        while o < old.count || n < new.count {
+            if let word = inserted[n] { append(&out, .added, word); n += 1; continue }
+            if o < old.count, removed.contains(o) { append(&out, .removed, old[o]); o += 1; continue }
+            if o < old.count, n < new.count { append(&out, .same, new[n]); o += 1; n += 1; continue }
+            break
+        }
+        return out
+    }
+
+    /// Consecutive words of the same kind are one run, so a whole phrase is
+    /// struck through in one piece rather than word by word.
+    private func append(_ out: inout [(change: Change, words: String)], _ change: Change, _ word: String) {
+        if out.last?.change == change { out[out.count - 1].words += " " + word } else { out.append((change, word)) }
     }
 }

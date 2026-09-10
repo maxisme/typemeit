@@ -15,6 +15,8 @@ struct InsightRow: Sendable {
     var postProcessed: String? = nil
     var postProcessRequested: Bool = false
     var durationMs: Int? = nil
+    var transcribeMs: Int? = nil
+    var postProcessMs: Int? = nil
     var dictionaryFixes: Int = 0
     var appId: String? = nil
     var appName: String? = nil
@@ -52,6 +54,13 @@ struct InsightsStats: Sendable, Equatable {
     var dictionaryFixes: Int
     /// Words changed by post-processing where it ran.
     var postProcessFixes: Int
+    /// Typical time the engine took over one dictation, in milliseconds.
+    var transcribeMedianMs: Int?
+    /// Time spent transcribing as a fraction of the audio's own length, over
+    /// the dictations that recorded both.
+    var transcribeRealtime: Double?
+    /// Typical time the clean-up took over one dictation, in milliseconds.
+    var cleanUpMedianMs: Int?
     var categories: [CategoryUsage]
     /// Dictations with no app recorded, which the categories exclude. Every
     /// entry saved before app attribution shipped counts here.
@@ -169,6 +178,10 @@ enum Insights {
         var timedDictations = 0
         var dictionaryFixes = 0
         var postProcessFixes = 0
+        var transcribeTimes: [Int] = []
+        var cleanUpTimes: [Int] = []
+        var transcribingMs = 0
+        var transcribedAudioMs = 0
         var unattributed = 0
         var byCategory: [UsageCategory: (dictations: Int, words: Int)] = [:]
         var byApp: [String: (name: String, dictations: Int, words: Int)] = [:]
@@ -195,6 +208,17 @@ enum Insights {
                 timedWords += words
                 timedMs += ms
                 timedDictations += 1
+            }
+
+            if let ms = row.transcribeMs, ms > 0 {
+                transcribeTimes.append(ms)
+                if let audio = row.durationMs, audio > 0 {
+                    transcribingMs += ms
+                    transcribedAudioMs += audio
+                }
+            }
+            if row.postProcessRequested, let ms = row.postProcessMs, ms > 0 {
+                cleanUpTimes.append(ms)
             }
 
             dictionaryFixes += max(row.dictionaryFixes, 0)
@@ -238,6 +262,14 @@ enum Insights {
             }
         }
 
+        var transcribeRealtime: Double? = nil
+        if transcribedAudioMs > 0 {
+            let factor = Double(transcribingMs) / Double(transcribedAudioMs)
+            if factor.isFinite {
+                transcribeRealtime = factor
+            }
+        }
+
         let categories = UsageCategory.allCases.map { category in
             let (dictations, words) = byCategory[category] ?? (0, 0)
             return CategoryUsage(category: category, dictations: dictations, words: words)
@@ -272,6 +304,9 @@ enum Insights {
             timedDictations: timedDictations,
             dictionaryFixes: dictionaryFixes,
             postProcessFixes: postProcessFixes,
+            transcribeMedianMs: median(transcribeTimes),
+            transcribeRealtime: transcribeRealtime,
+            cleanUpMedianMs: median(cleanUpTimes),
             categories: categories,
             unattributed: unattributed,
             totalApps: totalApps,
@@ -281,6 +316,15 @@ enum Insights {
             activeToday: activeToday,
             activity: activity
         )
+    }
+
+    /// The middle value, or the mean of the two middle ones. A median rather
+    /// than an average, so one slow dictation does not carry the figure.
+    static func median(_ values: [Int]) -> Int? {
+        guard !values.isEmpty else { return nil }
+        let sorted = values.sorted()
+        let middle = sorted.count / 2
+        return sorted.count.isMultiple(of: 2) ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle]
     }
 
     /// `(current, longest)` runs of consecutive active days. The current streak

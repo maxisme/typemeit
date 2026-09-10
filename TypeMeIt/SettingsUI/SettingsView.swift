@@ -2,7 +2,8 @@ import FoundationModels
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case insights, settings, cleanup, history
+    // The order the sidebar lists them in.
+    case insights, cleanup, history, settings
 
     var icon: String {
         switch self {
@@ -20,7 +21,7 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationSplitView {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 0) {
                 // Drawn as a template so it follows the appearance: the mark's
                 // own ink is fixed at the time it is rendered.
                 Image(nsImage: MenuBarIconRenderer.mark(side: 40))
@@ -28,38 +29,30 @@ struct SettingsView: View {
                     .resizable()
                     .foregroundStyle(DesignTokens.Colors.ink)
                     .frame(width: 40, height: 40)
-                    .padding(.leading, 6)
-                    .padding(.bottom, 8)
+                    .padding(.leading, 12)
+                    .padding(.bottom, 14)
                 ForEach(SettingsTab.allCases, id: \.self) { t in
-                    let on = t == tab
-                    Button { tab = t } label: {
-                        HStack(spacing: 8) {
-                            Image(t.icon).resizable().frame(width: 14, height: 14)
-                            Text(t.rawValue).font(DesignTokens.Fonts.ui.monospaced().weight(.semibold))
-                        }
-                            .foregroundStyle(on ? DesignTokens.Colors.onSlab : DesignTokens.Colors.ink2)
-                            .padding(.horizontal, 10)
-                            .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
-                            .background(Rectangle().fill(on ? DesignTokens.Colors.slab : Color.clear))
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                    SidebarItem(tab: t, selected: t == tab) { tab = t }
                 }
                 Spacer()
             }
-            .padding(10)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(DesignTokens.Colors.paper)
+            .background(DesignTokens.Colors.paperSunk)
             .toolbar(removing: .sidebarToggle)
-            .navigationSplitViewColumnWidth(min: 150, ideal: 170, max: 220)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 196, max: 240)
         } detail: {
-            Group {
-                switch tab ?? .insights {
-                case .settings: MainSettingsTab()
-                case .cleanup: CleanupTab()
-                case .history: HistoryTab()
-                case .insights: InsightsTab()
+            VStack(alignment: .leading, spacing: 0) {
+                PageHeader(title: (tab ?? .insights).rawValue)
+                Group {
+                    switch tab ?? .insights {
+                    case .settings: MainSettingsTab()
+                    case .cleanup: CleanupTab()
+                    case .history: HistoryTab()
+                    case .insights: InsightsTab()
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(DesignTokens.Colors.paper)
@@ -67,7 +60,7 @@ struct SettingsView: View {
             .toolbar(removing: .title)
         }
         .tint(DesignTokens.Colors.ink)
-        .frame(minWidth: 780, minHeight: 480)
+        .frame(minWidth: 780, minHeight: 700)
         .onAppear(perform: takeRequestedTab)
         .onChange(of: appState.settingsTab) { _, _ in takeRequestedTab() }
     }
@@ -76,6 +69,55 @@ struct SettingsView: View {
         guard let requested = appState.settingsTab else { return }
         tab = requested
         appState.settingsTab = nil
+    }
+}
+
+/// A sidebar choice. The slab runs the full width of the column so the
+/// selection reads as a band in the window rather than a floating button, and
+/// the pointer gets a light wash on the rest.
+private struct SidebarItem: View {
+    let tab: SettingsTab
+    let selected: Bool
+    let choose: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: choose) {
+            HStack(spacing: 10) {
+                Image(tab.icon).resizable().frame(width: 16, height: 16)
+                Text(tab.rawValue).font(.system(size: 14, weight: .semibold, design: .monospaced))
+            }
+            .foregroundStyle(selected ? DesignTokens.Colors.onSlab : DesignTokens.Colors.ink2)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+            .background(Rectangle().fill(fill))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+    }
+
+    private var fill: Color {
+        if selected { return DesignTokens.Colors.slab }
+        return hovering ? DesignTokens.Colors.inkA08 : .clear
+    }
+}
+
+/// The page's name, above the page's own scroll view, so content passes under
+/// a hairline instead of running out at the window's edge.
+private struct PageHeader: View {
+    let title: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.system(size: 20, weight: .semibold, design: .monospaced))
+                .foregroundStyle(DesignTokens.Colors.ink)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+            Rectangle().fill(DesignTokens.Colors.rule).frame(height: DesignTokens.hairline)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -146,6 +188,20 @@ struct RowRule: View {
     var body: some View { Rectangle().fill(DesignTokens.Colors.inkA20).frame(height: DesignTokens.hairline) }
 }
 
+extension SettingsRow {
+    /// Parses a subtitle as markdown and underlines link runs, so any link in
+    /// a subtitle carries the same underline the standalone `Link` rows do.
+    /// Plain strings render unchanged; a malformed markdown string falls back
+    /// to a plain AttributedString.
+    static func subtitleAttributed(_ s: String) -> AttributedString {
+        var attr = (try? AttributedString(markdown: s)) ?? AttributedString(s)
+        for run in attr.runs where run.link != nil {
+            attr[run.range].underlineStyle = .single
+        }
+        return attr
+    }
+}
+
 struct SettingsRow<Control: View>: View {
     var label: String
     var subtitle: String?
@@ -158,7 +214,7 @@ struct SettingsRow<Control: View>: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label).font(DesignTokens.Fonts.ui.monospaced())
                     if let subtitle {
-                        Text(subtitle).font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2).frame(maxWidth: 400, alignment: .leading)
+                        Text(SettingsRow.subtitleAttributed(subtitle)).font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2).tint(DesignTokens.Colors.ink).frame(maxWidth: 400, alignment: .leading)
                     }
                 }
                 Spacer()
@@ -280,7 +336,7 @@ struct MainSettingsTab: View {
                     }
                 }
                 SettingsGroup(title: "about") {
-                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
+                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "[parakeet 0.6b](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) · [apple intelligence](https://www.apple.com/apple-intelligence/)") {
                         updateStatus
                     }
                     SettingsRow(label: "website", last: true) {
@@ -324,6 +380,8 @@ struct CleanupTab: View {
     @State private var store = Store.shared
     @State private var newWord = ""
     @State private var availability = PostProcessor.availability
+    @State private var verifier = VerifyCustomWord.shared
+    @State private var player = RecordingPlayer.shared
     /// Apple Intelligence is switched in System Settings, not in the app, so
     /// it is re-read while the window is up.
     private let poll = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
@@ -392,8 +450,13 @@ struct CleanupTab: View {
                         }
                         TextField("add a word", text: $newWord)
                             .textFieldStyle(.roundedBorder)
-                            .onSubmit { settings.addCustomWord(newWord); newWord = "" }
+                            .onSubmit { addWordAndVerify() }
                         .padding(.horizontal, 12).padding(.vertical, 8)
+                        if verifier.state != .idle {
+                            RowRule()
+                            verifyPanel
+                                .padding(.horizontal, 12).padding(.vertical, 10)
+                        }
                     }
                 }
             }
@@ -401,6 +464,77 @@ struct CleanupTab: View {
         }
         .onAppear { availability = PostProcessor.availability }
         .onReceive(poll) { _ in availability = PostProcessor.availability }
+    }
+
+    private func addWordAndVerify() {
+        let w = newWord.trimmingCharacters(in: .whitespaces)
+        guard !w.isEmpty else { newWord = ""; return }
+        let existing = settings.customWords
+        settings.addCustomWord(w)
+        newWord = ""
+        // Only worth checking when the model can run. On other Macs the word
+        // is added silently.
+        if case .available = availability {
+            verifier.run(for: w, existingWords: existing, history: store.history)
+        }
+    }
+
+    @ViewBuilder
+    private var verifyPanel: some View {
+        switch verifier.state {
+        case .idle: EmptyView()
+        case .checking(let word, let scanned, let total):
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("checking recent dictations for '\(word)' · \(scanned)/\(total)")
+                    .font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2)
+                Spacer()
+                Button("stop") { verifier.clear() }.buttonStyle(InkButtonStyle(quiet: true))
+            }
+        case .done(let word, let matches, let scanned):
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image("akar-sparkles").resizable().frame(width: 11, height: 11).foregroundStyle(DesignTokens.Colors.ink2)
+                    Text(headline(for: word, matches: matches, scanned: scanned))
+                        .font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2)
+                    Spacer()
+                    Button("dismiss") { verifier.clear() }.buttonStyle(InkButtonStyle(quiet: true))
+                }
+                ForEach(matches) { match in verifyRow(match) }
+            }
+        }
+    }
+
+    private func headline(for word: String, matches: [VerifyCustomWord.Match], scanned: Int) -> String {
+        if matches.isEmpty { return "'\(word)' would not have changed the last \(scanned) dictations" }
+        return "'\(word)' would have caught \(matches.count) of the last \(scanned) dictations"
+    }
+
+    @ViewBuilder
+    private func verifyRow(_ match: VerifyCustomWord.Match) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Text(match.timestamp.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute()))
+                    .font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink3)
+                Spacer()
+                if match.recordingFile != nil, let entry = store.history.first(where: { $0.id == match.id }) {
+                    let on = player.playing == match.id
+                    Button {
+                        player.toggle(entry)
+                    } label: {
+                        Image(on ? "akar-stop" : "akar-play").resizable().frame(width: 11, height: 11)
+                    }
+                    .buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
+                    .help(on ? "stop" : "play the audio")
+                }
+            }
+            Text(match.before).font(.system(size: 12))
+                .foregroundStyle(DesignTokens.Colors.diffRemove).strikethrough()
+            Text(match.after).font(.system(size: 12))
+                .foregroundStyle(DesignTokens.Colors.diffAdd)
+        }
+        .padding(8)
+        .background(Rectangle().fill(DesignTokens.Colors.inkA04))
     }
 }
 

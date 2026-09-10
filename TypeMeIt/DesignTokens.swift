@@ -29,6 +29,8 @@ enum DesignTokens {
         static let inkA48 = dynamic(light: NSColor(srgbRed: 0.0392, green: 0.0392, blue: 0.0392, alpha: 0.48), dark: NSColor(srgbRed: 0.9804, green: 0.9804, blue: 0.9804, alpha: 0.52))
         static let inkA64 = dynamic(light: NSColor(srgbRed: 0.0392, green: 0.0392, blue: 0.0392, alpha: 0.64), dark: NSColor(srgbRed: 0.9804, green: 0.9804, blue: 0.9804, alpha: 0.68))
         static let inkA88 = dynamic(light: NSColor(srgbRed: 0.0392, green: 0.0392, blue: 0.0392, alpha: 0.88), dark: NSColor(srgbRed: 0.9804, green: 0.9804, blue: 0.9804, alpha: 0.90))
+        static let diffAdd = dynamic(light: NSColor(srgbRed: 0.1020, green: 0.4980, blue: 0.2157, alpha: 1), dark: NSColor(srgbRed: 0.2471, green: 0.7255, blue: 0.3137, alpha: 1))
+        static let diffRemove = dynamic(light: NSColor(srgbRed: 0.8118, green: 0.1333, blue: 0.1804, alpha: 1), dark: NSColor(srgbRed: 0.9725, green: 0.3176, blue: 0.2863, alpha: 1))
     }
 
     enum Fonts {

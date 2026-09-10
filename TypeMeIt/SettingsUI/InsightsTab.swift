@@ -8,6 +8,7 @@ struct InsightsTab: View {
         Insights.compute(store.history.map {
             InsightRow(timestamp: $0.timestamp, transcript: $0.transcript, postProcessed: $0.postProcessed,
                        postProcessRequested: $0.postProcessRequested, durationMs: $0.durationMs,
+                       transcribeMs: $0.transcribeMs, postProcessMs: $0.postProcessMs,
                        dictionaryFixes: $0.dictionaryFixes, appId: $0.appId, appName: $0.appName, windowTitle: $0.windowTitle)
         })
     }
@@ -30,8 +31,7 @@ struct InsightsTab: View {
                 HStack(alignment: .top, spacing: 12) {
                     statCard("words dictated", s.totalWords.formatted(), monthCaption(s))
                     wpmCard(s)
-                    statCard("fixes", (s.dictionaryFixes + s.postProcessFixes).formatted(),
-                             "\(s.dictionaryFixes.formatted()) words · \(s.postProcessFixes.formatted()) clean-ups")
+                    statCard("fixes", (s.dictionaryFixes + s.postProcessFixes).formatted(), fixCaption(s))
                 }
                 .fixedSize(horizontal: false, vertical: true)
                 HStack(alignment: .top, spacing: 12) {
@@ -45,6 +45,7 @@ struct InsightsTab: View {
                 SettingsGroup(title: s.currentStreak > 0 ? "\(s.currentStreak) day streak · longest \(s.longestStreak)" : "streak · longest \(s.longestStreak)") {
                     calendar(s)
                 }
+                SettingsGroup(title: "speed") { speed(s) }
             }
             .padding(20)
         }
@@ -60,6 +61,42 @@ struct InsightsTab: View {
             delta = "\(s.wordsThisMonth.formatted()) this month"
         }
         return "\(delta) · \(s.totalDictations) dictations"
+    }
+
+    /// The fixes as a share of everything dictated, then the two kinds of fix
+    /// they are made of.
+    private func fixCaption(_ s: InsightsStats) -> String {
+        let breakdown = "\(s.dictionaryFixes.formatted()) words · \(s.postProcessFixes.formatted()) clean-ups"
+        guard s.totalWords > 0 else { return breakdown }
+        let share = Double(s.dictionaryFixes + s.postProcessFixes) / Double(s.totalWords) * 100
+        return String(format: "%.1f%% of words · ", share) + breakdown
+    }
+
+    /// How long each half of the pipeline takes over one dictation. Medians,
+    /// so a single slow run does not carry the figure.
+    private func speed(_ s: InsightsStats) -> some View {
+        VStack(spacing: 0) {
+            speedRow("parakeet", s.transcribeMedianMs.map(InsightsTab.duration),
+                     detail: s.transcribeRealtime.map { String(format: "%.2f× the length of the audio", $0) })
+            RowRule()
+            speedRow("apple intelligence", s.cleanUpMedianMs.map(InsightsTab.duration),
+                     detail: s.cleanUpMedianMs == nil ? "no clean-ups yet" : nil, last: true)
+        }
+    }
+
+    private func speedRow(_ label: String, _ value: String?, detail: String? = nil, last: Bool = false) -> some View {
+        HStack(spacing: 12) {
+            Text(label).font(.system(size: 12))
+            Spacer()
+            if let detail { Text(detail).font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink3) }
+            Text(value ?? "–").font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+    }
+
+    /// Milliseconds under a second, seconds above it.
+    private static func duration(_ ms: Int) -> String {
+        ms < 1000 ? "\(ms) ms" : String(format: "%.1f s", Double(ms) / 1000)
     }
 
     private func statCard(_ label: String, _ value: String, _ caption: String) -> some View {

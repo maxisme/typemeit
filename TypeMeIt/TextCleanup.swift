@@ -411,6 +411,23 @@ enum TextCleanup {
     ///
     /// Kept separate from `removeFillerWords` so disabling filler deletion
     /// does not also disable the repeated-word and whitespace cleanup.
+    /// Drops a full stop at the very end of a finished dictation. A
+    /// dictation is not a sentence in isolation; the user rarely wants their
+    /// typed text ending in one, and the pill's copy prompt already trails
+    /// with a period the app would then double up on. Question marks stay,
+    /// so do exclamation marks and ellipses.
+    static func stripTrailingFullStop(_ text: String) -> String {
+        let trimmed = text.reversed().drop(while: { $0 == " " || $0 == "\t" || $0 == "\n" })
+        guard let last = trimmed.first, last == "." else { return text }
+        // Ellipsis, or any other run of dots, means something. Leave it.
+        if trimmed.dropFirst().first == "." { return text }
+        // Drop the last "." and any whitespace after it.
+        var scalars = Array(text.unicodeScalars)
+        while let tail = scalars.last, tail == " " || tail == "\t" || tail == "\n" { scalars.removeLast() }
+        if scalars.last == "." { scalars.removeLast() }
+        return String(String.UnicodeScalarView(scalars))
+    }
+
     static func normalize(_ text: String) -> String {
         var normalized = collapseStutters(removeFalseStarts(text))
 

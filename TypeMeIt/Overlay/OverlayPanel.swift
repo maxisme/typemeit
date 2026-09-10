@@ -14,6 +14,10 @@ final class OverlayPanel {
     static let size = NSSize(width: 460, height: 260)
     /// How far the cloud's centre sits in from the screen edge at a side.
     static let sideInset: CGFloat = 56
+    /// The same at the top, where the cloud sits against the menu bar. The
+    /// panel is above the menu bar's level, so the cloud's upper edge runs
+    /// into it rather than stopping under it.
+    static let topInset: CGFloat = 20
 
     init() {
         panel = NSPanel(contentRect: NSRect(origin: .zero, size: OverlayPanel.size),
@@ -54,7 +58,7 @@ final class OverlayPanel {
         let position = model.presentation == .cloud ? Settings.shared.cloudPosition : .centre
         let origin: NSPoint = switch position {
         case .left: NSPoint(x: visible.minX + OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
-        case .top: NSPoint(x: visible.midX - half, y: visible.maxY - OverlayPanel.sideInset - CloudView.restHeight)
+        case .top: NSPoint(x: visible.midX - half, y: visible.maxY - OverlayPanel.topInset - CloudView.restHeight)
         case .centre: NSPoint(x: visible.midX - half, y: visible.minY)
         case .right: NSPoint(x: visible.maxX - OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
         }
