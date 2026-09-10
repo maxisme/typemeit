@@ -14,14 +14,17 @@ struct Case: Decodable {
     /// The cleaned text wanted; `alsoAccepted` lists other outputs that count, each with why.
     let expected: String
     let alsoAccepted: [Variant]
+    /// The user's custom words, as they would be at the time; empty when the case has none.
+    let customWords: [String]
     var accepted: [String] { [expected] + alsoAccepted.map(\.text) }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         input = try c.decode(String.self, forKey: .input)
         expected = try c.decode(String.self, forKey: .expected)
         alsoAccepted = try c.decodeIfPresent([Variant].self, forKey: .alsoAccepted) ?? []
+        customWords = try c.decodeIfPresent([String].self, forKey: .customWords) ?? []
     }
-    enum CodingKeys: CodingKey { case input, expected, alsoAccepted }
+    enum CodingKeys: CodingKey { case input, expected, alsoAccepted, customWords }
 }
 
 @main struct Eval {
@@ -35,8 +38,8 @@ struct Case: Decodable {
         guard case .available = PostProcessor.availability else { print("Apple Intelligence is not available on this Mac"); exit(2) }
         var failed = 0
         for c in cases {
-            let local = TextCleanup.run(c.input, customWords: [], aliases: []).text
-            let out = await PostProcessor.shared.run(local, customWords: []) ?? local
+            let local = TextCleanup.run(c.input, customWords: c.customWords, aliases: []).text
+            let out = await PostProcessor.shared.run(local, customWords: c.customWords) ?? local
             let ok = c.accepted.contains { normalise(out) == normalise($0) }
             if !ok { failed += 1 }
             print("\(ok ? "PASS" : "FAIL")  \(c.input)")
