@@ -69,6 +69,9 @@ jobs:
           retention-days: 7
           compression-level: 0 # already quantised; zip only wastes runner time
 
+      # --latest=false: typeme.it/download resolves /releases/latest/download/
+      # TypeMeIt.dmg, so a model release taking "Latest" breaks every download
+      # until an app release follows.
       - name: Publish it
         if: inputs.publish
         env:
@@ -76,6 +79,7 @@ jobs:
         run: |
           sha="$(sha256sum "${{ steps.built.outputs.gguf }}" | cut -d' ' -f1)"
           gh release create "${{ steps.built.outputs.tag }}" \
+            --latest=false \
             --title "$(basename "${{ inputs.model }}") ${{ inputs.quant }}" \
             --notes "${{ inputs.model }} converted from NVIDIA's checkpoint and quantised to ${{ inputs.quant }} by this workflow.
 
