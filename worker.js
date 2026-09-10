@@ -3,7 +3,7 @@
 // is TypeMeIt.dmg: /releases/latest/download/ only resolves a fixed name, and
 // GitHub replaces spaces in asset names with dots, so the name the visitor saves
 // has to be set here, in the Content-Disposition header.
-const DMG = "https://github.com/maxisme/typemeit/releases/latest/download/TypeMeIt.dmg";
+const DMG = "https://github.com/typemeit/typemeit/releases/latest/download/TypeMeIt.dmg";
 
 export default {
   async fetch(request, env) {
