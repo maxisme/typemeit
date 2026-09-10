@@ -4,8 +4,9 @@
 Two things can go stale, and each is checked against what the app actually
 pins rather than against a state file, so there is nothing to keep in sync:
 
-  1. The GGUF repo we download from has moved past the revision pinned in
-     ModelStore.swift -- a requantisation, or a rebuild against a newer base.
+  1. The GGUF we download has been rebuilt -- a requantisation, or a rebuild
+     against a newer base. Checked by hashing, not by revision: the repo's head
+     moves for README edits too, and those are not our problem.
   2. NVIDIA has published a parakeet model newer than the base model our GGUF
      was quantised from, which is how a whole new generation shows up.
 
@@ -27,10 +28,14 @@ import urllib.request
 HF_API = "https://huggingface.co/api"
 MODEL_STORE = os.path.join(os.path.dirname(__file__), "..", "TypeMeIt", "ModelStore.swift")
 
-# The one line that names both the repo and the exact revision we ship.
-PINNED = re.compile(
-    r"https://huggingface\.co/(?P<repo>[^/\s]+/[^/\s]+)/resolve/(?P<sha>[0-9a-f]{40})/"
+# What ModelStore.swift pins: the repo, and the file plus digest the app will
+# accept. The digest is the real baseline -- it is what the app checks after
+# downloading, so it is what "has the model changed" has to mean here.
+PINNED_REPO = re.compile(
+    r"https://huggingface\.co/(?P<repo>[^/\s]+/[^/\s]+)/resolve/(?P<revision>[0-9a-f]{40})/"
 )
+PINNED_FILE = re.compile(r'let fileName = "(?P<name>[^"]+)"')
+PINNED_SHA = re.compile(r'let sha256 = "(?P<sha256>[0-9a-f]{64})"')
 
 
 def get_json(url):
@@ -41,10 +46,14 @@ def get_json(url):
 
 def pinned_model():
     with open(MODEL_STORE, encoding="utf-8") as handle:
-        match = PINNED.search(handle.read())
-    if match is None:
-        sys.exit(f"no pinned huggingface revision found in {MODEL_STORE}")
-    return match.group("repo"), match.group("sha")
+        source = handle.read()
+    pins = {}
+    for pattern in (PINNED_REPO, PINNED_FILE, PINNED_SHA):
+        match = pattern.search(source)
+        if match is None:
+            sys.exit(f"{MODEL_STORE} no longer pins what this script reads")
+        pins.update(match.groupdict())
+    return pins
 
 
 def speaks_english(tags):
@@ -55,25 +64,41 @@ def speaks_english(tags):
 
 
 def check():
-    repo, pinned_sha = pinned_model()
-    info = get_json(f"{HF_API}/models/{urllib.parse.quote(repo)}")
+    pins = pinned_model()
+    repo, name, pinned_sha = pins["repo"], pins["name"], pins["sha256"]
+    info = get_json(f"{HF_API}/models/{urllib.parse.quote(repo)}?blobs=true")
     findings = []
 
-    head = info.get("sha")
-    if head and head != pinned_sha:
+    # `lfs.sha256` is the digest of the file itself, so this compares the bytes
+    # the app would download against the bytes it is willing to accept.
+    sibling = next((s for s in info.get("siblings", []) if s.get("rfilename") == name), None)
+    if sibling is None:
         findings.append(
             {
-                "id": f"revision:{repo}:{head}",
-                "headline": f"{repo} has a new revision",
-                "detail": (
-                    f"Pinned `{pinned_sha[:12]}`, now `{head[:12]}` "
-                    f"(changed {info.get('lastModified', 'unknown')}).\n"
-                    "ModelStore.swift needs the new revision in both URLs, plus a fresh "
-                    "`sha256` and `expectedBytes` for the file."
-                ),
-                "link": f"https://huggingface.co/{repo}/commits/main",
+                "id": f"missing:{repo}:{name}",
+                "headline": f"{name} is gone from {repo}",
+                "detail": "The app downloads this file by name. Nothing will install until "
+                "ModelStore.swift points somewhere that has it.",
+                "link": f"https://huggingface.co/{repo}/tree/main",
             }
         )
+    else:
+        current = (sibling.get("lfs") or {}).get("sha256")
+        if current and current != pinned_sha:
+            findings.append(
+                {
+                    "id": f"rebuilt:{repo}:{current}",
+                    "headline": f"{name} has been rebuilt",
+                    "detail": (
+                        f"Pinned `{pinned_sha[:16]}`, now `{current[:16]}` "
+                        f"({sibling.get('size', '?')} bytes, changed "
+                        f"{info.get('lastModified', 'unknown')}).\n"
+                        "ModelStore.swift needs the new revision in the URL, plus this "
+                        "`sha256` and `expectedBytes`."
+                    ),
+                    "link": f"https://huggingface.co/{repo}/commits/main",
+                }
+            )
 
     # `base_model` is what the GGUF was quantised from; anything NVIDIA published
     # after it is a candidate to move to.
@@ -149,13 +174,14 @@ def main():
         sys.exit(f"huggingface lookup failed: {error}")
 
     if args.force and not findings:
-        repo, sha = pinned_model()
+        pins = pinned_model()
         findings = [
             {
-                "id": f"test:{repo}:{sha}",
+                "id": f"test:{pins['repo']}:{pins['sha256']}",
                 "headline": "parakeet watch test",
-                "detail": f"Nothing has changed. {repo} is still pinned at `{sha[:12]}`.",
-                "link": f"https://huggingface.co/{repo}",
+                "detail": f"Nothing has changed. {pins['name']} still hashes to "
+                f"`{pins['sha256'][:16]}`.",
+                "link": f"https://huggingface.co/{pins['repo']}",
             }
         ]
 
