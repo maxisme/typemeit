@@ -133,7 +133,6 @@ struct MenuContent: View {
             Button("Cancel Recording") { Pipeline.shared.shortcuts.cancelFromOverlay() }
         }
         Divider()
-        Text("Last five transcripts")
         if recentTranscripts.isEmpty {
             Text("No transcripts yet").disabled(true)
         }

@@ -14,9 +14,9 @@ final class OverlayPanel {
     static let size = NSSize(width: 460, height: 260)
     /// How far the cloud's centre sits in from the screen edge at a side.
     static let sideInset: CGFloat = 56
-    /// The same at the top, where the cloud sits against the menu bar. The
-    /// panel is above the menu bar's level, so the cloud's upper edge runs
-    /// into it rather than stopping under it.
+    /// The same at the top, measured from the screen's own top edge rather
+    /// than the visible frame's, so the cloud sits over the menu bar rather
+    /// than under it. The panel is above the menu bar's level.
     static let topInset: CGFloat = 20
 
     init() {
@@ -58,7 +58,7 @@ final class OverlayPanel {
         let position = model.presentation == .cloud ? Settings.shared.cloudPosition : .centre
         let origin: NSPoint = switch position {
         case .left: NSPoint(x: visible.minX + OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
-        case .top: NSPoint(x: visible.midX - half, y: visible.maxY - OverlayPanel.topInset - CloudView.restHeight)
+        case .top: NSPoint(x: visible.midX - half, y: screen.frame.maxY - OverlayPanel.topInset - CloudView.restHeight)
         case .centre: NSPoint(x: visible.midX - half, y: visible.minY)
         case .right: NSPoint(x: visible.maxX - OverlayPanel.sideInset - half, y: visible.midY - CloudView.restHeight)
         }
@@ -78,9 +78,10 @@ final class OverlayPanel {
         model.state = state
         resample()
         model.copied = false
-        // The cloud has nothing to click until it is pinned, so let clicks
-        // through to whatever is behind it until then.
-        panel.ignoresMouseEvents = model.presentation == .cloud && state != .pinned
+        // A click on the cloud pins it while Fn is held and finishes it once
+        // pinned. Before the microphone has opened there is nothing to
+        // click, so clicks go through to whatever is behind it.
+        panel.ignoresMouseEvents = model.presentation == .cloud && state != .recording && state != .pinned
         if !panel.isVisible || panel.alphaValue == 0 || placedFor != model.presentation { reposition() }
         panel.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { ctx in

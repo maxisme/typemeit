@@ -5,7 +5,7 @@ import SwiftUI
 /// bottom of the screen and swells with each syllable. It stays, small,
 /// still and thickened, with lightning flickering behind it once a second,
 /// while the dictation is transcribed and cleaned up, then fades.
-/// While pinned, a click on it finishes.
+/// A click on it pins it while Fn is held, and finishes it once pinned.
 struct CloudView: View {
     @Bindable var model: OverlayModel
     @Environment(\.colorScheme) private var scheme
@@ -31,11 +31,17 @@ struct CloudView: View {
         .animation(.easeInOut(duration: 0.2), value: model.backdrop)
         .frame(width: CloudView.size, height: CloudView.size)
         .contentShape(Circle().scale(0.45))
-        .onTapGesture { if model.state == .pinned { model.onStop?() } }
-        .onHover { inside in
-            if inside, model.state == .pinned { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+        .onTapGesture {
+            switch model.state {
+            case .recording: model.onPin?()
+            case .pinned: model.onStop?()
+            default: break
+            }
         }
-        .help(model.state == .pinned ? "Finish" : "")
+        .onHover { inside in
+            if inside, clickable { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+        }
+        .help(model.state == .pinned ? "Finish" : model.state == .recording ? "Pin" : "")
         .scaleEffect(grown ? 1 : CloudView.arrivalScale)
         .animation(.spring(duration: PuffView.arrivalDuration, bounce: 0.15), value: grown)
         .offset(y: CloudView.size / 2 - CloudView.restHeight)
@@ -49,6 +55,8 @@ struct CloudView: View {
             }
         }
     }
+
+    private var clickable: Bool { model.state == .recording || model.state == .pinned }
 
     private var isProcessing: Bool {
         switch model.state {
