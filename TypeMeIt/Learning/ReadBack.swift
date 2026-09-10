@@ -2,7 +2,6 @@ import Foundation
 
 /// Watches the field TypeMeIt pasted into and learns from the user's corrections
 /// there. One session at a time; a new recording ends the previous session.
-/// Port of the session in learning/readback.rs.
 @MainActor
 final class ReadBack {
     static let shared = ReadBack()

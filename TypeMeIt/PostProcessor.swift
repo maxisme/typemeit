@@ -122,7 +122,7 @@ actor PostProcessor {
         return !outWords.contains { $0 == first || ($0.first == first.first && TextCleanup.levenshtein($0, first) <= 2) }
     }
 
-    // MARK: Rewrite guard (port of looks_like_rewrite)
+    // MARK: Rewrite guard
 
     static func wordSet(_ s: String) -> Set<String> {
         Set(s.lowercased().split { !$0.isLetter && !$0.isNumber }.map(String.init))
