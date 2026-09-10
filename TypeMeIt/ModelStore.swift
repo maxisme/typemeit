@@ -11,8 +11,7 @@ final class ModelStore: NSObject, URLSessionDownloadDelegate {
     nonisolated static let fileName = "parakeet-unified-en-0.6b-Q8_0.gguf"
     nonisolated static let expectedBytes: Int64 = 731_357_568
     nonisolated static let sha256 = "4b50b6dd862bf6e346929aaf4f5eaacec003bfa3f56462d6c874b41ef2f38795"
-    nonisolated static let primaryURL = URL(string: "https://huggingface.co/handy-computer/parakeet-unified-en-0.6b-gguf/resolve/7e948f21b7bdbac698d3318db9d350f1096f3b6c/parakeet-unified-en-0.6b-Q8_0.gguf")!
-    nonisolated static let mirrorURL = URL(string: "https://blob.handy.computer/handy-computer/parakeet-unified-en-0.6b-gguf/7e948f21b7bdbac698d3318db9d350f1096f3b6c/parakeet-unified-en-0.6b-Q8_0.gguf")!
+    nonisolated static let downloadURL = URL(string: "https://github.com/typemeit/typemeit/releases/download/model-parakeet-unified-en-0.6b-q8_0/parakeet-unified-en-0.6b-Q8_0.gguf")!
 
     nonisolated static let modelsDirectory = Store.directory.appendingPathComponent("models", isDirectory: true)
     nonisolated static let modelURL = modelsDirectory.appendingPathComponent(fileName)
@@ -28,7 +27,6 @@ final class ModelStore: NSObject, URLSessionDownloadDelegate {
     private(set) var state: State
     private var task: URLSessionDownloadTask?
     private var resumeData: Data?
-    private var failures = 0
     @ObservationIgnored private lazy var session = URLSession(configuration: .default, delegate: self, delegateQueue: .main)
 
     private override init() {
@@ -50,8 +48,7 @@ final class ModelStore: NSObject, URLSessionDownloadDelegate {
             task = session.downloadTask(withResumeData: resumeData)
             self.resumeData = nil
         } else {
-            let url = failures >= 2 ? ModelStore.mirrorURL : ModelStore.primaryURL
-            task = session.downloadTask(with: url)
+            task = session.downloadTask(with: ModelStore.downloadURL)
         }
         task?.resume()
     }
@@ -113,7 +110,6 @@ final class ModelStore: NSObject, URLSessionDownloadDelegate {
     }
 
     private func fail(_ message: String) {
-        failures += 1
         task = nil
         state = .failed(message)
         Log.model.error("Model download failed: \(message)")

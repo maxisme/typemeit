@@ -82,6 +82,6 @@ ModelStore.swift wants:
     nonisolated static let expectedBytes: Int64 = $BYTES
     nonisolated static let sha256 = "$SHA"
 
-primaryURL and mirrorURL have to point at wherever this file gets hosted; the
-app downloads it at runtime and will not build it.
+downloadURL has to point at wherever this file gets hosted; the app downloads
+it at runtime and will not build it.
 EOF
