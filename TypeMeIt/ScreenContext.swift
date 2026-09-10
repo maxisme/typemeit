@@ -1,0 +1,164 @@
+// Reads the text on the user's screen while they dictate, so the
+// clean-up model knows the names and terms the speaker is probably looking
+// at. A grabbed frame of the frontmost window goes through Vision's text
+// recogniser; the lines it returns are boiled down to the words worth
+// telling the model about (names, jargon, identifiers) and the frame is
+// discarded. Needs Screen Recording, like `ScreenSampler`.
+
+import AppKit
+import ScreenCaptureKit
+import Vision
+
+enum ScreenContext {
+    /// How many terms the prompt is allowed to carry. The on-device model's
+    /// window is small and long lists dilute the transcript.
+    static let maxTerms = 40
+    static let minimumConfidence: Float = 0.5
+
+    /// Recognised text lines from the frontmost on-screen window of `pid`.
+    /// Empty when the grant is missing, the app has no window, or nothing
+    /// was read. Never throws: screen context is best effort.
+    static func captureLines(pid: pid_t) async -> [String] {
+        guard CGPreflightScreenCaptureAccess() else { return [] }
+        guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true) else { return [] }
+        // Windows come front to back; the first sizeable one owned by the app
+        // is the one the user is looking at. Tiny ones are tooltips and panels.
+        guard let window = content.windows.first(where: {
+            $0.owningApplication?.processID == pid && $0.frame.width > 200 && $0.frame.height > 100
+        }) else { return [] }
+        let filter = SCContentFilter(desktopIndependentWindow: window)
+        let config = SCStreamConfiguration()
+        config.showsCursor = false
+        config.captureResolution = .best
+        config.width = Int(window.frame.width * 2)
+        config.height = Int(window.frame.height * 2)
+        let start = ContinuousClock.now
+        guard let image = try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) else { return [] }
+        let lines = await recognise(image)
+        let elapsed = ContinuousClock.now - start
+        let ms = Int(elapsed.components.seconds * 1000) + Int(elapsed.components.attoseconds / 1_000_000_000_000_000)
+        Log.screenContext.info("Read \(lines.count) lines from \(window.owningApplication?.applicationName ?? "?", privacy: .public) in \(ms) ms")
+        return lines
+    }
+
+    /// Vision loads its recogniser on first use, which took 4 s on an M-series
+    /// Mac; run once at launch so no dictation waits for it.
+    static func prewarm() async {
+        guard let ctx = CGContext(data: nil, width: 64, height: 64, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+              let image = ctx.makeImage() else { return }
+        _ = await recognise(image)
+    }
+
+    /// Vision's accurate recogniser without language correction: correction
+    /// "fixes" exactly the unusual spellings this is trying to keep.
+    static func recognise(_ image: CGImage) async -> [String] {
+        var request = RecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        request.automaticallyDetectsLanguage = true
+        guard let observations = try? await request.perform(on: image) else { return [] }
+        // Below this the text is a fragment or a guess at an icon: "auFnUIk",
+        // "documentatior". A wrong spelling in the list does worse than none.
+        return observations.compactMap { $0.confidence >= minimumConfidence ? $0.topCandidates(1).first?.string : nil }
+    }
+
+    /// The words in `lines` worth telling the model about: anything that is
+    /// not an ordinary dictionary word (a name, a product, an identifier), or
+    /// that is capitalised where it would otherwise not be. `isKnownWord`
+    /// says whether a lowercase word is in the dictionary; it is injected so
+    /// the rule can be tested without a spell checker. Words already in
+    /// `excluding` (the custom words list) are left out, since the prompt
+    /// already carries them. Ordered by how often each appeared.
+    static func terms(from lines: [String], excluding: [String] = [], isKnownWord: (String) -> Bool) -> [String] {
+        var counts: [String: (spelling: String, count: Int)] = [:]
+        let excluded = Set(excluding.map { $0.lowercased() })
+        for line in lines {
+            // URLs and paths go before the code-punctuation split, or
+            // "https://x.dev/a" would yield "https".
+            let tokens = line.split(whereSeparator: \.isWhitespace)
+                .filter { !$0.contains("/") && !$0.contains("\\") }
+                .flatMap { $0.split(whereSeparator: { separators.contains($0) }) }
+                .compactMap { clean(String($0)) }
+            // A capitalised word the dictionary knows is kept only as half of
+            // a name whose other half it does not know: "Tomasz Wieczorek"
+            // brings Tomasz along. Any other capitalised dictionary word is a
+            // button or a label on a real screen ("Delete", "Learn More"), and
+            // OCR runs neighbouring labels together into one line.
+            func capitalised(_ t: String) -> Bool { t.first!.isUppercase && t.dropFirst().contains(where: \.isLowercase) }
+            func unknownName(_ t: String) -> Bool { capitalised(t) && !isKnownWord(t.lowercased()) }
+            for (i, token) in tokens.enumerated() {
+                let key = token.lowercased()
+                if excluded.contains(key) { continue }
+                let name = capitalised(token) && ((i > 0 && unknownName(tokens[i - 1])) || (i + 1 < tokens.count && unknownName(tokens[i + 1])))
+                guard name || isCandidate(token, isKnownWord: isKnownWord) else { continue }
+                if var existing = counts[key] {
+                    existing.count += 1
+                    counts[key] = existing
+                } else {
+                    counts[key] = (token, 1)
+                }
+            }
+        }
+        return counts.values
+            .sorted { $0.count != $1.count ? $0.count > $1.count : $0.spelling < $1.spelling }
+            .prefix(maxTerms)
+            .map(\.spelling)
+    }
+
+    /// Code punctuation that glues identifiers to their neighbours:
+    /// "fetchUser(raw," is two tokens, not one.
+    static let separators: Set<Character> = ["(", ")", "[", "]", "{", "}", "<", ">", ",", ";", ":", "\"", "`", "|", "=", "+", "*", "!", "?", "&"]
+
+    /// Strips surrounding punctuation and a possessive, and rejects tokens
+    /// that are not words: numbers, domains, single characters, long runs.
+    static func clean(_ raw: String) -> String? {
+        var trimmed = raw.trimmingCharacters(in: CharacterSet.punctuationCharacters.union(.symbols).subtracting(CharacterSet(charactersIn: "@#")))
+        for suffix in ["'s", "\u{2019}s"] where trimmed.hasSuffix(suffix) { trimmed = String(trimmed.dropLast(2)) }
+        guard trimmed.count >= 2, trimmed.count <= 30 else { return nil }
+        guard trimmed.contains(where: \.isLetter) else { return nil }
+        // "example.com" is a domain, not a term; "Node.js" is fine either way.
+        if trimmed.filter({ $0 == "." }).count > 1 { return nil }
+        return trimmed
+    }
+
+    /// A word earns a place when a speech model would plausibly misspell it:
+    /// it is not in the dictionary, or it is written in a shape (ALLCAPS,
+    /// camelCase, letters with digits, @handle) that spelling alone would not
+    /// produce. Ordinary capitalised words ("The", "Monday") are dictionary
+    /// words and are dropped.
+    static func isCandidate(_ token: String, isKnownWord: (String) -> Bool) -> Bool {
+        if token.hasPrefix("@") || token.hasPrefix("#") { return token.count >= 3 }
+        let letters = token.filter(\.isLetter)
+        let hasDigit = token.contains(where: \.isNumber)
+        if hasDigit { return letters.count >= 2 }
+        // Code identifiers. The spell checker splits on these separators and
+        // passes "parse_config" and "user.name" as two correct words each, so
+        // they never reach the dictionary rule below. An underscore or a dot
+        // between letters only ever appears in code. A hyphen also joins
+        // ordinary words ("well-known"), so kebab-case counts only when one
+        // side is not a word.
+        let parts = token.split(whereSeparator: { $0 == "_" || $0 == "." || $0 == "-" }).map(String.init)
+        if parts.count >= 2, parts.allSatisfy({ $0.contains(where: \.isLetter) }) {
+            if token.contains("_") || token.contains(".") { return true }
+            if parts.contains(where: { !isKnownWord($0.lowercased()) }) { return true }
+        }
+        let upper = letters.filter(\.isUppercase).count
+        if upper >= 2, upper == letters.count, letters.count >= 2, letters.count <= 6 { return true } // acronym
+        if upper >= 1, !token.first!.isUppercase { return true } // camelCase, iPhone
+        if upper >= 2 { return true } // McDonald, GitHub
+        // Everything else stands or falls on the dictionary. Case-folded so
+        // that "Zentryx" and "zentryx" both count as unknown.
+        return !isKnownWord(token.lowercased())
+    }
+
+    /// `terms(from:)` with the system spell checker for the user's language.
+    @MainActor
+    static func terms(from lines: [String], excluding: [String]) -> [String] {
+        let checker = NSSpellChecker.shared
+        return terms(from: lines, excluding: excluding) { word in
+            let range = checker.checkSpelling(of: word, startingAt: 0)
+            return range.location == NSNotFound
+        }
+    }
+}

@@ -22,6 +22,13 @@ final class Pipeline {
     private var copyPromptTask: Task<Void, Never>?
     private var toastTask: Task<Void, Never>?
     private var lastRecordingFirstBuffer = false
+    /// Screen terms for the dictation in progress: nil until the read
+    /// finishes. The read starts with the recording and is never waited
+    /// for; a dictation shorter than the read goes without.
+    private var screenTerms: [String]?
+    /// The last read, reused when the next dictation goes into the same
+    /// window soon after, so a run of short dictations is not a run of reads.
+    private var lastScreen: (pid: pid_t, title: String?, at: ContinuousClock.Instant, terms: [String])?
 
     private init() {
         shortcuts.onEvent = { [weak self] event in self?.handle(event) }
@@ -46,9 +53,9 @@ final class Pipeline {
         overlay.model.onCopy = { [weak self] in self?.copyFromPrompt() }
         overlay.model.onKeep = { [weak self] in self?.keepLearned() }
         overlay.model.onUndo = { [weak self] in self?.undoLearned() }
-        overlay.model.onOpenCleanup = { [weak self] in
+        overlay.model.onOpenIntelligence = { [weak self] in
             self?.keepLearned()
-            AppState.shared.settingsTab = .cleanup
+            AppState.shared.settingsTab = .intelligence
             NotificationCenter.default.post(name: MenuBarLabel.openSettings, object: nil)
         }
         overlay.model.onInstall = { [weak self] in self?.toastTask?.cancel(); self?.overlay.hide(); Updates.shared.install() }
@@ -59,6 +66,7 @@ final class Pipeline {
         if !shortcuts.install() {
             Log.app.error("Shortcuts not installed; Input Monitoring is missing")
         }
+        if settings.postProcessingEnabled, settings.screenContextEnabled { Task.detached { await ScreenContext.prewarm() } }
     }
 
     var isBusy: Bool { phase != .idle }
@@ -120,8 +128,31 @@ final class Pipeline {
             return
         }
         overlay.show(.arming)
-        if settings.postProcessingEnabled { Task { await PostProcessor.shared.prewarm() } }
+        screenTerms = nil
+        if settings.postProcessingEnabled {
+            Task { await PostProcessor.shared.prewarm() }
+            if settings.screenContextEnabled { readScreen(generation: generation) }
+        }
         Task { await Transcriber.shared.preload() }
+    }
+
+    /// Reads the frontmost window in the background and stores the terms
+    /// for dictation `gen`, unless the same window was read within
+    /// `Fixed.screenReadReuse`, in which case that read is used as is.
+    private func readScreen(generation gen: Int) {
+        guard let target = Frontmost.capture(), let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier else { return }
+        if let last = lastScreen, last.pid == pid, last.title == target.windowTitle, ContinuousClock.now - last.at < Fixed.screenReadReuse {
+            screenTerms = last.terms
+            return
+        }
+        let customWords = settings.customWords
+        Task { [weak self] in
+            let lines = await ScreenContext.captureLines(pid: pid)
+            let terms = await ScreenContext.terms(from: lines, excluding: customWords)
+            guard let self else { return }
+            self.lastScreen = (pid, target.windowTitle, ContinuousClock.now, terms)
+            if self.generation == gen { self.screenTerms = terms }
+        }
     }
 
     private func cancel() {
@@ -211,8 +242,11 @@ final class Pipeline {
             phase = .cleaningUp
             shortcuts.setPhase(.cleaningUp)
             overlay.show(.cleaningUp)
+            let screenTerms = self.screenTerms ?? []
+            if self.screenTerms == nil, settings.screenContextEnabled { Log.screenContext.info("Screen read not finished; cleaning up without it") }
+            if !screenTerms.isEmpty { Log.screenContext.info("Screen terms: \(screenTerms.joined(separator: ", "), privacy: .private)") }
             let start = ContinuousClock.now
-            postProcessed = await PostProcessor.shared.run(raw, customWords: customWords)
+            postProcessed = await PostProcessor.shared.run(raw, customWords: customWords, screenTerms: screenTerms)
             let ms = Pipeline.elapsedMs(since: start)
             postProcessMs = ms
             Log.postProcess.info("Post-processing took \(ms) ms (\(postProcessed == nil ? "no result, transcript typed as heard" : "applied"))")

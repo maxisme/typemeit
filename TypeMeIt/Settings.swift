@@ -106,6 +106,9 @@ final class Settings {
     /// The cloud samples the screen under it and goes white or dark against
     /// it. Needs Screen Recording; without the grant the appearance decides.
     var cloudMatchesBackdrop: Bool { didSet { defaults.set(cloudMatchesBackdrop, forKey: "cloudMatchesBackdrop") } }
+    /// The clean-up model is told the names and terms visible in the window
+    /// being dictated into. Needs Screen Recording.
+    var screenContextEnabled: Bool { didSet { defaults.set(screenContextEnabled, forKey: "screenContextEnabled") } }
     var onboardingComplete: Bool { didSet { defaults.set(onboardingComplete, forKey: "onboardingComplete") } }
     /// Copies the newest transcript to the clipboard. Nil means no shortcut.
     var copyLastShortcut: KeyCombo? {
@@ -137,6 +140,7 @@ final class Settings {
         cloudColor = CloudColor(rawValue: d.string(forKey: "cloudColor") ?? "") ?? .coral
         cloudPosition = CloudPosition(rawValue: d.string(forKey: "cloudPosition") ?? "") ?? .centre
         cloudMatchesBackdrop = bool("cloudMatchesBackdrop", false)
+        screenContextEnabled = bool("screenContextEnabled", false)
         onboardingComplete = bool("onboardingComplete", false)
         copyLastShortcut = d.data(forKey: "copyLastShortcut").flatMap { try? JSONDecoder().decode(KeyCombo.self, from: $0) }
         undoneWords = d.stringArray(forKey: "undoneWords") ?? []
@@ -169,6 +173,8 @@ enum Fixed {
     static let modelUnloadIdle: Duration = .seconds(5 * 60)
     static let copyPromptTimeout: Duration = .seconds(8)
     static let minimumRecordingSeconds = 0.3
+    /// A screen read serves every dictation into the same window this long.
+    static let screenReadReuse: Duration = .seconds(60)
     static let silencePeak: Float = 0.01
     static let learningAppDenylist: Set<String> = [
         "com.1password.1password", "com.agilebits.onepassword7", "com.bitwarden.desktop",
