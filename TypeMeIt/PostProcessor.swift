@@ -51,6 +51,16 @@ actor PostProcessor {
 
     static var availability: SystemLanguageModel.Availability { SystemLanguageModel.default.availability }
 
+    /// The session instructions, with the screen's terms appended when there
+    /// are any. They go here rather than after the transcript with the custom
+    /// words: put there, the model returns the transcript untouched. The
+    /// custom words stay in the prompt; in the instructions they are applied
+    /// too eagerly ("whisper" becomes a custom "wispr").
+    static func instructions(screenTerms: [String]) -> String {
+        guard !screenTerms.isEmpty else { return instructions }
+        return instructions + "\n\nNames and terms that were on the user's screen while they spoke, with their exact spelling:\n\(screenTerms.joined(separator: ", "))\n\nThe speech-to-text model does not know these terms, so it writes what they sound like, often as several ordinary words (\"cube control\" for kubectl, \"use state\" for useState, \"centrics\" for Zentryx). Where a word or run of words in the transcript sounds like one of these terms, replace it with the exact spelling above. Do not add a term the transcript does not say, and do not change anything else because of this list."
+    }
+
     static func prompt(for transcript: String, customWords: [String]) -> String {
         var t = template
         let words = customWords.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
@@ -67,12 +77,12 @@ actor PostProcessor {
     }
 
     /// nil means: use the locally cleaned transcript (cancelled, rejected, unavailable or failed).
-    func run(_ transcript: String, customWords: [String]) async -> String? {
+    func run(_ transcript: String, customWords: [String], screenTerms: [String] = []) async -> String? {
         current?.cancel()
         let model = self.model
         let task = Task<String?, Never> {
             guard case .available = model.availability else { return nil }
-            let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions)
+            let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions(screenTerms: screenTerms))
             let user = PostProcessor.prompt(for: transcript, customWords: customWords)
             do {
                 let r = try await session.respond(to: user, generating: CleanedTranscript.self, options: GenerationOptions(sampling: .greedy))

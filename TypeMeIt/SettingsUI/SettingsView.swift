@@ -3,13 +3,13 @@ import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
     // The order the sidebar lists them in.
-    case insights, cleanup, history, settings
+    case insights, intelligence, history, settings
 
     var icon: String {
         switch self {
         case .insights: "akar-statistic-up"
         case .settings: "akar-gear"
-        case .cleanup: "akar-sparkles"
+        case .intelligence: "akar-sparkles"
         case .history: "akar-history"
         }
     }
@@ -47,7 +47,7 @@ struct SettingsView: View {
                 Group {
                     switch tab ?? .insights {
                     case .settings: MainSettingsTab()
-                    case .cleanup: CleanupTab()
+                    case .intelligence: IntelligenceTab()
                     case .history: HistoryTab()
                     case .insights: InsightsTab()
                     }
@@ -440,7 +440,7 @@ struct MainSettingsTab: View {
     }
 }
 
-struct CleanupTab: View {
+struct IntelligenceTab: View {
     @State private var settings = Settings.shared
     @State private var store = Store.shared
     @State private var newWord = ""
@@ -454,6 +454,14 @@ struct CleanupTab: View {
     private var modelAvailable: Bool {
         if case .available = availability { return true }
         return false
+    }
+
+    /// Screen Recording is granted in System Settings too; the poll above re-reads it.
+    @State private var screenGranted = CGPreflightScreenCaptureAccess()
+
+    private var screenSubtitle: String {
+        if settings.screenContextEnabled, !screenGranted { return "needs screen recording permissions" }
+        return "spells names the way the window you dictate into does · needs screen recording"
     }
 
     /// Why clean-up cannot run right now, or nil when it can.
@@ -480,9 +488,22 @@ struct CleanupTab: View {
                                 .disabled(!modelAvailable)
                         }
                     }
-                    SettingsRow(label: "learn from corrections", subtitle: modelAvailable ? nil : "needs apple intelligence", last: true) {
+                    SettingsRow(label: "learn from corrections", subtitle: modelAvailable ? nil : "needs apple intelligence") {
                         Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
                             .disabled(!modelAvailable)
+                    }
+                    SettingsRow(label: "read the screen", subtitle: screenSubtitle, last: true) {
+                        HStack(spacing: 8) {
+                            if settings.screenContextEnabled, !screenGranted {
+                                Button("system settings") { NSWorkspace.shared.open(SecureInput.screenRecordingSettingsURL) }.buttonStyle(InkButtonStyle())
+                            }
+                            Toggle("", isOn: Binding(get: { settings.screenContextEnabled }, set: { on in
+                                settings.screenContextEnabled = on
+                                if on, !CGPreflightScreenCaptureAccess() { CGRequestScreenCaptureAccess() }
+                                screenGranted = CGPreflightScreenCaptureAccess()
+                            })).toggleStyle(.switch).labelsHidden()
+                        }
+                        .disabled(!settings.postProcessingEnabled)
                     }
                 }
                 SettingsGroup(title: "custom words") {
@@ -530,7 +551,7 @@ struct CleanupTab: View {
             .padding(20)
         }
         .onAppear { availability = PostProcessor.availability }
-        .onReceive(poll) { _ in availability = PostProcessor.availability }
+        .onReceive(poll) { _ in availability = PostProcessor.availability; screenGranted = CGPreflightScreenCaptureAccess() }
     }
 
     private func addWordAndVerify() {
