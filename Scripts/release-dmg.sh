@@ -183,7 +183,7 @@ GENERATE_APPCAST="$DERIVED/SourcePackages/artifacts/sparkle/Sparkle/bin/generate
 # the tag being published. Only the appcast itself is fetched through
 # /releases/latest/download.
 TAG="${RELEASE_TAG:-v$VERSION}"
-PREFIX="https://github.com/maxisme/typemeit/releases/download/$TAG/"
+PREFIX="https://github.com/typemeit/typemeit/releases/download/$TAG/"
 
 if [ -n "${SPARKLE_ED_PRIVATE_KEY:-}" ]; then
   # CI has no login Keychain to read the key from. `--ed-key-file -` takes it on
