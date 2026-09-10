@@ -3,9 +3,7 @@ import Foundation
 /// Transcript cleanup: custom-word correction, filler-word removal and
 /// whitespace/stutter normalisation.
 ///
-/// Port of TypeMeIt's `audio_toolkit/text.rs`, plus `is_blank_transcription` and
-/// `strip_think_block` from `actions.rs`. Everything here is a pure function;
-/// the enum is a namespace only.
+/// Everything here is a pure function; the enum is a namespace only.
 ///
 /// Rust `char` semantics are preserved by working on Unicode scalars, not
 /// Swift `Character`s: classification (`is_alphanumeric`, `is_whitespace`,
