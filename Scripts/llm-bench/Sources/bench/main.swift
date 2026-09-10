@@ -15,8 +15,8 @@ func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, Str
     let cpu0 = Metrics.processCPUSeconds(), m0 = Metrics.machineTicks()
     var results: [CaseResult] = []
     for c in cases {
-        let local = TextCleanup.run(c.input, customWords: [], aliases: []).text
-        var o = try await run(instructions, template.replacingOccurrences(of: "${output}", with: local))
+        let local = TextCleanup.run(c.input, customWords: c.customWords, aliases: []).text
+        var o = try await run(instructions, PostProcessor.prompt(for: local, customWords: c.customWords))
         // The app's guards: a rewrite or a lost opening falls back to the local text.
         if PostProcessor.looksLikeRewrite(transcript: local, output: o.text, template: template) || PostProcessor.lostOpening(transcript: local, output: o.text) { o.text = local }
         let ok = c.expected.contains { Cases.normalise(o.text) == Cases.normalise($0) }

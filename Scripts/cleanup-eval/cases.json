@@ -74,5 +74,49 @@
         "why": "both of the above"
       }
     ]
+  },
+  {
+    "input": "what does",
+    "expected": "What does",
+    "customWords": [
+      "typeme.it",
+      "Eliza"
+    ],
+    "alsoAccepted": [
+      {
+        "text": "What does?",
+        "why": "a fragment may be punctuated as a question"
+      }
+    ]
+  },
+  {
+    "input": "and I think",
+    "expected": "And I think"
+  },
+  {
+    "input": "yeah",
+    "expected": "Yeah."
+  },
+  {
+    "input": "or did you correct it",
+    "expected": "Or did you correct it?"
+  },
+  {
+    "input": "fucking hell claude you have cooked",
+    "expected": "Fucking hell, Claude, you have cooked."
+  },
+  {
+    "input": "can you look at notify",
+    "expected": "Can you look at Notify?",
+    "customWords": [
+      "typeme.it",
+      "Eliza"
+    ],
+    "alsoAccepted": [
+      {
+        "text": "Can you look at notify?",
+        "why": "an unknown product name need not be capitalised"
+      }
+    ]
   }
 ]

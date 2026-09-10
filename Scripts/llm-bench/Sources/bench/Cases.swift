@@ -4,18 +4,22 @@ struct Case: Decodable {
     let input: String
     /// The cleaned text wanted; `alsoAccepted` lists other outputs that count, each with why.
     let expected: [String]
+    /// The user's custom words, as they would be at the time; empty when the case has none.
+    let customWords: [String]
     struct Variant: Decodable { let why: String; let text: String }
-    init(input: String, expected: String, alsoAccepted: [Variant] = []) {
+    init(input: String, expected: String, alsoAccepted: [Variant] = [], customWords: [String] = []) {
         self.input = input
         self.expected = [expected] + alsoAccepted.map(\.text)
+        self.customWords = customWords
     }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         input = try c.decode(String.self, forKey: .input)
         let also = try c.decodeIfPresent([Variant].self, forKey: .alsoAccepted) ?? []
         expected = [try c.decode(String.self, forKey: .expected)] + also.map(\.text)
+        customWords = try c.decodeIfPresent([String].self, forKey: .customWords) ?? []
     }
-    enum CodingKeys: CodingKey { case input, expected, alsoAccepted }
+    enum CodingKeys: CodingKey { case input, expected, alsoAccepted, customWords }
 }
 
 enum Cases {
