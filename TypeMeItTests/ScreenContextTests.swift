@@ -13,10 +13,10 @@ final class ScreenContextTests: XCTestCase {
         )
     }
 
-    func testCapitalisedWordsAfterTheFirstAreNamesEvenWhenTheDictionaryKnowsThem() {
-        let lines = ["Tomasz Wieczorek  10:44", "Meeting with Grace about the review", "The meeting"]
-        let known: (String) -> Bool = { ["tomasz", "wieczorek", "meeting", "with", "grace", "about", "the", "review"].contains($0) }
-        XCTAssertEqual(ScreenContext.terms(from: lines, isKnownWord: known), ["Grace", "Tomasz", "Wieczorek"])
+    func testAKnownFirstNameJoinsAnUnknownSurnameButLabelsStayOut() {
+        let lines = ["Tomasz Wieczorek  10:44", "Meeting with Grace about the review", "Delete  Learn More  Your Mac"]
+        let known: (String) -> Bool = { ["tomasz", "meeting", "with", "grace", "about", "the", "review", "delete", "learn", "more", "your", "mac"].contains($0) }
+        XCTAssertEqual(ScreenContext.terms(from: lines, isKnownWord: known), ["Tomasz", "Wieczorek"])
     }
 
     func testCodePunctuationSplitsTokens() {

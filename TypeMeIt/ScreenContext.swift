@@ -13,6 +13,7 @@ enum ScreenContext {
     /// How many terms the prompt is allowed to carry. The on-device model's
     /// window is small and long lists dilute the transcript.
     static let maxTerms = 40
+    static let minimumConfidence: Float = 0.5
 
     /// Recognised text lines from the frontmost on-screen window of `pid`.
     /// Empty when the grant is missing, the app has no window, or nothing
@@ -57,7 +58,9 @@ enum ScreenContext {
         request.usesLanguageCorrection = false
         request.automaticallyDetectsLanguage = true
         guard let observations = try? await request.perform(on: image) else { return [] }
-        return observations.compactMap { $0.topCandidates(1).first?.string }
+        // Below this the text is a fragment or a guess at an icon: "auFnUIk",
+        // "documentatior". A wrong spelling in the list does worse than none.
+        return observations.compactMap { $0.confidence >= minimumConfidence ? $0.topCandidates(1).first?.string : nil }
     }
 
     /// The words in `lines` worth telling the model about: anything that is
@@ -77,15 +80,17 @@ enum ScreenContext {
                 .filter { !$0.contains("/") && !$0.contains("\\") }
                 .flatMap { $0.split(whereSeparator: { separators.contains($0) }) }
                 .compactMap { clean(String($0)) }
-            // A capitalised word after the first in a line is a name or a
-            // title far more often than a sentence start, so it is kept
-            // whether or not the dictionary knows it: "Tomasz", "Fathom". The
-            // first word joins in when the second is one, for "Tomasz Wieczorek".
+            // A capitalised word the dictionary knows is kept only as half of
+            // a name whose other half it does not know: "Tomasz Wieczorek"
+            // brings Tomasz along. Any other capitalised dictionary word is a
+            // button or a label on a real screen ("Delete", "Learn More"), and
+            // OCR runs neighbouring labels together into one line.
             func capitalised(_ t: String) -> Bool { t.first!.isUppercase && t.dropFirst().contains(where: \.isLowercase) }
+            func unknownName(_ t: String) -> Bool { capitalised(t) && !isKnownWord(t.lowercased()) }
             for (i, token) in tokens.enumerated() {
                 let key = token.lowercased()
                 if excluded.contains(key) { continue }
-                let name = capitalised(token) && (i > 0 || (tokens.count > 1 && capitalised(tokens[1])))
+                let name = capitalised(token) && ((i > 0 && unknownName(tokens[i - 1])) || (i + 1 < tokens.count && unknownName(tokens[i + 1])))
                 guard name || isCandidate(token, isKnownWord: isKnownWord) else { continue }
                 if var existing = counts[key] {
                     existing.count += 1

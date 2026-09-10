@@ -31,6 +31,17 @@ struct Case: Decodable {
     enum CodingKeys: CodingKey { case input, screen, expected, alsoAccepted }
 }
 
+/// One line of result.json per case, for anything that renders the run.
+struct Result: Encodable {
+    let input, local, output: String
+    let pass: Bool
+    let expected: [String]
+    let screen: [String]?
+    let terms: [String]
+    let withoutScreen: String?
+    let withoutScreenPass: Bool?
+}
+
 @main struct Eval {
     static func normalise(_ s: String) -> String {
         s.lowercased().split { !$0.isLetter && !$0.isNumber && !"$£€%".contains($0) }.joined(separator: " ")
@@ -42,6 +53,7 @@ struct Case: Decodable {
         guard case .available = PostProcessor.availability else { print("Apple Intelligence is not available on this Mac"); exit(2) }
         var failed = 0
         var helped = 0, hurt = 0, screened = 0
+        var results: [Result] = []
         for c in cases {
             let local = TextCleanup.run(c.input, customWords: [], aliases: []).text
             let terms = await MainActor.run { ScreenContext.terms(from: c.screen ?? [], excluding: []) }
@@ -50,18 +62,23 @@ struct Case: Decodable {
             if !ok { failed += 1 }
             print("\(ok ? "PASS" : "FAIL")  \(c.input)")
             if !ok { print("      expected: \(c.accepted.joined(separator: "\n             or: "))\n      got:      \(out)") }
+            var blind: String?, blindOk: Bool?
             if c.screen != nil {
                 screened += 1
-                let blind = await PostProcessor.shared.run(local, customWords: []) ?? local
-                let blindOk = c.accepted.contains { normalise(blind) == normalise($0) }
-                if ok, !blindOk { helped += 1 }
-                if !ok, blindOk { hurt += 1 }
+                let b = await PostProcessor.shared.run(local, customWords: []) ?? local
+                let bOk = c.accepted.contains { normalise(b) == normalise($0) }
+                if ok, !bOk { helped += 1 }
+                if !ok, bOk { hurt += 1 }
                 print("      screen terms: \(terms.joined(separator: ", "))")
-                if blind != out { print("      without screen: \(blind)") }
+                if b != out { print("      without screen: \(b)") }
+                blind = b; blindOk = bOk
             }
+            results.append(Result(input: c.input, local: local, output: out, pass: ok, expected: c.accepted, screen: c.screen, terms: terms, withoutScreen: blind, withoutScreenPass: blindOk))
         }
         print("\n\(cases.count - failed)/\(cases.count) passed")
         if screened > 0 { print("screen: \(screened) cases, helped \(helped), hurt \(hurt)") }
+        let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        try enc.encode(results).write(to: dir.appendingPathComponent("result.json"))
         exit(failed == 0 ? 0 : 1)
     }
 }
