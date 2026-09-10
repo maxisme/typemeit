@@ -31,9 +31,11 @@ MODEL_STORE = os.path.join(os.path.dirname(__file__), "..", "TypeMeIt", "ModelSt
 # What ModelStore.swift pins: the repo, and the file plus digest the app will
 # accept. The digest is the real baseline -- it is what the app checks after
 # downloading, so it is what "has the model changed" has to mean here.
-PINNED_REPO = re.compile(
-    r"https://huggingface\.co/(?P<repo>[^/\s]+/[^/\s]+)/resolve/(?P<revision>[0-9a-f]{40})/"
-)
+# Where the file we host came from. The app downloads its own copy from a
+# GitHub release, so this provenance no longer appears in ModelStore.swift and
+# has to live here; change it when the model is rebuilt from somewhere else.
+UPSTREAM_REPO = "handy-computer/parakeet-unified-en-0.6b-gguf"
+
 PINNED_FILE = re.compile(r'let fileName = "(?P<name>[^"]+)"')
 PINNED_SHA = re.compile(r'let sha256 = "(?P<sha256>[0-9a-f]{64})"')
 
@@ -47,8 +49,8 @@ def get_json(url):
 def pinned_model():
     with open(MODEL_STORE, encoding="utf-8") as handle:
         source = handle.read()
-    pins = {}
-    for pattern in (PINNED_REPO, PINNED_FILE, PINNED_SHA):
+    pins = {"repo": UPSTREAM_REPO}
+    for pattern in (PINNED_FILE, PINNED_SHA):
         match = pattern.search(source)
         if match is None:
             sys.exit(f"{MODEL_STORE} no longer pins what this script reads")
