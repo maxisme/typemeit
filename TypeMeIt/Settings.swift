@@ -140,7 +140,7 @@ final class Settings {
         cloudColor = CloudColor(rawValue: d.string(forKey: "cloudColor") ?? "") ?? .coral
         cloudPosition = CloudPosition(rawValue: d.string(forKey: "cloudPosition") ?? "") ?? .centre
         cloudMatchesBackdrop = bool("cloudMatchesBackdrop", false)
-        screenContextEnabled = bool("screenContextEnabled", true)
+        screenContextEnabled = bool("screenContextEnabled", false)
         onboardingComplete = bool("onboardingComplete", false)
         copyLastShortcut = d.data(forKey: "copyLastShortcut").flatMap { try? JSONDecoder().decode(KeyCombo.self, from: $0) }
         undoneWords = d.stringArray(forKey: "undoneWords") ?? []
