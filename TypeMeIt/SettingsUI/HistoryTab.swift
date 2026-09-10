@@ -84,29 +84,30 @@ struct HistoryTab: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                HStack(spacing: 6) {
+                    Image("akar-search").resizable().frame(width: 13, height: 13).foregroundStyle(DesignTokens.Colors.ink3)
+                    TextField("search", text: $search).textFieldStyle(.plain)
+                }
+                .padding(.horizontal, 8).frame(height: 26)
+                .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.md).fill(DesignTokens.Colors.paperRaised))
+                .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.md).strokeBorder(DesignTokens.Colors.ruleControl, lineWidth: 0.5))
+                Text("\(store.history.count) dictations")
+                    .font(.system(size: 11).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+                if !selected.isEmpty {
+                    Button("delete \(selected.count)") { store.delete(ids: selected); selected = [] }
+                        .buttonStyle(InkButtonStyle())
+                }
+                Button("delete all") { confirmDeleteAll = true }
+                    .buttonStyle(InkButtonStyle())
+                    .disabled(store.history.isEmpty)
+                    .confirmationDialog("Delete all \(store.history.count) dictations?", isPresented: $confirmDeleteAll, titleVisibility: .visible) {
+                        Button("Delete All", role: .destructive) { store.deleteAllHistory(); selected = [] }
+                    } message: { Text("This cannot be undone.") }
+            }
+            .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 18)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 18) {
-                    HStack(spacing: 8) {
-                        HStack(spacing: 6) {
-                            Image("akar-search").resizable().frame(width: 13, height: 13).foregroundStyle(DesignTokens.Colors.ink3)
-                            TextField("search", text: $search).textFieldStyle(.plain)
-                        }
-                        .padding(.horizontal, 8).frame(height: 26)
-                        .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.md).fill(DesignTokens.Colors.paperRaised))
-                        .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.md).strokeBorder(DesignTokens.Colors.ruleControl, lineWidth: 0.5))
-                        Text("\(store.history.count) dictations")
-                            .font(.system(size: 11).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
-                        if !selected.isEmpty {
-                            Button("delete \(selected.count)") { store.delete(ids: selected); selected = [] }
-                                .buttonStyle(InkButtonStyle())
-                        }
-                        Button("delete all") { confirmDeleteAll = true }
-                            .buttonStyle(InkButtonStyle())
-                            .disabled(store.history.isEmpty)
-                            .confirmationDialog("Delete all \(store.history.count) dictations?", isPresented: $confirmDeleteAll, titleVisibility: .visible) {
-                                Button("Delete All", role: .destructive) { store.deleteAllHistory(); selected = [] }
-                            } message: { Text("This cannot be undone.") }
-                    }
                     if groups.isEmpty {
                         Text(store.history.isEmpty ? "nothing yet" : "no matches")
                             .foregroundStyle(DesignTokens.Colors.ink2).frame(maxWidth: .infinity).padding(.vertical, 40)
@@ -121,7 +122,7 @@ struct HistoryTab: View {
                         }
                     }
                 }
-                .padding(20)
+                .padding(.horizontal, 20).padding(.bottom, 20)
             }
             RowRule()
             VStack(spacing: 0) {

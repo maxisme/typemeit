@@ -58,9 +58,9 @@ enum MenuBarIconRenderer {
             layer(outlineLayer, tint: tint)
             layer(arcsLayer, tint: tint, alpha: transcribing ? 0.35 : 1)
 
-            // Anything that stops dictation working, Secure Input or a
-            // permission taken away, is a slash through the whole mark, the
-            // way the OS strikes wifi.slash. The gap under the stroke is cut first so the
+            // A permission taken away is a slash through the whole mark, the
+            // way the OS strikes wifi.slash. Secure Input is not: dictation
+            // still works under it, and the menu says what does not. The gap under the stroke is cut first so the
             // line reads as lying across the puff rather than dissolving into
             // it.
             // A downloaded update waiting to be installed is a dot at the
