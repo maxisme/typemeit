@@ -106,6 +106,9 @@ final class Settings {
     /// The cloud samples the screen under it and goes white or dark against
     /// it. Needs Screen Recording; without the grant the appearance decides.
     var cloudMatchesBackdrop: Bool { didSet { defaults.set(cloudMatchesBackdrop, forKey: "cloudMatchesBackdrop") } }
+    /// The clean-up model is told the names and terms visible in the window
+    /// being dictated into. Needs Screen Recording.
+    var screenContextEnabled: Bool { didSet { defaults.set(screenContextEnabled, forKey: "screenContextEnabled") } }
     var onboardingComplete: Bool { didSet { defaults.set(onboardingComplete, forKey: "onboardingComplete") } }
     /// Copies the newest transcript to the clipboard. Nil means no shortcut.
     var copyLastShortcut: KeyCombo? {
@@ -137,6 +140,7 @@ final class Settings {
         cloudColor = CloudColor(rawValue: d.string(forKey: "cloudColor") ?? "") ?? .coral
         cloudPosition = CloudPosition(rawValue: d.string(forKey: "cloudPosition") ?? "") ?? .centre
         cloudMatchesBackdrop = bool("cloudMatchesBackdrop", false)
+        screenContextEnabled = bool("screenContextEnabled", true)
         onboardingComplete = bool("onboardingComplete", false)
         copyLastShortcut = d.data(forKey: "copyLastShortcut").flatMap { try? JSONDecoder().decode(KeyCombo.self, from: $0) }
         undoneWords = d.stringArray(forKey: "undoneWords") ?? []
