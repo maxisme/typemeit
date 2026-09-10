@@ -15,10 +15,9 @@ func bench(name: String, fileGB: Double?, loadSeconds: Double, run: (String, Str
     let cpu0 = Metrics.processCPUSeconds(), m0 = Metrics.machineTicks()
     var results: [CaseResult] = []
     for c in cases {
-        let local = TextCleanup.run(c.input, customWords: c.customWords, aliases: []).text
-        var o = try await run(instructions, PostProcessor.prompt(for: local, customWords: c.customWords))
-        // The app's guards: a rewrite or a lost opening falls back to the local text.
-        if PostProcessor.looksLikeRewrite(transcript: local, output: o.text, template: template) || PostProcessor.lostOpening(transcript: local, output: o.text) { o.text = local }
+        var o = try await run(instructions, PostProcessor.prompt(for: c.input, customWords: c.customWords, aliases: c.aliases))
+        // The app's guards: a rewrite or a lost opening falls back to the transcript as heard.
+        if PostProcessor.looksLikeRewrite(transcript: c.input, output: o.text, template: template) || PostProcessor.lostOpening(transcript: c.input, output: o.text) { o.text = c.input }
         let ok = c.expected.contains { Cases.normalise(o.text) == Cases.normalise($0) }
         results.append(CaseResult(input: c.input, expected: c.expected, got: o.text, pass: ok, wallSeconds: o.promptSeconds + o.generateSeconds, promptTokens: o.promptTokens, outputTokens: o.outputTokens,
                                   promptTokensPerSecond: o.promptSeconds > 0 ? Double(o.promptTokens) / o.promptSeconds : 0, generationTokensPerSecond: o.generateSeconds > 0 ? Double(o.outputTokens) / o.generateSeconds : 0))
