@@ -17,7 +17,7 @@ final class OverlayPanel {
     /// The same at the top, measured from the screen's own top edge rather
     /// than the visible frame's, so the cloud sits over the menu bar rather
     /// than under it. The panel is above the menu bar's level.
-    static let topInset: CGFloat = 56
+    static let topInset: CGFloat = 76
 
     init() {
         panel = UnconstrainedPanel(contentRect: NSRect(origin: .zero, size: OverlayPanel.size),
