@@ -81,7 +81,6 @@ final class Settings {
     private let defaults = UserDefaults.standard
 
     var microphoneUID: String? { didSet { defaults.set(microphoneUID, forKey: "microphoneUID") } }
-    var alwaysOnMicrophone: Bool { didSet { defaults.set(alwaysOnMicrophone, forKey: "alwaysOnMicrophone") } }
     var muteWhileRecording: Bool { didSet { defaults.set(muteWhileRecording, forKey: "muteWhileRecording") } }
     var audioFeedback: Bool { didSet { defaults.set(audioFeedback, forKey: "audioFeedback") } }
     var copyPromptEnabled: Bool { didSet { defaults.set(copyPromptEnabled, forKey: "copyPromptEnabled") } }
@@ -94,6 +93,9 @@ final class Settings {
     var historyLimit: Int { didSet { defaults.set(historyLimit, forKey: "historyLimit") } }
     /// Keeps each dictation's audio next to its history entry.
     var keepRecordings: Bool { didSet { defaults.set(keepRecordings, forKey: "keepRecordings") } }
+    /// A ready update is announced with the pill and waits for a click. Off,
+    /// the app installs it and restarts itself once no dictation is in flight.
+    var askBeforeUpdating: Bool { didSet { defaults.set(askBeforeUpdating, forKey: "askBeforeUpdating") } }
     var launchAtLogin: Bool { didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin") } }
     var showDockIcon: Bool { didSet { defaults.set(showDockIcon, forKey: "showDockIcon") } }
     var appearance: Appearance { didSet { defaults.set(appearance.rawValue, forKey: "appearance") } }
@@ -116,7 +118,6 @@ final class Settings {
         let d = UserDefaults.standard
         func bool(_ key: String, _ fallback: Bool) -> Bool { d.object(forKey: key) == nil ? fallback : d.bool(forKey: key) }
         microphoneUID = d.string(forKey: "microphoneUID")
-        alwaysOnMicrophone = bool("alwaysOnMicrophone", false)
         muteWhileRecording = bool("muteWhileRecording", true)
         audioFeedback = bool("audioFeedback", true)
         copyPromptEnabled = bool("copyPromptEnabled", true)
@@ -128,6 +129,7 @@ final class Settings {
         autoSubmitKey = AutoSubmitKey(rawValue: d.string(forKey: "autoSubmitKey") ?? "") ?? .enter
         historyLimit = d.object(forKey: "historyLimit") == nil ? 500 : d.integer(forKey: "historyLimit")
         keepRecordings = bool("keepRecordings", Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true)
+        askBeforeUpdating = bool("askBeforeUpdating", true)
         launchAtLogin = bool("launchAtLogin", true)
         showDockIcon = bool("showDockIcon", true)
         appearance = Appearance(rawValue: d.string(forKey: "appearance") ?? "") ?? .system

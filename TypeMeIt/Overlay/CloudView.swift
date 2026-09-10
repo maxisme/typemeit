@@ -66,7 +66,7 @@ struct CloudView: View {
     /// Over the first half second of processing the cloud settles: smaller
     /// by this much expansion, and this much thicker.
     static let processingSettle = 0.2
-    static let processingDensity = 1.9
+    static let processingDensity = 1.35
     /// It lets go again as it departs, so a thin cloud drifts apart rather
     /// than a dense ball bursting.
     private func settled(at now: Date) -> Double {

@@ -56,11 +56,8 @@ struct PillView: View {
             // a way to that page.
             Button { model.onOpenCleanup?() } label: {
                 Image("akar-sparkles").resizable().frame(width: 14, height: 14)
-                    .foregroundStyle(DesignTokens.Colors.ink)
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(QuietButtonStyle(side: 24, radius: DesignTokens.Radius.full))
             .help("Open clean-up")
         case .updateReady, .updateFailed:
             Image("akar-sparkles").resizable().frame(width: 14, height: 14).foregroundStyle(DesignTokens.Colors.ink)
@@ -127,15 +124,13 @@ struct PillView: View {
         }
     }
 
-    /// The quiet dismiss: a cross with no outline, ink-2 until hovered.
+    /// The quiet dismiss: a cross with no outline, ink-2 until hovered. Round,
+    /// since the wash sits inside a capsule.
     private func cross(help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image("akar-cross").resizable().frame(width: 10, height: 10)
-                .foregroundStyle(DesignTokens.Colors.ink2)
-                .frame(width: 26, height: 26)
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(QuietButtonStyle(side: 26, radius: DesignTokens.Radius.full))
         .help(help)
     }
 }

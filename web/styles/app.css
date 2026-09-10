@@ -164,9 +164,11 @@
     transition: transform var(--duration-2) var(--ease-out),
                 background-color var(--duration-2) var(--ease-out);
   }
+  .toggle:hover { background: var(--color-ink-a04); }
   .toggle[aria-checked='true'] { background: var(--color-slab); border-color: var(--color-slab); }
+  .toggle[aria-checked='true']:hover { background: var(--color-ink-a88); border-color: var(--color-ink-a88); }
   .toggle[aria-checked='true']::after { transform: translateX(16px); background: var(--color-on-slab); }
-  .toggle:disabled { border-color: var(--color-rule); cursor: not-allowed; }
+  .toggle:disabled, .toggle:disabled:hover { border-color: var(--color-rule); background: transparent; cursor: not-allowed; }
   .toggle:disabled::after { background: var(--color-ink-3); }
 
   /* --- Select: the native element with the chrome removed and our chevron. */

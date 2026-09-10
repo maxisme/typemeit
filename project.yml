@@ -66,7 +66,7 @@ targets:
         NSMicrophoneUsageDescription: "type me it records your voice while you hold the Fn key so it can transcribe it."
         NSHumanReadableCopyright: ""
         NSPrincipalClass: NSApplication
-        SUFeedURL: https://github.com/maxisme/typemeit/releases/latest/download/appcast.xml
+        SUFeedURL: https://github.com/typemeit/typemeit/releases/latest/download/appcast.xml
         SUEnableAutomaticChecks: true
         SUScheduledCheckInterval: 3600
         SUAutomaticallyUpdate: true

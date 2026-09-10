@@ -2,7 +2,8 @@ import FoundationModels
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
-    case insights, settings, cleanup, history
+    // The order the sidebar lists them in.
+    case insights, cleanup, history, settings
 
     var icon: String {
         switch self {
@@ -20,7 +21,7 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationSplitView {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 0) {
                 // Drawn as a template so it follows the appearance: the mark's
                 // own ink is fixed at the time it is rendered.
                 Image(nsImage: MenuBarIconRenderer.mark(side: 40))
@@ -28,38 +29,30 @@ struct SettingsView: View {
                     .resizable()
                     .foregroundStyle(DesignTokens.Colors.ink)
                     .frame(width: 40, height: 40)
-                    .padding(.leading, 6)
-                    .padding(.bottom, 8)
+                    .padding(.leading, 12)
+                    .padding(.bottom, 14)
                 ForEach(SettingsTab.allCases, id: \.self) { t in
-                    let on = t == tab
-                    Button { tab = t } label: {
-                        HStack(spacing: 8) {
-                            Image(t.icon).resizable().frame(width: 14, height: 14)
-                            Text(t.rawValue).font(DesignTokens.Fonts.ui.monospaced().weight(.semibold))
-                        }
-                            .foregroundStyle(on ? DesignTokens.Colors.onSlab : DesignTokens.Colors.ink2)
-                            .padding(.horizontal, 10)
-                            .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
-                            .background(Rectangle().fill(on ? DesignTokens.Colors.slab : Color.clear))
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                    SidebarItem(tab: t, selected: t == tab) { tab = t }
                 }
                 Spacer()
             }
-            .padding(10)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(DesignTokens.Colors.paper)
+            .background(DesignTokens.Colors.paperSunk)
             .toolbar(removing: .sidebarToggle)
-            .navigationSplitViewColumnWidth(min: 150, ideal: 170, max: 220)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 196, max: 240)
         } detail: {
-            Group {
-                switch tab ?? .insights {
-                case .settings: MainSettingsTab()
-                case .cleanup: CleanupTab()
-                case .history: HistoryTab()
-                case .insights: InsightsTab()
+            VStack(alignment: .leading, spacing: 0) {
+                PageHeader(title: (tab ?? .insights).rawValue)
+                Group {
+                    switch tab ?? .insights {
+                    case .settings: MainSettingsTab()
+                    case .cleanup: CleanupTab()
+                    case .history: HistoryTab()
+                    case .insights: InsightsTab()
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(DesignTokens.Colors.paper)
@@ -67,7 +60,7 @@ struct SettingsView: View {
             .toolbar(removing: .title)
         }
         .tint(DesignTokens.Colors.ink)
-        .frame(minWidth: 780, minHeight: 480)
+        .frame(minWidth: 780, minHeight: 700)
         .onAppear(perform: takeRequestedTab)
         .onChange(of: appState.settingsTab) { _, _ in takeRequestedTab() }
     }
@@ -79,8 +72,62 @@ struct SettingsView: View {
     }
 }
 
+/// A sidebar choice. The slab runs the full width of the column so the
+/// selection reads as a band in the window rather than a floating button, and
+/// the pointer gets a light wash on the rest.
+private struct SidebarItem: View {
+    let tab: SettingsTab
+    let selected: Bool
+    let choose: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: choose) {
+            HStack(spacing: 10) {
+                Image(tab.icon).resizable().frame(width: 16, height: 16)
+                Text(tab.rawValue).font(.system(size: 14, weight: .semibold, design: .monospaced))
+            }
+            .foregroundStyle(selected ? DesignTokens.Colors.onSlab : DesignTokens.Colors.ink2)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+            .background(Rectangle().fill(fill))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+    }
+
+    private var fill: Color {
+        if selected { return DesignTokens.Colors.slab }
+        return hovering ? DesignTokens.Colors.inkA08 : .clear
+    }
+}
+
+/// The page's name, above the page's own scroll view, so content passes under
+/// a hairline instead of running out at the window's edge.
+private struct PageHeader: View {
+    let title: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.system(size: 20, weight: .semibold, design: .monospaced))
+                .foregroundStyle(DesignTokens.Colors.ink)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+            Rectangle().fill(DesignTokens.Colors.rule).frame(height: DesignTokens.hairline)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 /// The design system's button: mono label, ink outline, inverts when primary,
 /// loses its outline when quiet. Disabled drops to ink-3 on a rule border.
+///
+/// The pointer states are the ones `web/styles/app.css` gives `.btn-*`: an
+/// outlined button takes an ink-a04 wash and a primary one eases off its slab
+/// to ink-a88, and both go a step further while held. A disabled button
+/// answers neither.
 struct InkButtonStyle: ButtonStyle {
     var primary = false
     var quiet = false
@@ -93,6 +140,8 @@ struct InkButtonStyle: ButtonStyle {
         let primary: Bool
         let quiet: Bool
         @Environment(\.isEnabled) private var enabled
+        @State private var hovering = false
+        private var hot: Bool { hovering && enabled }
 
         var body: some View {
             configuration.label
@@ -100,25 +149,86 @@ struct InkButtonStyle: ButtonStyle {
                 .foregroundStyle(foreground)
                 .padding(.horizontal, 10)
                 .frame(height: 26)
-                .background(background)
+                .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).fill(background))
                 .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(border, lineWidth: DesignTokens.hairline))
-                .opacity(configuration.isPressed ? 0.6 : 1)
+                .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm))
+                .onHover { hovering = $0 }
+                .animation(.easeOut(duration: DesignTokens.Duration.n1), value: hot)
         }
 
         private var foreground: Color {
             if !enabled { return DesignTokens.Colors.ink3 }
             if primary { return DesignTokens.Colors.onSlab }
-            return quiet ? DesignTokens.Colors.ink2 : DesignTokens.Colors.ink
+            if quiet { return hot ? DesignTokens.Colors.ink : DesignTokens.Colors.ink2 }
+            return DesignTokens.Colors.ink
         }
 
         private var background: Color {
-            guard primary else { return .clear }
-            return enabled ? DesignTokens.Colors.slab : DesignTokens.Colors.inkA12
+            if primary {
+                guard enabled else { return DesignTokens.Colors.inkA12 }
+                if configuration.isPressed { return DesignTokens.Colors.inkA64 }
+                return hot ? DesignTokens.Colors.inkA88 : DesignTokens.Colors.slab
+            }
+            guard enabled else { return .clear }
+            if configuration.isPressed { return DesignTokens.Colors.inkA08 }
+            return hot ? DesignTokens.Colors.inkA04 : .clear
         }
 
         private var border: Color {
             if primary || quiet { return .clear }
             return enabled ? DesignTokens.Colors.ink : DesignTokens.Colors.rule
+        }
+    }
+}
+
+/// The design system's plain button: no outline and no fill of its own, an
+/// ink-a04 wash and full-strength ink under the pointer, a step darker while
+/// held. It is what `.btn-quiet` is on the web, and it is the style for every
+/// button that draws its own label — the icon buttons, the sidebar tabs, the
+/// crosses that dismiss things.
+struct QuietButtonStyle: ButtonStyle {
+    /// A square target for icon buttons, so a 10pt glyph still gets something
+    /// worth hovering. Nil leaves the label at the size it drew itself.
+    var side: CGFloat?
+    var radius: CGFloat = DesignTokens.Radius.sm
+    /// A selected button is inverted outright and stops answering the pointer,
+    /// being already the thing a click would ask for.
+    var selected = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        QuietButtonLabel(configuration: configuration, side: side, radius: radius, selected: selected)
+    }
+
+    private struct QuietButtonLabel: View {
+        let configuration: Configuration
+        let side: CGFloat?
+        let radius: CGFloat
+        let selected: Bool
+        @Environment(\.isEnabled) private var enabled
+        @State private var hovering = false
+        private var hot: Bool { hovering && enabled && !selected }
+
+        var body: some View {
+            configuration.label
+                .foregroundStyle(foreground)
+                .frame(width: side, height: side)
+                .background(RoundedRectangle(cornerRadius: radius).fill(background))
+                .contentShape(RoundedRectangle(cornerRadius: radius))
+                .onHover { hovering = $0 }
+                .animation(.easeOut(duration: DesignTokens.Duration.n1), value: hot)
+        }
+
+        private var foreground: Color {
+            if selected { return DesignTokens.Colors.onSlab }
+            if !enabled { return DesignTokens.Colors.ink3 }
+            return hot ? DesignTokens.Colors.ink : DesignTokens.Colors.ink2
+        }
+
+        private var background: Color {
+            if selected { return DesignTokens.Colors.slab }
+            guard enabled else { return .clear }
+            if configuration.isPressed { return DesignTokens.Colors.inkA08 }
+            return hot ? DesignTokens.Colors.inkA04 : .clear
         }
     }
 }
@@ -146,6 +256,20 @@ struct RowRule: View {
     var body: some View { Rectangle().fill(DesignTokens.Colors.inkA20).frame(height: DesignTokens.hairline) }
 }
 
+extension SettingsRow {
+    /// Parses a subtitle as markdown and underlines link runs, so any link in
+    /// a subtitle carries the same underline the standalone `Link` rows do.
+    /// Plain strings render unchanged; a malformed markdown string falls back
+    /// to a plain AttributedString.
+    static func subtitleAttributed(_ s: String) -> AttributedString {
+        var attr = (try? AttributedString(markdown: s)) ?? AttributedString(s)
+        for run in attr.runs where run.link != nil {
+            attr[run.range].underlineStyle = .single
+        }
+        return attr
+    }
+}
+
 struct SettingsRow<Control: View>: View {
     var label: String
     var subtitle: String?
@@ -158,7 +282,7 @@ struct SettingsRow<Control: View>: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label).font(DesignTokens.Fonts.ui.monospaced())
                     if let subtitle {
-                        Text(subtitle).font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2).frame(maxWidth: 400, alignment: .leading)
+                        Text(SettingsRow.subtitleAttributed(subtitle)).font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2).tint(DesignTokens.Colors.ink).frame(maxWidth: 400, alignment: .leading)
                     }
                 }
                 Spacer()
@@ -200,15 +324,12 @@ struct MainSettingsTab: View {
                 }
                 SettingsGroup(title: "microphone") {
                     SettingsRow(label: "microphone") {
-                        Picker("", selection: Binding(get: { settings.microphoneUID ?? "" }, set: { settings.microphoneUID = $0.isEmpty ? nil : $0; Pipeline.shared.applyMicrophoneSettings() })) {
+                        Picker("", selection: Binding(get: { settings.microphoneUID ?? "" }, set: { settings.microphoneUID = $0.isEmpty ? nil : $0 })) {
                             Text("system default").tag("")
                             ForEach(devices) { d in Text(d.name).tag(d.id) }
                         }
                         .labelsHidden().fixedSize()
                         .onAppear { devices = AudioCapture.inputDevices() }
-                    }
-                    SettingsRow(label: "keep microphone open", subtitle: "faster start") {
-                        Toggle("", isOn: Binding(get: { settings.alwaysOnMicrophone }, set: { settings.alwaysOnMicrophone = $0; Pipeline.shared.applyMicrophoneSettings() })).toggleStyle(.switch).labelsHidden()
                     }
                     SettingsRow(label: "mute other audio", last: true) {
                         Toggle("", isOn: $settings.muteWhileRecording).toggleStyle(.switch).labelsHidden()
@@ -266,8 +387,8 @@ struct MainSettingsTab: View {
                     SettingsRow(label: "open at login") {
                         Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "update automatically", subtitle: "otherwise updates wait for you below") {
-                        Toggle("", isOn: Binding(get: { updates.installsAutomatically }, set: { updates.installsAutomatically = $0 })).toggleStyle(.switch).labelsHidden()
+                    SettingsRow(label: "ask before updating", subtitle: "otherwise it restarts itself when idle") {
+                        Toggle("", isOn: Binding(get: { settings.askBeforeUpdating }, set: { settings.askBeforeUpdating = $0; Updates.shared.askPreferenceChanged() })).toggleStyle(.switch).labelsHidden()
                             .disabled(Updates.isDevBuild)
                     }
                     SettingsRow(label: "dock icon") {
@@ -280,7 +401,7 @@ struct MainSettingsTab: View {
                     }
                 }
                 SettingsGroup(title: "about") {
-                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "parakeet 0.6b · apple intelligence") {
+                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "[parakeet 0.6b](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) · [apple intelligence](https://www.apple.com/apple-intelligence/)") {
                         updateStatus
                     }
                     SettingsRow(label: "website", last: true) {
@@ -324,6 +445,8 @@ struct CleanupTab: View {
     @State private var store = Store.shared
     @State private var newWord = ""
     @State private var availability = PostProcessor.availability
+    @State private var verifier = VerifyCustomWord.shared
+    @State private var player = RecordingPlayer.shared
     /// Apple Intelligence is switched in System Settings, not in the app, so
     /// it is re-read while the window is up.
     private let poll = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
@@ -380,7 +503,9 @@ struct CleanupTab: View {
                                             settings.removeCustomWord(word)
                                         } label: {
                                             Image("akar-cross").resizable().frame(width: 8, height: 8)
-                                        }.buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
+                                        }
+                                        .buttonStyle(QuietButtonStyle(side: 16, radius: DesignTokens.Radius.full))
+                                        .help("forget \(word)")
                                     }
                                     .padding(.leading, learned == nil ? 9 : 7).padding(.trailing, 6)
                                     .frame(height: 22)
@@ -392,8 +517,13 @@ struct CleanupTab: View {
                         }
                         TextField("add a word", text: $newWord)
                             .textFieldStyle(.roundedBorder)
-                            .onSubmit { settings.addCustomWord(newWord); newWord = "" }
+                            .onSubmit { addWordAndVerify() }
                         .padding(.horizontal, 12).padding(.vertical, 8)
+                        if verifier.state != .idle {
+                            RowRule()
+                            verifyPanel
+                                .padding(.horizontal, 12).padding(.vertical, 10)
+                        }
                     }
                 }
             }
@@ -402,12 +532,84 @@ struct CleanupTab: View {
         .onAppear { availability = PostProcessor.availability }
         .onReceive(poll) { _ in availability = PostProcessor.availability }
     }
+
+    private func addWordAndVerify() {
+        let w = newWord.trimmingCharacters(in: .whitespaces)
+        guard !w.isEmpty else { newWord = ""; return }
+        let existing = settings.customWords
+        settings.addCustomWord(w)
+        newWord = ""
+        // Only worth checking when the model can run. On other Macs the word
+        // is added silently.
+        if case .available = availability {
+            verifier.run(for: w, existingWords: existing, history: store.history)
+        }
+    }
+
+    @ViewBuilder
+    private var verifyPanel: some View {
+        switch verifier.state {
+        case .idle: EmptyView()
+        case .checking(let word, let scanned, let total):
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("checking recent dictations for '\(word)' · \(scanned)/\(total)")
+                    .font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2)
+                Spacer()
+                Button("stop") { verifier.clear() }.buttonStyle(InkButtonStyle(quiet: true))
+            }
+        case .done(let word, let matches, let scanned):
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image("akar-sparkles").resizable().frame(width: 11, height: 11).foregroundStyle(DesignTokens.Colors.ink2)
+                    Text(headline(for: word, matches: matches, scanned: scanned))
+                        .font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2)
+                    Spacer()
+                    Button("dismiss") { verifier.clear() }.buttonStyle(InkButtonStyle(quiet: true))
+                }
+                ForEach(matches) { match in verifyRow(match) }
+            }
+        }
+    }
+
+    private func headline(for word: String, matches: [VerifyCustomWord.Match], scanned: Int) -> String {
+        if matches.isEmpty { return "'\(word)' would not have changed the last \(scanned) dictations" }
+        return "'\(word)' would have caught \(matches.count) of the last \(scanned) dictations"
+    }
+
+    @ViewBuilder
+    private func verifyRow(_ match: VerifyCustomWord.Match) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Text(match.timestamp.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute()))
+                    .font(.system(size: 10).monospaced()).foregroundStyle(DesignTokens.Colors.ink3)
+                Spacer()
+                if match.recordingFile != nil, let entry = store.history.first(where: { $0.id == match.id }) {
+                    let on = player.playing == match.id
+                    Button {
+                        player.toggle(entry)
+                    } label: {
+                        Image(on ? "akar-stop" : "akar-play").resizable().frame(width: 11, height: 11)
+                    }
+                    .buttonStyle(QuietButtonStyle(side: 20))
+                    .help(on ? "stop" : "play the audio")
+                }
+            }
+            Text(match.before).font(.system(size: 12))
+                .foregroundStyle(DesignTokens.Colors.diffRemove).strikethrough()
+            Text(match.after).font(.system(size: 12))
+                .foregroundStyle(DesignTokens.Colors.diffAdd)
+        }
+        .padding(8)
+        .background(Rectangle().fill(DesignTokens.Colors.inkA04))
+    }
 }
 
 /// A full-width row of resting puffs, one in each colour, each showing its
 /// own smoke; the chosen one is drawn larger.
 struct CloudColorPalette: View {
     @Binding var selection: CloudColor
+    @State private var hovered: CloudColor?
 
     /// The cell each puff sits in, and the larger square it is drawn in, so
     /// the cloud fills the cell rather than resting a quarter of the way
@@ -419,15 +621,19 @@ struct CloudColorPalette: View {
         HStack(spacing: 0) {
             ForEach(Array(CloudColor.allCases.enumerated()), id: \.element) { i, c in
                 let on = c == selection
+                // Chosen is 1.5; the pointer takes an unchosen puff part of
+                // the way there, so the row answers before it is clicked.
+                let scale = on ? 1.5 : (hovered == c ? 1.25 : 1.0)
                 Button { selection = c } label: {
                     PuffView(level: 0, tint: Color(nsColor: c.color), timeOffset: Double(i) * 7.3)
                         .frame(width: CloudColorPalette.drawn, height: CloudColorPalette.drawn)
                         .frame(width: CloudColorPalette.side, height: CloudColorPalette.side)
-                        .scaleEffect(on ? 1.5 : 1)
-                        .animation(.easeOut(duration: 0.18), value: on)
+                        .scaleEffect(scale)
+                        .animation(.easeOut(duration: 0.18), value: scale)
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .onHover { hovered = $0 ? c : (hovered == c ? nil : hovered) }
                 .help(c.label)
                 .accessibilityLabel(c.label)
                 .accessibilityAddTraits(on ? .isSelected : [])
@@ -444,6 +650,7 @@ struct ShortcutRecorder: View {
     @Binding var combo: KeyCombo?
     @State private var recording = false
     @State private var monitor: Any?
+    @State private var hovering = false
 
     var body: some View {
         HStack(spacing: 6) {
@@ -457,18 +664,23 @@ struct ShortcutRecorder: View {
                 } else if let combo {
                     HStack(spacing: 4) { ForEach(combo.caps, id: \.self) { Keycap($0) } }
                 } else {
-                    Text("set shortcut").font(.system(size: 12).monospaced()).foregroundStyle(DesignTokens.Colors.ink2)
+                    // An empty outline is easy to read as furniture, so the
+                    // pointer brings it up to a real edge and full ink.
+                    Text("set shortcut").font(.system(size: 12).monospaced())
+                        .foregroundStyle(hovering ? DesignTokens.Colors.ink : DesignTokens.Colors.ink2)
                         .frame(height: 22).padding(.horizontal, 8)
-                        .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(DesignTokens.Colors.inkA20, lineWidth: 0.5))
+                        .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.sm).strokeBorder(hovering ? DesignTokens.Colors.ink : DesignTokens.Colors.inkA20, lineWidth: 0.5))
                 }
             }
             .buttonStyle(.plain)
+            .onHover { hovering = $0 }
+            .animation(.easeOut(duration: DesignTokens.Duration.n1), value: hovering)
             .help(recording ? "esc to cancel, ⌫ to clear" : "click, then press the keys")
             if combo != nil, !recording {
                 Button { combo = nil } label: {
                     Image("akar-cross").resizable().frame(width: 8, height: 8)
                 }
-                .buttonStyle(.plain).foregroundStyle(DesignTokens.Colors.ink2)
+                .buttonStyle(QuietButtonStyle(side: 18, radius: DesignTokens.Radius.full))
                 .help("clear")
                 .accessibilityLabel("clear shortcut")
             }
