@@ -314,7 +314,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
         <li>no answer, because the app in front does not speak accessibility: treated as a text input.</li>
       </ul>
       <div class="pillwrap"><svg class="pillart" viewBox="0 0 300 44" width="300" height="44" aria-hidden="true"><rect x="0.5" y="0.5" width="299" height="43" rx="21.5" fill="var(--paper)" stroke="var(--ink)"/><g transform="translate(16,15)" fill="none" stroke="var(--ink-2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="10" height="12" rx="1.5"/><path d="M5 2V1h4v1M4 6h6M4 9h6"/></g><text x="44" y="27" font-family="DM Mono, ui-monospace, monospace" font-size="12" fill="var(--ink)">nowhere to type it</text><rect x="228.5" y="9.5" width="52" height="25" rx="12.5" fill="var(--slab)"/><text x="254.5" y="26" text-anchor="middle" font-family="DM Mono, ui-monospace, monospace" font-size="12" fill="var(--on-slab)">copy</text></svg></div>
-      <p>the same capsule shows when the paste itself fails, below.</p>
+      <p>the same capsule shows if the paste itself fails, which happens when the accessibility grant is missing.</p>
       <div class="chips"><span class="chip">space after typing<em>settings › typing</em></span></div>
     </div>
   </div>
@@ -323,9 +323,8 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step mark"><canvas class="puffgl" data-state="depart" width="88" height="88" aria-hidden="true"></canvas>
     <div class="box">
       <h3><s>type</s> paste it <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Output.swift">Output.paste</a></span></h3>
-      <p>the clipboard's text (or image) is saved, the transcript put on it, 60 ms wait, cmd+v posted as a system event, 60 ms wait, and the clipboard restored. with auto-submit on, return is posted 50 ms later with the chosen modifier.</p>
+      <p>the clipboard's text (or image) is saved, the transcript put on it, 60 ms wait, cmd+v posted as a system event, 60 ms wait, and the clipboard restored. with auto-submit on, return is posted 50 ms later, with the modifier picked under key after typing › key.</p>
       <div class="chips"><span class="chip">key after typing<em>settings › typing</em></span></div>
-      <div class="gate">cmd+v is not typed into the app; it is a keystroke posted to the system as if from a keyboard. macos only accepts that from an app with the accessibility grant (system settings › privacy &amp; security › accessibility, given during onboarding). without it the event cannot be created, nothing is pasted, and the paste reports false. the clipboard has already been put back, so the text is not on it either; the cloud becomes the copy capsule above instead, and the history entry is written all the same.</div>
     </div>
   </div>
 
