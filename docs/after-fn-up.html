@@ -38,6 +38,7 @@ code{background:var(--ink-a08);padding:1px 5px;border-radius:3px}
 .t b{display:block;color:var(--ink);font-weight:500}
 .step{position:relative;padding:12px 0 12px 28px}
 .step::before{content:"";position:absolute;left:-4px;top:24px;width:9px;height:9px;border-radius:50%;background:var(--paper);border:1px solid var(--ink)}
+.flow:not(.nested)>.step:not(.mark)::before{display:none}
 .step.exit::before{background:var(--ink)}
 .step.mark::before{display:none}
 .step.mark .puffgl{position:absolute;left:-23px;top:8px;width:46px;height:46px}
@@ -89,7 +90,7 @@ details.evals .sub{margin-top:6px}
 .flow.nested .box h3{font-size:14px}
 .flow.nested .box p,.flow.nested .box li{font-size:13px}
 .flow.nested .sub{grid-template-columns:1fr}
-.pillwrap{margin:10px 0;max-width:300px}
+.pillwrap{margin:10px 0 4px;max-width:300px}
 .pillwrap svg{display:block;width:100%;height:auto}
 .gate{margin-top:8px;padding-top:8px;border-top:1px dashed var(--rule-control);color:var(--ink-2);font-size:13px}
 .gate .mono{color:var(--ink-3)}
@@ -115,7 +116,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
 
 <main>
 <h1>after fn up</h1>
-<p class="lede">what one dictation does between the key coming up and the text landing in the field, on the happy path with every setting on. the cloud on the left is drawn by the app's own shader, in the state it is in at that moment: breathing while you speak, struck by lightning once a second from fn up until the text is typed, then drawing in and fading over 0.35 s as the overlay hides. code names in mono; timings are medians from 556 dictations on this mac plus the fixed delays in <code>Fixed</code>.</p>
+<p class="lede">what one dictation does between the key coming up and the text landing in the field, on the happy path with every setting on. the cloud on the left is drawn by the app's own shader, in the state it is in at that moment: breathing while you speak, struck by lightning once a second from fn up until the text is typed, then drawing in and fading over 0.35 s as the text lands. code names in mono; timings are medians from 556 dictations on this mac plus the fixed delays in <code>Fixed</code>.</p>
 <p class="meta"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Pipeline.swift">Pipeline.swift</a> · endRecording → deliver · median dictation 4.7 s of audio</p>
 <div class="key"><span class="disk">written to disk <em>· ~/Library/Application Support/TypeMeIt</em></span><span style="border:0">a chip names a setting that touches the step, as its row reads in the settings window, with its tab and group. every one is on for the path drawn. the table at the end says what each does.</span></div>
 
@@ -162,7 +163,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step mark"><canvas class="puffgl" data-state="struck" width="88" height="88" aria-hidden="true"></canvas>
     <div class="box">
       <h3>speech to text <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Transcriber.swift">Transcriber.transcribe</a> · <a href="https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2">parakeet 0.6b</a></span></h3>
-      <p>the pill shows transcribing. nothing is transcribed while you speak: the whole recording goes to parakeet now, in one go. it works about 33× faster than you spoke, so a 5 s dictation is text about 150 ms after fn up. the result is parakeet's text: the words it heard, with its own capitals and punctuation.</p>
+      <p>the cloud shows transcribing. nothing is transcribed while you speak: the whole recording goes to parakeet now, in one go. it works about 33× faster than you spoke, so a 5 s dictation is text about 150 ms after fn up. the result is parakeet's text: the words it heard, with its own capitals and punctuation.</p>
       <div class="gate">exit if the result is blank, or if a new recording started meanwhile: the generation counter no longer matches and this task returns without touching anything. <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Pipeline.swift">gen == generation</a></span></div>
     </div>
   </div>
@@ -171,7 +172,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step mark"><canvas class="puffgl" data-state="struck" width="88" height="88" aria-hidden="true"></canvas>
     <div class="box">
       <h3>the model and the code around it <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">PostProcessor.clean</a></span></h3>
-      <p>the pill shows cleaning up. code before the model, the on-device model, two guards on what it returns, code after it, then the writing styles. this is the one function the eval scores, so what the eval sees is what gets typed. each pass is below.</p>
+      <p>the cloud shows cleaning up. code before the model, the on-device model, two guards on what it returns, code after it, then the writing styles. this is the one function the eval scores, so what the eval sees is what gets typed. each pass is below.</p>
       <details class="evals"><summary>how the eval works</summary>
 <div class="sub">
 <div><b>what runs</b><code>make eval</code> compiles this app's own clean-up code into a small tool and runs every case in <a href="https://github.com/typemeit/typemeit/blob/main/Scripts/cleanup-eval/cases.json">cases.json</a> through <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">PostProcessor.clean</a> on this mac's apple intelligence. the same function the pipeline calls, so the eval scores exactly what gets typed.</div>
@@ -234,10 +235,10 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
 
   <div class="t"><b>on device</b>most of the 929 ms</div>
   <div class="step">
-    <div class="box slabbox">
+    <div class="box">
       <h3>apple intelligence <span class="mono"><a href="https://developer.apple.com/documentation/foundationmodels/languagemodelsession/respond(to:generating:includeschemainprompt:options:)">LanguageModelSession.respond</a></span></h3>
       <p><span class="mono"><a href="https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel">SystemLanguageModel(guardrails: .permissiveContentTransformations)</a></span>, so a transcript about anything is still cleaned rather than refused. a fresh session per dictation, prewarmed at fn down so the first response is not slowed by loading. guided generation into one struct with one field, <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">CleanedTranscript.cleanedText</a></span>, so the model cannot answer in prose around the text. greedy sampling, so the same transcript gives the same answer every time; the eval relies on that.</p>
-      <div class="gate" style="border-color:var(--on-slab);opacity:.8">a thrown error other than cancellation is logged and returns nil. the model's text passes through <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">stripThinkBlock</a></span>, which drops a leading <code>&lt;think&gt;…&lt;/think&gt;</code> if one is there, then is trimmed. empty means nil.</div>
+      <div class="gate">a thrown error other than cancellation is logged and returns nil. the model's text passes through <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">stripThinkBlock</a></span>, which drops a leading <code>&lt;think&gt;…&lt;/think&gt;</code> if one is there, then is trimmed. empty means nil.</div>
     </div>
   </div>
 
@@ -314,32 +315,37 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step mark"><canvas class="puffgl" data-state="struck" width="88" height="88" aria-hidden="true"></canvas>
     <div class="box">
       <h3>look at the focused element <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Focus.swift">Focus.focusedElementIsTextInput</a></span></h3>
-      <p>a trailing space is added. then accessibility is asked whether the focused element is a text input: yes, no, or no answer. the answer decides what happens after the paste, not whether it happens.</p>
+      <p>a trailing space is added. then accessibility is asked what has keyboard focus. the paste happens either way; the answer decides what the cloud does next.</p>
+      <ul>
+        <li>a text input, such as a chat box, a document or a terminal: the text lands there, and the cloud fades out once it has.</li>
+        <li>anything else, such as the finder, a video player or no window at all: the text has nowhere to land, so the cloud becomes a capsule with copy on it for 8 s, and copy puts the text on the clipboard.</li>
+        <li>no answer, because the app in front does not speak accessibility: treated as a text input.</li>
+      </ul>
+      <div class="pillwrap"><svg class="pillart" viewBox="0 0 300 44" width="300" height="44" aria-hidden="true"><rect x="0.5" y="0.5" width="299" height="43" rx="21.5" fill="var(--paper)" stroke="var(--ink)"/><g transform="translate(16,15)" fill="none" stroke="var(--ink-2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="10" height="12" rx="1.5"/><path d="M5 2V1h4v1M4 6h6M4 9h6"/></g><text x="44" y="27" font-family="DM Mono, ui-monospace, monospace" font-size="12" fill="var(--ink)">nowhere to type it</text><rect x="228.5" y="9.5" width="52" height="25" rx="12.5" fill="var(--slab)"/><text x="254.5" y="26" text-anchor="middle" font-family="DM Mono, ui-monospace, monospace" font-size="12" fill="var(--on-slab)">copy</text></svg></div>
+      <p>the same capsule shows when the paste itself fails, below.</p>
       <div class="chips"><span class="chip">space after typing<em>settings › typing</em></span></div>
     </div>
   </div>
 
   <div class="t"><b>paste</b>120 ms fixed</div>
-  <div class="step mark"><canvas class="puffgl" data-state="struck" width="88" height="88" aria-hidden="true"></canvas>
-    <div class="box slabbox">
+  <div class="step mark"><canvas class="puffgl" data-state="depart" width="88" height="88" aria-hidden="true"></canvas>
+    <div class="box">
       <h3>type it <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Output.swift">Output.paste</a></span></h3>
       <p>the clipboard's text (or image) is saved, the transcript put on it, 60 ms wait, cmd+v posted as a system event, 60 ms wait, and the clipboard restored. with auto-submit on, return is posted 50 ms later with the chosen modifier.</p>
       <div class="chips"><span class="chip">key after typing<em>settings › typing</em></span></div>
-      <div class="gate" style="border-color:var(--on-slab);opacity:.9">cmd+v is not typed into the app; it is a keystroke posted to the system as if from a keyboard. macOS only accepts that from an app with the accessibility grant (system settings › privacy &amp; security › accessibility, given during onboarding). without it the event cannot be created, nothing is pasted, and the paste reports false. the clipboard has already been put back, so the text is not on it either. the last step then shows this instead of hiding, for 8 s, and copy puts the text on the clipboard:
-      <div class="pillwrap"><svg class="pillart" viewBox="0 0 300 44" width="300" height="44" aria-hidden="true"><rect x="0.5" y="0.5" width="299" height="43" rx="21.5" fill="var(--paper)" stroke="var(--ink)"/><g transform="translate(16,15)" fill="none" stroke="var(--ink-2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="10" height="12" rx="1.5"/><path d="M5 2V1h4v1M4 6h6M4 9h6"/></g><text x="44" y="27" font-family="DM Mono, ui-monospace, monospace" font-size="12" fill="var(--ink)">nowhere to type it</text><rect x="228.5" y="9.5" width="52" height="25" rx="12.5" fill="var(--slab)"/><text x="254.5" y="26" text-anchor="middle" font-family="DM Mono, ui-monospace, monospace" font-size="12" fill="var(--on-slab)">copy</text></svg></div>
-      the same pill shows when the paste worked but the focused element was not a text input, such as the finder or a video player, so the text went nowhere. the history entry is written either way.</div>
+      <div class="gate">cmd+v is not typed into the app; it is a keystroke posted to the system as if from a keyboard. macos only accepts that from an app with the accessibility grant (system settings › privacy &amp; security › accessibility, given during onboarding). without it the event cannot be created, nothing is pasted, and the paste reports false. the clipboard has already been put back, so the text is not on it either; the cloud becomes the copy capsule above instead, and the history entry is written all the same.</div>
     </div>
   </div>
 
   <div class="t">+0 ms</div>
-  <div class="step mark"><canvas class="puffgl" data-state="depart" width="88" height="88" aria-hidden="true"></canvas>
+  <div class="step">
     <div class="box">
-      <h3>write history, go idle <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Store.swift">store.append</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Pipeline.swift">phase = .idle</a></span></h3>
-      <p>one entry with the transcript as heard, the cleaned text, both durations, the app and window, and the recording file's name. the whole history is rewritten atomically after every change; it is small enough to hold in memory. the pill hides and the next fn down is accepted.</p>
+      <h3>write history <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Store.swift">store.append</a></span></h3>
+      <p>one entry with the transcript as heard, the cleaned text, both durations, the app and window, and the recording file's name. the whole history is rewritten atomically after every change; it is small enough to hold in memory.</p>
       <div class="disk">history.json <em>· the entry, appended; the oldest beyond the keep limit go, with their recordings</em></div>
       <ul>
         <li>focused element was a text input: read-back starts, watching the field for your corrections to learn from. <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Learning/ReadBack.swift">ReadBack.start</a></span></li>
-        <li>not a text input, or the paste failed: the pill offers copy for 8 s instead. <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Pipeline.swift">showCopyPrompt</a></span></li>
+        <li>not a text input, or the paste failed: the copy capsule, above. <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Pipeline.swift">showCopyPrompt</a></span></li>
       </ul>
       <div class="chips"><span class="chip">keep<em>history › keep</em></span><span class="chip">learn from corrections<em>intelligence › clean-up</em></span><span class="chip">offer to copy when no text box is focused<em>settings › typing</em></span></div>
     </div>
@@ -362,13 +368,13 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
 <tr><td>space after typing</td><td>settings › typing</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">appendTrailingSpace</a></td><td>a space after the text.</td></tr>
 <tr><td>key after typing · key</td><td>settings › typing</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">autoSubmit · autoSubmitKey</a></td><td>return, ctrl-return or cmd-return 50 ms after the paste.</td></tr>
 <tr><td>learn from corrections</td><td>intelligence › clean-up</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">learnFromCorrections</a></td><td>read-back watches the field after a paste into a text input. never in password managers, terminals or under secure input.</td></tr>
-<tr><td>offer to copy when no text box is focused</td><td>settings › typing</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">copyPromptEnabled</a></td><td>the copy pill for 8 s when the paste had nowhere to go.</td></tr>
+<tr><td>offer to copy when no text box is focused</td><td>settings › typing</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">copyPromptEnabled</a></td><td>the copy capsule for 8 s when the paste had nowhere to go.</td></tr>
 <tr><td>keep</td><td>history › keep</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">historyLimit</a></td><td>how many entries are kept, oldest out first with their recordings.</td></tr>
 </table>
 </div>
 
 <h2>not on this page</h2>
-<p class="lede">esc at any point (it cancels the dictation whatever step it is on, and types nothing), the model being unavailable or still downloading, the learned-words toast that read-back can raise later, and the model unload five minutes after the last dictation. the eval's wish list holds the cases where this path does not yet produce the text it should.</p>
+<p class="lede">esc at any point (it cancels the dictation whatever step it is on, and types nothing), the model being unavailable or still downloading, the learned-words capsule that read-back can raise later, and the model unload five minutes after the last dictation. the eval's wish list holds the cases where this path does not yet produce the text it should.</p>
 </main>
 
 <script>
