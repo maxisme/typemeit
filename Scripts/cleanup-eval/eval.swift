@@ -1,16 +1,17 @@
 import Foundation
 import FoundationModels
 
-/// Runs the cases in cases.json through the app's own path: PostProcessor
-/// (prompt, guided generation, rewrite and opening guards), with the raw
-/// transcript as the fallback when the model's output is rejected. The sources
+/// Runs the cases in cases.json through the app's own path, PostProcessor.clean:
+/// the code passes before the model, the prompt, guided generation, the
+/// rewrite and opening guards, the raw transcript as the fallback when the
+/// model's output is rejected, then the writing styles. The sources
 /// are compiled in by run.sh, so this scores exactly what ships. A case with
 /// `screen`, lines of text standing in for the window the user dictates into,
 /// goes through ScreenContext's term filter first and the model is told the
 /// terms, the way the read-the-screen setting does; it is also run without
 /// them so the summary says whether the screen helped. A case with `styles`
 /// runs with those writing styles on, the way the writing-style rows do: the
-/// rules in the instructions, then WritingStyle.apply on the output; a case
+/// rules in the instructions and the code passes on the output; a case
 /// with `matrix` runs under every combination of styles; a case with `wish`
 /// is reported but never fails the run; a normal case has one expected text
 /// and only alternatives that are as good. A case passes
@@ -203,7 +204,7 @@ struct Result: Encodable {
             let terms = await MainActor.run { ScreenContext.terms(from: c.screen ?? [], excluding: c.customWords) }
             for r in c.runs {
                 total += 1
-                let out = WritingStyle.apply(r.styles, to: await PostProcessor.shared.run(r.input, customWords: c.customWords, screenTerms: terms, styles: r.styles) ?? r.input)
+                let out = await PostProcessor.shared.clean(r.input, customWords: c.customWords, screenTerms: terms, styles: r.styles).text
                 let matched = r.match(out)
                 let ok = matched != nil
                 if c.wish != nil { wished += 1; total -= 1; if ok { granted += 1 } } else if !ok { failed += 1 }
@@ -213,7 +214,7 @@ struct Result: Encodable {
                 var blind: String?, blindOk: Bool?
                 if c.screen != nil {
                     screened += 1
-                    let b = await PostProcessor.shared.run(r.input, customWords: c.customWords) ?? r.input
+                    let b = await PostProcessor.shared.clean(r.input, customWords: c.customWords, styles: r.styles).text
                     let bOk = r.match(b) != nil
                     if ok, !bOk { helped += 1 }
                     if !ok, bOk { hurt += 1 }

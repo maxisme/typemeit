@@ -36,7 +36,7 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
         switch self {
         case .digits, .lowercase, .lists: nil
         case .fillerWords:
-            "Also delete these filler words, and only these: like, actually, sort of, kind of, wherever they add nothing (it was like really good → it was really good; it's kind of late → it's late; actually I think → I think). Keep them where they carry meaning (I like it, that kind of person). Keep every other word, including I think and I guess."
+            "Also delete these filler words, and only these: like, actually, sort of, kind of, wherever they add nothing (it was like really good → it was really good; it's kind of late → it's late; actually I think → I think). Never delete the verb like (I like it, I do not like it) or a comparison (like rain), and never delete the words around a filler. Keep every other word, including I think and I guess."
         case .contractions:
             "Use contractions wherever one exists (do not → don't, I am → I'm, it is → it's, we will → we'll)."
         }
@@ -76,6 +76,8 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
         #"(?i)(^|[\s,])(?<!\b(?:do|did|does|don't|didn't|doesn't|if|whether|as|to|let|would|could|should|will|can|must|might|i|we|they|who|that|you)\s)(you know)(,\s*|\s+|(?=[.?!,])|$)"#,
         #"(?i)(^|[\s,])(basically|literally|i mean|actually)(,\s*|\s+|(?=[.?!,])|$)"#,
         #"(?i)(^|[\s,])(like)(,\s*|\s+)(?=(?:really|very|just|so|super|totally|literally|basically|actually|kind of|sort of|a bit|a lot|pretty|quite)\b)"#,
+        // "kind of" and "sort of" hedge an adjective; before a noun they are the phrase.
+        #"(?i)(^|[\s,])(kind of|sort of)(\s+)(?!(?:a|an|the|this|that|these|those|my|your|our|their|thing|things|person|people|stuff|way|place|error|problem|issue|work|job|guy|idea|deal|situation)\b)(?=[a-z])"#,
         #"(?i)(^|[.?!]\s+)(like)(,\s*|\s+)(?=(?:i|you|we|they|he|she|it|there|this|that|the|my|your|our)\b)"#,
     ].map { try! NSRegularExpression(pattern: $0) }
 
@@ -161,8 +163,8 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
     /// The contractions that are never wrong. A subject and verb are joined
     /// only when a word follows, so "that is what it is" and "here I am" keep
     /// their last word, and not after where or how ("where we are with it");
-    /// "has" is never joined ("she has a car"); "let us" is never joined
-    /// ("let us know").
+    /// "has" is joined only before a past participle ("she has finished",
+    /// never "she has a car"); "let us" is never joined ("let us know").
     private static let negatives: [(String, String)] = [
         ("cannot", "can't"), ("can not", "can't"), ("will not", "won't"), ("shall not", "shan't"),
         ("do not", "don't"), ("does not", "doesn't"), ("did not", "didn't"), ("could not", "couldn't"),
@@ -182,14 +184,28 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
         ("there is", "there's"), ("there will", "there'll"), ("here is", "here's"),
         ("what is", "what's"), ("who is", "who's"), ("where is", "where's"), ("how is", "how's"),
     ]
+    /// "has" joins only before a past participle: "she has finished" → she's finished, "she has a car" stays.
+    private static let hasSubjects = ["he", "she", "it", "who", "that", "there", "nobody", "everybody", "someone", "everyone"]
+    private static let irregularParticiples = "been|gone|done|seen|got|gotten|had|made|taken|given|come|become|left|lost|won|said|told|found|run|put|set|brought|thought|bought|sent|built|kept|felt|met|paid|read|written|spoken|broken|chosen|forgotten|eaten|fallen|driven|flown|known|shown|grown|thrown|drawn|worn|torn|begun|sung|drunk|caught|taught|fought|heard|held|led|sold|stood|understood|cut|hit|let|quit|shut|spent|sat|slept|woken|beaten|hidden|ridden|risen|shaken|stolen|struck|swept|sworn|blown|frozen|bitten|lain|meant|sought|won"
 
+    /// Subjects join before "is not" and "are not" are looked at, so "it is
+    /// not" reads it's not rather than it isn't; "will not" still wins over
+    /// we'll not because it goes first.
     static func contract(_ text: String) -> String {
         var t = text
-        for (long, short) in negatives {
+        let late = ["is not", "are not", "am not"]
+        for (long, short) in negatives where !late.contains(long) {
             t = replaceWords(long, with: short, in: t, needsFollowingWord: false)
         }
         for (long, short) in joins {
             t = replaceWords(long, with: short, in: t, needsFollowingWord: true)
+        }
+        for (long, short) in negatives where late.contains(long) {
+            t = replaceWords(long, with: short, in: t, needsFollowingWord: false)
+        }
+        for subject in hasSubjects {
+            let re = try! NSRegularExpression(pattern: #"(?i)\b("# + subject + #")\s+has(?=\s+(?:\w+ed|"# + irregularParticiples + #")\b)"#)
+            t = re.stringByReplacingMatches(in: t, range: NSRange(t.startIndex..., in: t), withTemplate: "$1's")
         }
         return t
     }
@@ -240,7 +256,9 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
     /// Rewrites every spelled-out number as digits: "twenty five" and
     /// "twenty-five" → 25, "one hundred and twenty" → 120, "first" → 1st,
     /// "one" → 1 except as a pronoun ("no one", "one of them"). "a" and "an"
-    /// are untouched, "second" stays a word since it is also a unit of time,
+    /// are untouched except before hundred, thousand or million ("a hundred"
+    /// → 100), "second" stays a word since it is also a unit of time unless
+    /// it follows the, my, his or the like and a word follows it,
     /// a sentence-opening "First," or the counters of a spoken list stay
     /// words, "N percent" becomes N%, "five thirty" becomes 5:30, and digits
     /// read out one at a time ("oh seven seven one…") become one number.
@@ -343,14 +361,16 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
                 i += 1; continue
             }
             if ordinal { break }
-            if let u = units[t.word] {
+            if t.word == "a", i + 2 < tokens.count, tokens[i + 1].text == " ", scales[tokens[i + 2].word] != nil, current == 0 {
+                current = 1; any = true; lastWasScale = false
+            } else if let u = units[t.word] {
                 // "second" is never a number here; a repeated unit ("one two") is two numbers.
                 if current % 10 != 0 || (current >= 20 && u >= 10) { break }
                 current += u; any = true; lastWasScale = false
             } else if let d = tens[t.word] {
                 if current != 0, current % 100 != 0 { break }
                 current += d; any = true; lastWasScale = false
-            } else if let o = ordinals[t.word], t.word != "second" {
+            } else if let o = ordinals[t.word], t.word != "second" || isOrdinalSecond(tokens, at: i) {
                 if o >= 20 { if current != 0, current % 100 != 0 { break }; current += o } else {
                     if current % 10 != 0 || (current >= 20 && o >= 10) { break }
                     current += o
@@ -369,6 +389,13 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
         // Do not swallow a trailing joiner.
         while i > start, !tokens[i - 1].isWord { i -= 1 }
         return (total + current, i, ordinal)
+    }
+
+    /// "the second session" is 2nd; "a second" and "wait a second" are time.
+    private static let ordinalSecondBefore: Set<String> = ["the", "my", "your", "his", "her", "our", "their", "its", "every"]
+    private static func isOrdinalSecond(_ tokens: [Token], at i: Int) -> Bool {
+        guard let before = tokens[..<i].last(where: \.isWord), ordinalSecondBefore.contains(before.word) else { return false }
+        return tokens[(i + 1)...].first(where: \.isWord) != nil
     }
 
     private static func isNumberWord(_ w: String) -> Bool {

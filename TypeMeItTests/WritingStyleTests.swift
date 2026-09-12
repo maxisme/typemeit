@@ -27,8 +27,9 @@ final class WritingStyleTests: XCTestCase {
     func testDigitsLeavesPronounOneAndSecond() {
         XCTAssertEqual(WritingStyle.digits("No one told me one of them left"), "No one told me one of them left")
         XCTAssertEqual(WritingStyle.digits("which one do you want"), "which one do you want")
-        XCTAssertEqual(WritingStyle.digits("wait a second, and the second one"), "wait a second, and the second one")
-        XCTAssertEqual(WritingStyle.digits("a hundred"), "a hundred")
+        XCTAssertEqual(WritingStyle.digits("wait a second, give me a second"), "wait a second, give me a second")
+        XCTAssertEqual(WritingStyle.digits("a hundred percent yes and a thousand more"), "100% yes and 1000 more")
+        XCTAssertEqual(WritingStyle.digits("the second session and the second one"), "the 2nd session and the 2nd one")
         XCTAssertEqual(WritingStyle.digits("and then we left"), "and then we left")
     }
 
@@ -50,6 +51,7 @@ final class WritingStyleTests: XCTestCase {
 
     func testCutFillersCutsLikeAndActually() {
         XCTAssertEqual(WritingStyle.cutFillers("It was like really cold."), "It was really cold.")
+        XCTAssertEqual(WritingStyle.cutFillers("It's kind of late and sort of a waste for that kind of person."), "It's late and sort of a waste for that kind of person.")
         XCTAssertEqual(WritingStyle.cutFillers("Like I don't even know."), "I don't even know.")
         XCTAssertEqual(WritingStyle.cutFillers("I actually think so. Actually, no."), "I think so. No.")
     }
@@ -84,12 +86,14 @@ final class WritingStyleTests: XCTestCase {
         XCTAssertEqual(WritingStyle.contract("You are right, it does not matter. We will see."), "You're right, it doesn't matter. We'll see.")
         XCTAssertEqual(WritingStyle.contract("He would have called if he could not make it."), "He would've called if he couldn't make it.")
         XCTAssertEqual(WritingStyle.contract("I cannot believe it is Friday. Do not go."), "I can't believe it's Friday. Don't go.")
+        XCTAssertEqual(WritingStyle.contract("It is not that we will not go; she is not here."), "It's not that we won't go; she's not here.")
     }
 
     func testContractLeavesAmbiguousOnes() {
         XCTAssertEqual(WritingStyle.contract("That is what it is."), "That's what it is.")
         XCTAssertEqual(WritingStyle.contract("Here I am."), "Here I am.")
         XCTAssertEqual(WritingStyle.contract("She has a car. Let us know."), "She has a car. Let us know.")
+        XCTAssertEqual(WritingStyle.contract("She has finished and he has gone."), "She's finished and he's gone.")
         XCTAssertEqual(WritingStyle.contract("That is where we are with it and how they are doing."), "That's where we are with it and how they are doing.")
     }
 

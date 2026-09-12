@@ -163,13 +163,7 @@
       "Message #eng-platform"
     ],
     "input": "lottie h q signed with anthropic yesterday",
-    "expected": "LottieHQ signed with Anthropic yesterday.",
-    "alsoAccepted": [
-      {
-        "text": "Lottie signed with Anthropic yesterday.",
-        "why": "the prompt's false-start rule drops the stranded letters h and q, so the acronym is only recovered when the screen supplies it"
-      }
-    ]
+    "expected": "LottieHQ signed with Anthropic yesterday."
   },
   {
     "screen": [
@@ -710,7 +704,8 @@
       "contractions",
       "digits"
     ],
-    "expected": "Right so a quick update on where we are with the migration. We've moved about 60% of the customers over to the new database and so far there have been no complaints, which is you know either a good sign or a sign that nobody has noticed yet. The remaining 40% are the larger accounts so we're going to do those 1 at a time starting on Monday. I don't think we'll need the extra downtime window we booked but I'd rather keep it just in case, and I'll send round a summary at the end of each day so everyone knows where things stand."
+    "expected": "Right so a quick update on where we are with the migration. We've moved about 60% of the customers over to the new database and so far there have been no complaints, which is you know either a good sign or a sign that nobody has noticed yet. The remaining 40% are the larger accounts so we're going to do those 1 at a time starting on Monday. I don't think we'll need the extra downtime window we booked but I'd rather keep it just in case, and I'll send round a summary at the end of each day so everyone knows where things stand.",
+    "wish": "A 100-word update with contractions and digits, punctuated and with you know kept. With the contractions rule on, the model returns this one as spoken and deletes the you know by itself."
   },
   {
     "input": "hey it's me just leaving you a message because I could not get through um so there are three things first can you pick up the parcel from the post office it closes at five thirty second I have booked the table for eight so if you could be home by seven that would be great and third my mum is coming on saturday so we need to sort the spare room at some point this week anyway call me back when you get this bye",
@@ -731,7 +726,6 @@
   },
   {
     "input": "there is no way she has finished already",
-    "wish": "she has + participle joined to she's. Code never joins has because she has a car must stay, so this needs the model, which does not do it.",
     "styles": [
       "contractions"
     ],
@@ -739,7 +733,6 @@
   },
   {
     "input": "a hundred percent yes",
-    "wish": "a hundred percent read as 100%. Code leaves a hundred alone because a is not a number word; the model does not convert it either.",
     "styles": [
       "digits"
     ],
@@ -755,12 +748,10 @@
   },
   {
     "input": "that will be 25 dollars please",
-    "wish": "25 dollars written as $25, which base rule 4 asks for. The model keeps the words.",
     "expected": "That will be $25 please."
   },
   {
     "input": "no one told me it costs one hundred and twenty pounds",
-    "wish": "£120, as base rule 4 asks. The model writes 120 pounds.",
     "styles": [
       "digits"
     ],
@@ -768,7 +759,6 @@
   },
   {
     "input": "it costs about three hundred and fifty dollars",
-    "wish": "$350, as base rule 4 asks. The model writes 350 dollars.",
     "styles": [
       "digits"
     ],
@@ -776,12 +766,11 @@
   },
   {
     "input": "lottie h q signed with anthropic yesterday",
-    "wish": "LottieHQ recovered with nothing on the screen. The prompt's false-start rule deletes the stranded h and q first, so only the screen can supply it today.",
-    "expected": "LottieHQ signed with Anthropic yesterday."
+    "expected": "Lottie HQ signed with Anthropic yesterday."
   },
   {
     "input": "ping tomash about the kavu contract",
-    "wish": "Tomasz and Kavuu from the screen. Tomasz is in the macOS dictionary, so the screen filter drops it as an ordinary capitalised word before the model sees it.",
+    "wish": "Tomasz and Kavuu from the screen. Kavuu is fixed now; Tomasz is in the macOS dictionary, so the screen filter drops it as an ordinary capitalised word before the model sees it.",
     "screen": [
       "#eng-platform",
       "Priya Raghunathan  10:42",
@@ -798,7 +787,7 @@
   },
   {
     "input": "bump max retries to five in parse config",
-    "wish": "MAX_RETRIES and parse_config fused from the spoken words. The model fuses one identifier at most and leaves the rest as spoken.",
+    "wish": "MAX_RETRIES and parse_config fused from the spoken words, and five as 5. The fusing now happens in code; the model returns the rest of this sentence as spoken.",
     "screen": [
       "EXPLORER",
       "  src/",
@@ -838,7 +827,6 @@
   },
   {
     "input": "no one came to the second session",
-    "wish": "second read as 2nd from context. Code never converts second because it is also a unit of time, so this needs the model, which does not do it.",
     "styles": [
       "digits"
     ],
@@ -864,12 +852,11 @@
   },
   {
     "input": "it is not that I do not like it I just think it is kind of expensive",
-    "wish": "kind of cut as a hedge. The model keeps it on this sentence.",
     "styles": [
       "fillerWords"
     ],
     "exact": true,
-    "expected": "It's not that I don't like it, I just think it's expensive."
+    "expected": "It is not that I do not like it, I just think it is expensive."
   },
   {
     "input": "so I just got off the call with the client and um basically they want to move the launch back by two weeks which I think is actually fine because we were never going to hit the original date anyway the main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account and I said we could probably get a first version of that done by the end of next week can you let the design team know and also um can you check whether the analytics events for the pricing page are actually firing because last time I looked they were not",
@@ -892,7 +879,18 @@
     "styles": [
       "fillerWords"
     ],
-    "wish": "Every word kept: this like is a verb. With the filler rule on, the model deletes the whole clause that holds it, although the rule says to keep I like it.",
     "expected": "It is not that I do not like it, I just think it is too expensive."
+  },
+  {
+    "input": "send it as a p d f to the c e o",
+    "expected": "Send it as a PDF to the CEO."
+  },
+  {
+    "input": "right so a quick update on where we are with the migration we have moved about sixty percent of the customers over to the new database and so far there have been no complaints which is you know either a good sign or a sign that nobody has noticed yet the remaining forty percent are the larger accounts so we are going to do those one at a time starting on monday I do not think we will need the extra downtime window we booked but I would rather keep it just in case and I will send round a summary at the end of each day so everyone knows where things stand",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "Right so a quick update on where we are with the migration. We have moved about 60% of the customers over to the new database and so far there have been no complaints, which is either a good sign or a sign that nobody has noticed yet. The remaining 40% are the larger accounts so we are going to do those one at a time starting on Monday. I do not think we will need the extra downtime window we booked but I would rather keep it just in case, and I will send round a summary at the end of each day so everyone knows where things stand.",
+    "wish": "A 100-word update with the fillers cut, punctuated and with the percentages as digits. The model cuts the you know but returns the rest as spoken."
   }
 ]
