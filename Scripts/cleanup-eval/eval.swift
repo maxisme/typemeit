@@ -123,13 +123,15 @@ struct Result: Encodable {
             if let i = groups.firstIndex(where: { $0.0 == key }) { groups[i].1.append(r) } else { groups.append((key, [r])) }
         }
         for (key, rs) in groups {
-            out += "\n## \(key) (\(rs.count))\n\n| | input | expected | screen terms | got |\n|---|---|---|---|---|\n"
+            let screen = rs.contains { $0.screen != nil }
+            out += "\n## \(key) (\(rs.count))\n\n| | input | expected |\(screen ? " screen terms |" : "") got |\n|---|---|---|\(screen ? "---|" : "")---|\n"
             for r in rs {
-                let expected = r.expected.enumerated().map { $0.offset == 0 ? cell($0.element) : "*or* " + cell($0.element) }.joined(separator: "<br>")
+                let expected = r.expected.map(cell).joined(separator: "<br><hr>*or*<br>")
                 var got = cell(r.output)
                 if let b = r.withoutScreen, b != r.output { got += "<br>*without screen:* " + cell(b) }
                 let mark = r.wish ? (r.pass ? "granted" : "not yet") : (r.pass ? "pass" : "**fail**")
-                out += "| \(mark) | \(cell(r.input)) | \(expected) | \(cell(r.terms.joined(separator: ", "))) | \(got) |\n"
+                let terms = screen ? " \(cell(r.terms.joined(separator: ", "))) |" : ""
+                out += "| \(mark) | \(cell(r.input)) | \(expected) |\(terms) \(got) |\n"
             }
         }
         return out
