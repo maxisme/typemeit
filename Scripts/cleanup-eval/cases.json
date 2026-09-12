@@ -649,9 +649,15 @@
     "expected": "{contractions:I am|I'm} {fillerWords:actually |}going to be {digits:five|5} minutes late."
   },
   {
-    "input": "hey sam can you pick up milk on the way home",
+    "input": "hey sam can you pick up milk on the way home my mum said we are out",
     "matrix": true,
-    "expected": "Hey Sam, can you pick up milk on the way home?"
+    "expected": "Hey Sam, can you pick up milk on the way home? My mum said {quotes:we {contractions:are|'re} out|\"we {contractions:are|'re} out\"}.",
+    "alsoAccepted": [
+      {
+        "text": "Hey Sam can you pick up milk on the way home? My mum said {quotes:we {contractions:are|'re} out|\"we {contractions:are|'re} out\"}.",
+        "why": "the comma after hey is optional"
+      }
+    ]
   },
   {
     "input": "okay so basically two things first I do not think we will hit friday and second we need like three more people",
@@ -892,5 +898,85 @@
     ],
     "expected": "Right so a quick update on where we are with the migration. We have moved about 60% of the customers over to the new database and so far there have been no complaints, which is either a good sign or a sign that nobody has noticed yet. The remaining 40% are the larger accounts so we are going to do those one at a time starting on Monday. I do not think we will need the extra downtime window we booked but I would rather keep it just in case, and I will send round a summary at the end of each day so everyone knows where things stand.",
     "wish": "A 100-word update with the fillers cut, punctuated and with the percentages as digits. The model cuts the you know but returns the rest as spoken."
+  },
+  {
+    "input": "she said ship it",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "She said \"ship it\".",
+    "wish": "The reporting verb kept and the two words quoted. On a transcript this short the model returns only ship it, and the opening guard lets it through because ship is within two edits of she."
+  },
+  {
+    "input": "he told me don't worry about it",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "He told me \"don't worry about it\"."
+  },
+  {
+    "input": "she said that we should ship it",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "She said that we should ship it."
+  },
+  {
+    "input": "the error says file not found",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "The error says \"file not found\"."
+  },
+  {
+    "input": "my mum always says you get what you pay for",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "My mum always says \"you get what you pay for\"."
+  },
+  {
+    "input": "I asked him where the invoice was and he said I have no idea",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "I asked him \"where the invoice was\" and he said \"I have no idea\"."
+  },
+  {
+    "input": "can you pick up milk on the way home",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "Can you pick up milk on the way home?"
+  },
+  {
+    "input": "the button just says submit",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "The button just says \"submit\"."
+  },
+  {
+    "input": "she asked if we were ready and I said not yet",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "She asked if we were ready and I said \"not yet\"."
+  },
+  {
+    "input": "he was like no way and I was like yes way",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "He was like \"no way\" and I was like \"yes way\"."
+  },
+  {
+    "input": "sam said we do not need three more people",
+    "styles": [
+      "quotes",
+      "contractions",
+      "digits"
+    ],
+    "expected": "Sam said \"we don't need 3 more people\"."
   }
 ]

@@ -188,7 +188,7 @@ struct Result: Encodable {
     }
 
     static func normalise(_ s: String) -> String {
-        s.lowercased().split { !$0.isLetter && !$0.isNumber && !"$£€%".contains($0) }.joined(separator: " ")
+        s.lowercased().split { !$0.isLetter && !$0.isNumber && !"$£€%\"".contains($0) }.joined(separator: " ")
     }
 
     static func main() async throws {

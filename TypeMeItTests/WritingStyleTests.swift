@@ -105,6 +105,20 @@ final class WritingStyleTests: XCTestCase {
         XCTAssertEqual(WritingStyle.digits("First, we wait. And second, they sign. She came first, I came fourth."), "First, we wait. And second, they sign. She came 1st, I came 4th.")
     }
 
+    func testQuoteWrapsReportedSpeech() {
+        XCTAssertEqual(WritingStyle.quote("She said ship it."), "She said \"ship it\".")
+        XCTAssertEqual(WritingStyle.quote("He told me don't worry about it, and I said fine."), "He told me \"don't worry about it\", and I said \"fine\".")
+        XCTAssertEqual(WritingStyle.quote("The error says file not found. My mum always says you get what you pay for."), "The error says \"file not found\". My mum always says \"you get what you pay for\".")
+        XCTAssertEqual(WritingStyle.quote("I asked him where the invoice was and he said I have no idea"), "I asked him \"where the invoice was\" and he said \"I have no idea\"")
+    }
+
+    func testQuoteLeavesIndirectSpeech() {
+        XCTAssertEqual(WritingStyle.quote("She said that we should ship it."), "She said that we should ship it.")
+        XCTAssertEqual(WritingStyle.quote("He asked if we were ready and told me to wait."), "He asked if we were ready and told me to wait.")
+        XCTAssertEqual(WritingStyle.quote("She said nothing about it."), "She said nothing about it.")
+        XCTAssertEqual(WritingStyle.quote("Can you pick up milk on the way home?"), "Can you pick up milk on the way home?")
+    }
+
     func testApplyLowercasesLast() {
         XCTAssertEqual(WritingStyle.apply([.fillerWords, .digits, .lowercase], to: "Basically Sam brought three."), "sam brought 3.")
         XCTAssertEqual(WritingStyle.apply([.lowercase], to: "Hey Sam, I will send the report to John on Monday. OK?"), "hey sam, i will send the report to john on monday. ok?")
@@ -113,7 +127,7 @@ final class WritingStyleTests: XCTestCase {
     }
 
     func testRulesOnlyCoverModelStyles() {
-        XCTAssertNil(WritingStyle.rules([.digits, .lowercase, .lists]))
+        XCTAssertNil(WritingStyle.rules([.digits, .lowercase, .lists, .quotes]))
         XCTAssertEqual(WritingStyle.rules([.contractions]), "The user also wants these, applied to the whole transcript:\n- " + WritingStyle.contractions.rule!)
     }
 }
