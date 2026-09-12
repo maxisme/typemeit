@@ -123,7 +123,7 @@ td:nth-child(3){color:var(--ink-2);font-family:var(--mono);font-size:12px;min-wi
     <div class="box">
       <h3>remember where you are <span class="mono">Frontmost.capture() · RecordingArchive.save</span></h3>
       <p>the frontmost app and its focused window's title are taken now, at fn up rather than fn down, because with pin you can switch windows while still talking and the text lands where you finish. taken before any await, so the second of transcribe and clean-up cannot change the answer. the app and title are what insights uses to sort dictations into email, chat, code and so on, and what the screen read keys its 60 s reuse on. the audio is written to the archive under the entry's id.</p>
-      <div class="chips"><span class="chip on">keep the audio <em>· history › keep · on in dev, off in release</em></span></div>
+      <div class="chips"><span class="chip off">keep the audio <em>· history › keep · off</em></span></div>
     </div>
   </div>
 
@@ -313,7 +313,7 @@ td:nth-child(3){color:var(--ink-2);font-family:var(--mono);font-size:12px;min-wi
 <tr><th>key</th><th>default</th><th>row · tab › group</th><th>what it does here</th></tr>
 <tr><td>muteWhileRecording</td><td>on</td><td>mute other audio · settings › microphone</td><td>the output device was muted at fn down; fn up restores it, and the stop cue waits 80 ms for the device to come back.</td></tr>
 <tr><td>audioFeedback</td><td>on</td><td>sounds · settings › cloud</td><td>the stop cue itself.</td></tr>
-<tr><td>keepRecordings</td><td>dev on, release off</td><td>keep the audio · history › keep</td><td>writes the audio next to the history entry. off, nothing is saved and there is nothing to play back in history.</td></tr>
+<tr><td>keepRecordings</td><td>off</td><td>keep the audio · history › keep</td><td>writes the audio next to the history entry. off, nothing is saved and there is nothing to play back in history.</td></tr>
 <tr><td>postProcessingEnabled</td><td>on</td><td>clean up with apple intelligence · intelligence › clean-up</td><td>the whole clean-up step. off, the transcript as heard goes straight to the paste and no style applies.</td></tr>
 <tr><td>screenContextEnabled</td><td>off</td><td>read the screen · intelligence › clean-up</td><td>the screen read lane. needs screen recording. off, the model gets no screen terms and nothing is fused after it.</td></tr>
 <tr><td>customWords</td><td>empty</td><td>custom words · intelligence › custom words</td><td>listed after the transcript in the prompt, and fused in code after the model.</td></tr>
