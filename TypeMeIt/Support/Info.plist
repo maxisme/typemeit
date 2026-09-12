@@ -40,5 +40,7 @@
 	<string>WGBC31wJMt0uMIwvfVDsWaqVJL8ki+jRfdKACFhPEDw=</string>
 	<key>SUScheduledCheckInterval</key>
 	<integer>3600</integer>
+	<key>TMIFeedbackKey</key>
+	<string>$(FEEDBACK_KEY)</string>
 </dict>
 </plist>

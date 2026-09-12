@@ -29,6 +29,9 @@ settings:
     # release looks like the same build and no update is ever offered.
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
+    # "id:hex" key the app signs feedback reports with; the worker holds the
+    # same key as FEEDBACK_KEYS. Empty in a local build, which then cannot send.
+    FEEDBACK_KEY: ${FEEDBACK_KEY}
 packages:
   TranscribeCpp:
     path: Packages/TranscribeCpp
@@ -71,6 +74,7 @@ targets:
         SUScheduledCheckInterval: 3600
         SUAutomaticallyUpdate: true
         SUPublicEDKey: WGBC31wJMt0uMIwvfVDsWaqVJL8ki+jRfdKACFhPEDw=
+        TMIFeedbackKey: "$(FEEDBACK_KEY)"
     entitlements:
       path: TypeMeIt/Support/TypeMeIt.entitlements
       properties:

@@ -32,10 +32,10 @@
 <header>
   <a class="home" href="/">← type me it</a>
   <h1>privacy</h1>
-  <p class="meta">last updated 5 september 2026</p>
+  <p class="meta">last updated 12 september 2026</p>
 </header>
 
-<p class="lead">type me it turns your speech into text on your mac. your speech, the text it becomes, and the history it keeps never leave the computer. this page lists what the app touches, what it stores, and the two servers it talks to.</p>
+<p class="lead">type me it turns your speech into text on your mac. your speech, the text it becomes, and the history it keeps never leave the computer unless you send a report about one dictation. this page lists what the app touches, what it stores, and the two servers it talks to.</p>
 
 <section>
   <h2>what the app does with your speech</h2>
@@ -89,6 +89,14 @@
   <li><em>accessibility</em>, to type the text where the cursor is, to read the title of the window you dictated into, and to read back your corrections as described above.</li>
 </ul>
 <p>each is granted in system settings and can be withdrawn there. without the microphone or input monitoring the app cannot dictate. without accessibility it cannot type, attribute dictations to an app, or learn from corrections.</p>
+  </div>
+</section>
+
+<section>
+  <h2>feedback you send</h2>
+  <div>
+<p>each dictation in the history tab has a report button. nothing is sent until you press send on the form it opens. a report carries: the problem you type, the transcript, the tidied text and any edit you made, the app and window you dictated into, the timings, your settings (as on or off values and counts, not your custom words), the app version, the macos version and the mac's chip. if the dictation kept its audio and you leave "send the audio" on, the recording goes too.</p>
+<p>reports are stored on cloudflare r2 under typeme.it, are deleted 30 days after they arrive, and are read only to fix the problem you reported. a summary of each report, without the audio, is pushed to the developer's phone through notifi.it under its own privacy policy. reports carry no name or account; they are tied to nothing but the text in them.</p>
   </div>
 </section>
 

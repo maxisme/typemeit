@@ -1,5 +1,17 @@
 # Every request is served from ./web as a static file, except /download, which
-# worker.js answers by streaming the latest DMG from GitHub under its own name.
+# worker.js answers by streaming the latest DMG from GitHub under its own name,
+# and /api/feedback, which stores the app's feedback reports in R2.
+#
+# Secrets, set with `wrangler secret put <name>` (and `--env production`):
+#   FEEDBACK_KEYS        "id:hex64,id:hex64" — the HMAC keys the app signs with
+#   FEEDBACK_READ_TOKEN  bearer token for reading reports back
+#   NOTIFI_KEY           notifi.it device key; unset means no notification
+#
+# Each bucket carries a lifecycle rule deleting objects 30 days after upload:
+#   wrangler r2 bucket lifecycle add typemeit-feedback-dev --prefix reports/ --expire-days 30
+#   wrangler r2 bucket lifecycle add typemeit-feedback --prefix reports/ --expire-days 30
+# and a rate-limiting rule on typeme.it/api/feedback* of 5 requests per IP per
+# 10 minutes, set in the Cloudflare dashboard under Security → WAF.
 name = "typemeit-web-dev"
 main = "worker.js"
 compatibility_date = "2026-07-01"
@@ -8,6 +20,10 @@ compatibility_date = "2026-07-01"
 directory = "./web"
 binding = "ASSETS"
 
+[[r2_buckets]]
+binding = "FEEDBACK"
+bucket_name = "typemeit-feedback-dev"
+
 [env.production]
 name = "typemeit-web"
 routes = [{ pattern = "typeme.it", custom_domain = true }]
@@ -15,3 +31,7 @@ routes = [{ pattern = "typeme.it", custom_domain = true }]
 [env.production.assets]
 directory = "./web"
 binding = "ASSETS"
+
+[[env.production.r2_buckets]]
+binding = "FEEDBACK"
+bucket_name = "typemeit-feedback"

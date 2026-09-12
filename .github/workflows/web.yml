@@ -6,12 +6,16 @@ on:
     paths:
       - "web/**"
       - "worker.js"
+      - "feedback.mjs"
+      - "feedback.test.mjs"
       - "wrangler.toml"
       - ".github/workflows/web.yml"
   pull_request:
     paths:
       - "web/**"
       - "worker.js"
+      - "feedback.mjs"
+      - "feedback.test.mjs"
       - "wrangler.toml"
       - ".github/workflows/web.yml"
 
@@ -35,6 +39,10 @@ jobs:
           python-version: "3.12"
       - run: python3 web/generate.py
       - run: git diff --exit-code web/puff.glsl.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test feedback.test.mjs
 
   deploy-dev:
     needs: check
