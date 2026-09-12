@@ -112,7 +112,7 @@ td:nth-child(3){color:var(--ink-2);font-family:var(--mono);font-size:12px;min-wi
   <div class="step">
     <div class="box">
       <h3>stop the capture <span class="mono">endRecording · capture.stop()</span></h3>
-      <p>the 16 kHz float buffer comes back whole. the output device is unmuted, and the stop cue plays 80 ms later because a sound played in the same instant as the unmute is lost.</p>
+      <p>recording stops and the audio is handed over as one buffer. other audio is unmuted. the stop sound plays 80 ms later, because the device drops a sound played the moment it is unmuted.</p>
       <div class="chips"><span class="chip on">mute other audio <em>· settings › microphone · on</em></span><span class="chip on">sounds <em>· settings › cloud · on</em></span></div>
       <div class="gate">exit if the recording is under 0.3 s or its peak is under 0.01: discarded, back to idle, nothing typed. <span class="mono">Fixed.minimumRecordingSeconds · silencePeak</span></div>
     </div>
