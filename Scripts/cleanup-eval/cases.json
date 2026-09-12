@@ -943,5 +943,164 @@
       "lists"
     ],
     "expected": "We need:\n- milk\n- eggs\n- bread\n- butter"
+  },
+  {
+    "input": "that will be 25 dollars please",
+    "wish": true,
+    "expected": "That will be $25 please."
+  },
+  {
+    "input": "no one told me it costs one hundred and twenty pounds",
+    "wish": true,
+    "styles": [
+      "digits"
+    ],
+    "expected": "No one told me it costs £120."
+  },
+  {
+    "input": "it costs about three hundred and fifty dollars",
+    "wish": true,
+    "styles": [
+      "digits"
+    ],
+    "expected": "It costs about $350."
+  },
+  {
+    "input": "lottie h q signed with anthropic yesterday",
+    "wish": true,
+    "expected": "LottieHQ signed with Anthropic yesterday."
+  },
+  {
+    "input": "ping tomash about the kavu contract",
+    "wish": true,
+    "screen": [
+      "#eng-platform",
+      "Priya Raghunathan  10:42",
+      "the Zentryx cluster is back on 1.29, staging rollout at 3",
+      "Tomasz Wieczorek  10:44",
+      "nice. can someone look at the Kavuu contract renewal before friday?",
+      "@maxisme  10:45",
+      "on it. PR-1234 has the fix for the enquiry dedupe",
+      "Priya Raghunathan  10:47",
+      "thanks! also ping ola about LottieHQ x Anthropic",
+      "Message #eng-platform"
+    ],
+    "expected": "Ping Tomasz about the Kavuu contract."
+  },
+  {
+    "input": "can you deploy centrix to staging",
+    "wish": true,
+    "screen": [
+      "#eng-platform",
+      "Priya Raghunathan  10:42",
+      "the Zentryx cluster is back on 1.29, staging rollout at 3",
+      "Tomasz Wieczorek  10:44",
+      "nice. can someone look at the Kavuu contract renewal before friday?",
+      "@maxisme  10:45",
+      "on it. PR-1234 has the fix for the enquiry dedupe",
+      "Priya Raghunathan  10:47",
+      "thanks! also ping ola about LottieHQ x Anthropic",
+      "Message #eng-platform"
+    ],
+    "expected": "Can you deploy Zentryx to staging?"
+  },
+  {
+    "input": "bump max retries to five in parse config",
+    "wish": true,
+    "screen": [
+      "EXPLORER",
+      "  src/",
+      "    parse_config.ts",
+      "    fetchUser.ts",
+      "    useEnquiries.ts",
+      "parse_config.ts",
+      "1  import { useState } from 'react'",
+      "2  export const MAX_RETRIES = 3",
+      "3  export function parse_config(raw: string): Config {",
+      "4    const [state, setState] = useState<Config | null>(null)",
+      "5    return fetchUser(raw, MAX_RETRIES)",
+      "6  }",
+      "Ln 4, Col 12   TypeScript"
+    ],
+    "expected": "Bump MAX_RETRIES to 5 in parse_config."
+  },
+  {
+    "input": "so um basically I was like you know we should actually just uh go for it",
+    "wish": true,
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "So we should just go for it."
+  },
+  {
+    "input": "it was like really cold out there",
+    "wish": true,
+    "exact": true,
+    "expected": "It was like really cold out there."
+  },
+  {
+    "input": "I am actually going to be like five minutes late",
+    "wish": true,
+    "exact": true,
+    "expected": "I am actually going to be like five minutes late."
+  },
+  {
+    "input": "no one came to the second session",
+    "wish": true,
+    "styles": [
+      "digits"
+    ],
+    "expected": "No one came to the 2nd session."
+  },
+  {
+    "input": "my number is oh seven seven one two three four five six seven",
+    "wish": true,
+    "styles": [
+      "digits"
+    ],
+    "expected": "My number is 07712345678."
+  },
+  {
+    "input": "two things first the build is red and second the release notes are missing",
+    "wish": true,
+    "styles": [
+      "lists"
+    ],
+    "exact": true,
+    "expected": "Two things.\n1. The build is red.\n2. The release notes are missing."
+  },
+  {
+    "input": "first um preheat the oven secondly mix the flour and butter and thirdly bake for twenty minutes",
+    "wish": true,
+    "styles": [
+      "lists"
+    ],
+    "exact": true,
+    "expected": "1. Preheat the oven.\n2. Mix the flour and butter.\n3. Bake for 20 minutes."
+  },
+  {
+    "input": "it is not that I do not like it I just think it is kind of expensive",
+    "wish": true,
+    "styles": [
+      "fillerWords"
+    ],
+    "exact": true,
+    "expected": "It's not that I don't like it, I just think it's expensive."
+  },
+  {
+    "input": "so I just got off the call with the client and um basically they want to move the launch back by two weeks which I think is actually fine because we were never going to hit the original date anyway the main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account and I said we could probably get a first version of that done by the end of next week can you let the design team know and also um can you check whether the analytics events for the pricing page are actually firing because last time I looked they were not",
+    "wish": true,
+    "exact": true,
+    "expected": "So I just got off the call with the client and basically they want to move the launch back by two weeks, which I think is actually fine because we were never going to hit the original date anyway. The main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account, and I said we could probably get a first version of that done by the end of next week. Can you let the design team know? And also, can you check whether the analytics events for the pricing page are actually firing? Because last time I looked they were not."
+  },
+  {
+    "input": "hey it's me just leaving you a message because I could not get through um so there are three things first can you pick up the parcel from the post office it closes at five thirty second I have booked the table for eight so if you could be home by seven that would be great and third my mum is coming on saturday so we need to sort the spare room at some point this week anyway call me back when you get this bye",
+    "wish": true,
+    "styles": [
+      "contractions",
+      "fillerWords"
+    ],
+    "exact": true,
+    "expected": "Hey, it's me, just leaving you a message because I couldn't get through. So there are three things. First, can you pick up the parcel from the post office? It closes at 5:30. Second, I've booked the table for 8, so if you could be home by 7 that would be great. And third, my mum is coming on Saturday, so we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye."
   }
 ]
