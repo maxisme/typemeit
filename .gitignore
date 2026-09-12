@@ -12,3 +12,4 @@ web/node_modules/
 Scripts/cleanup-eval/eval
 .wrangler/
 .dev.vars
+node_modules/

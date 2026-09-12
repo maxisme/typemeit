@@ -11,23 +11,13 @@
 // The report id is the SHA-256 of the body, so a retry of the same bytes lands
 // on the same object and sends no second notification.
 
+import { z } from "zod";
+
 const encoder = new TextEncoder();
 
 export const TIMESTAMP_WINDOW_SECONDS = 5 * 60;
 export const MAX_BODY_BYTES = 3 * 1024 * 1024;
 export const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
-
-const LIMITS = {
-  issue: 4000,
-  transcript: 20000,
-  text: 20000,
-  version: 32,
-  build: 32,
-  macos: 64,
-  chip: 96,
-  app: 256,
-  window: 512,
-};
 
 export function hex(bytes) {
   return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -73,68 +63,47 @@ export async function verifySignature({ keyId, timestamp, signature, body, keys,
   return timingSafeEqual(expected, signature) ? null : "bad signature";
 }
 
-function str(value, max, required = false) {
-  if (value === undefined || value === null) {
-    if (required) throw new Error("missing field");
-    return undefined;
-  }
-  if (typeof value !== "string" || value.length > max) throw new Error("bad field");
-  return value;
-}
+const text = (max) => z.string().max(max);
+const count = z.number().int().min(0).max(1e9);
 
-function int(value) {
-  if (value === undefined || value === null) return undefined;
-  if (!Number.isInteger(value) || value < 0 || value > 1e9) throw new Error("bad field");
-  return value;
-}
+/// The shape a report must have. Anything outside it is refused, and the
+/// stored report is the parsed value, never the raw body.
+export const Report = z.object({
+  issue: text(4000).trim().min(1),
+  previousId: text(48).optional(),
+  app: z.object({
+    version: text(32),
+    build: text(32).optional(),
+    macos: text(64).optional(),
+    chip: text(96).optional(),
+    appleIntelligence: text(64).optional(),
+    model: text(128).optional(),
+  }).strict(),
+  dictation: z.object({
+    id: text(48),
+    at: text(40).optional(),
+    transcript: text(20000),
+    postProcessed: text(20000).optional(),
+    postProcessRequested: z.boolean(),
+    edited: text(20000).optional(),
+    durationMs: count.optional(),
+    transcribeMs: count.optional(),
+    postProcessMs: count.optional(),
+    dictionaryFixes: count.optional(),
+    appId: text(256).optional(),
+    appName: text(256).optional(),
+    windowTitle: text(512).optional(),
+  }).strict(),
+  settings: z.record(z.string().regex(/^[a-zA-Z]{1,40}$/), z.union([z.boolean(), z.number(), text(64)])),
+  audio: z.string().optional(),
+}).strict();
 
-function bool(value) {
-  if (typeof value !== "boolean") throw new Error("bad field");
-  return value;
-}
-
-/// Picks the fields the endpoint knows out of the parsed body, throwing on
-/// anything outside its shape. The stored report is this, never the raw body.
+/// Throws with the path and reason of the first bad field.
 export function validateReport(json) {
-  if (typeof json !== "object" || json === null || Array.isArray(json)) throw new Error("bad body");
-  const settings = json.settings;
-  if (typeof settings !== "object" || settings === null || Array.isArray(settings)) throw new Error("bad settings");
-  for (const [k, v] of Object.entries(settings)) {
-    if (!/^[a-zA-Z]{1,40}$/.test(k)) throw new Error("bad settings");
-    if (!["boolean", "number", "string"].includes(typeof v) || String(v).length > 64) throw new Error("bad settings");
-  }
-  const d = json.dictation;
-  if (typeof d !== "object" || d === null) throw new Error("bad dictation");
-  const out = {
-    issue: str(json.issue, LIMITS.issue, true).trim(),
-    previousId: str(json.previousId, 48),
-    app: {
-      version: str(json.app?.version, LIMITS.version, true),
-      build: str(json.app?.build, LIMITS.build),
-      macos: str(json.app?.macos, LIMITS.macos),
-      chip: str(json.app?.chip, LIMITS.chip),
-      appleIntelligence: str(json.app?.appleIntelligence, 64),
-      model: str(json.app?.model, 128),
-    },
-    dictation: {
-      id: str(d.id, 48, true),
-      at: str(d.at, 40),
-      transcript: str(d.transcript, LIMITS.transcript, true),
-      postProcessed: str(d.postProcessed, LIMITS.text),
-      postProcessRequested: bool(d.postProcessRequested),
-      edited: str(d.edited, LIMITS.text),
-      durationMs: int(d.durationMs),
-      transcribeMs: int(d.transcribeMs),
-      postProcessMs: int(d.postProcessMs),
-      dictionaryFixes: int(d.dictionaryFixes),
-      appId: str(d.appId, LIMITS.app),
-      appName: str(d.appName, LIMITS.app),
-      windowTitle: str(d.windowTitle, LIMITS.window),
-    },
-    settings,
-  };
-  if (!out.issue) throw new Error("empty issue");
-  return out;
+  const result = Report.safeParse(json);
+  if (result.success) return result.data;
+  const issue = result.error.issues[0];
+  throw new Error(`${issue.path.join(".") || "body"}: ${issue.message}`);
 }
 
 /// The audio arrives base64 inside the JSON. Only AAC in an MPEG-4 container
@@ -219,9 +188,9 @@ async function postReport(request, env, ctx, origin) {
   let report;
   let audio;
   try {
-    const parsed = JSON.parse(new TextDecoder().decode(body));
-    report = validateReport(parsed);
-    audio = decodeAudio(parsed.audio);
+    const { audio: encoded, ...rest } = validateReport(JSON.parse(new TextDecoder().decode(body)));
+    report = rest;
+    audio = decodeAudio(encoded);
   } catch (e) {
     return json({ error: e.message }, 400);
   }

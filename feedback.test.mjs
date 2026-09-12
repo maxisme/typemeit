@@ -94,13 +94,14 @@ test("an oversized body is refused before it is read", async () => {
 });
 
 test("validation keeps the known shape and rejects the rest", () => {
-  assert.throws(() => validateReport(report({ issue: "   " })), /empty issue/);
-  assert.throws(() => validateReport(report({ issue: "x".repeat(4001) })), /bad field/);
-  assert.throws(() => validateReport(report({ settings: { "bad key!": true } })), /bad settings/);
-  assert.throws(() => validateReport(report({ settings: { nested: {} } })), /bad settings/);
-  assert.throws(() => validateReport(report({ dictation: { id: "A1" } })), /missing field/);
-  const out = validateReport(report({ extra: "dropped" }));
-  assert.equal(out.extra, undefined);
+  assert.throws(() => validateReport(report({ issue: "   " })), { message: "issue: Too small: expected string to have >=1 characters" });
+  assert.throws(() => validateReport(report({ issue: "x".repeat(4001) })), { message: "issue: Too big: expected string to have <=4000 characters" });
+  assert.throws(() => validateReport(report({ settings: { "bad key!": true } })), { message: "settings.bad key!: Invalid key in record" });
+  assert.throws(() => validateReport(report({ settings: { nested: {} } })), { message: "settings.nested: Invalid input" });
+  assert.throws(() => validateReport(report({ dictation: { id: "A1" } })), { message: "dictation.transcript: Invalid input: expected string, received undefined" });
+  assert.throws(() => validateReport(report({ extra: "dropped" })), { message: 'body: Unrecognized key: "extra"' });
+  const out = validateReport(report({ issue: "  trimmed  " }));
+  assert.equal(out.issue, "trimmed");
   assert.equal(out.dictation.appName, "Slack");
 });
 

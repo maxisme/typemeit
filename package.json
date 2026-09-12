@@ -1,0 +1,11 @@
+{
+  "name": "typemeit-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test feedback.test.mjs"
+  },
+  "dependencies": {
+    "zod": "4.1.11"
+  }
+}
