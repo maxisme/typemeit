@@ -49,7 +49,6 @@ final class Pipeline {
             if case .learned = self.overlay.model.state { self.keepLearned(); return }
             self.shortcuts.cancelFromOverlay()
         }
-        overlay.model.onSkip = { [weak self] in self?.skipPostProcessing() }
         overlay.model.onCopy = { [weak self] in self?.copyFromPrompt() }
         overlay.model.onKeep = { [weak self] in self?.keepLearned() }
         overlay.model.onUndo = { [weak self] in self?.undoLearned() }
@@ -82,7 +81,6 @@ final class Pipeline {
             if overlay.model.isRecording { overlay.show(.pinned) }
         case .recordingEnded: endRecording()
         case .cancelled: cancel()
-        case .skipRequested: skipPostProcessing()
         case .copyLastRequested: copyLast()
         }
     }
@@ -279,11 +277,6 @@ final class Pipeline {
         } else {
             overlay.hide()
         }
-    }
-
-    private func skipPostProcessing() {
-        guard phase == .cleaningUp else { return }
-        PostProcessor.shared.cancel()
     }
 
     // MARK: Copy prompt

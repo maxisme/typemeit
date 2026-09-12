@@ -69,7 +69,6 @@ final class OverlayModel {
     var onPin: (@MainActor () -> Void)?
     var onStop: (@MainActor () -> Void)?
     var onCancel: (@MainActor () -> Void)?
-    var onSkip: (@MainActor () -> Void)?
     var onCopy: (@MainActor () -> Void)?
     var onKeep: (@MainActor () -> Void)?
     var onUndo: (@MainActor () -> Void)?
