@@ -33,8 +33,7 @@ struct Case: Decodable {
     let styles: Set<WritingStyle>
     /// Compare case and punctuation too, for styles that are about those.
     let exact: Bool
-    /// Run under every combination of writing styles except lowercase, which
-    /// is pure code and covered by unit tests. `expected` and `alsoAccepted`
+    /// Run under every combination of writing styles. `expected` and `alsoAccepted`
     /// are then templates: `{digits:one|1}` reads "one" with digits off and
     /// "1" with it on. Case and punctuation are compared when the output or
     /// expected text has a line break.
@@ -62,7 +61,7 @@ struct Case: Decodable {
     /// The runs this case stands for: itself, or one per style combination.
     var runs: [Run] {
         guard matrix else { return [Run(input: input, styles: styles, accepted: accepted, whys: whys, exact: exact)] }
-        let all = WritingStyle.allCases.filter { $0 != .lowercase }
+        let all = WritingStyle.allCases
         return (0..<(1 << all.count)).map { bits in
             let on = Set(all.enumerated().filter { bits & (1 << $0.offset) != 0 }.map(\.element))
             return Run(input: input, styles: on, accepted: accepted.map { Case.expand($0, on) }, whys: whys, exact: exact)

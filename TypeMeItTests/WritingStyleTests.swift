@@ -119,15 +119,16 @@ final class WritingStyleTests: XCTestCase {
         XCTAssertEqual(WritingStyle.quote("Can you pick up milk on the way home?"), "Can you pick up milk on the way home?")
     }
 
-    func testApplyLowercasesLast() {
-        XCTAssertEqual(WritingStyle.apply([.fillerWords, .digits, .lowercase], to: "Basically Sam brought three."), "sam brought 3.")
-        XCTAssertEqual(WritingStyle.apply([.lowercase], to: "Hey Sam, I will send the report to John on Monday. OK?"), "hey sam, i will send the report to john on monday. ok?")
-        XCTAssertEqual(WritingStyle.apply([.lowercase, .lists, .contractions], to: "Two things. First, I am in. Second, you are out."), "two things.\n1. i'm in.\n2. you're out.")
+    func testApplyRunsTheCodeStyles() {
+        XCTAssertEqual(WritingStyle.apply([.fillerWords, .digits], to: "Basically Sam brought three."), "Sam brought 3.")
+        XCTAssertEqual(WritingStyle.apply([.lists, .contractions], to: "Two things. First, I am in. Second, you are out."), "Two things.
+1. I'm in.
+2. You're out.")
         XCTAssertEqual(WritingStyle.apply([], to: "Unchanged Text"), "Unchanged Text")
     }
 
     func testRulesOnlyCoverModelStyles() {
-        XCTAssertNil(WritingStyle.rules([.digits, .lowercase, .lists, .quotes]))
+        XCTAssertNil(WritingStyle.rules([.digits, .lists, .quotes]))
         XCTAssertEqual(WritingStyle.rules([.contractions]), "The user also wants these, applied to the whole transcript:\n- " + WritingStyle.contractions.rule!)
     }
 }

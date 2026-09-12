@@ -46,5 +46,5 @@ An `alsoAccepted` entry in `Scripts/cleanup-eval/cases.json` records an output
 the model actually produced in a run and that was judged fine. Do not add one
 because the model might plausibly do something; run `make eval`, read the
 output, then add it with a `why` that says what was seen. Behaviour that is
-pure code (lowercase, digits, lists, the safe contractions) is tested in
+pure code (digits, lists, quotes, the safe contractions) is tested in
 `TypeMeItTests`, not with eval cases.

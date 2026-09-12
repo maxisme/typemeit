@@ -2,18 +2,17 @@ import Foundation
 
 /// Opinionated rewrites the user turns on. Off by default: the base prompt
 /// keeps the words as spoken, and each of these changes something the
-/// speaker did not say differently. Digits and lowercase are applied in code
+/// speaker did not say differently. Digits are applied in code
 /// after clean-up, because the model ignores a rule about them on the very
 /// sentences it matters for; so are lists, quotes and the safe contractions. Filler words and contractions go to the model
 /// as rules, with the unambiguous fillers also cut in code. Scored by
 /// Scripts/cleanup-eval with the cases that carry a `styles` field.
 enum WritingStyle: String, Codable, CaseIterable, Sendable {
-    case digits, lowercase, fillerWords, contractions, lists, quotes
+    case digits, fillerWords, contractions, lists, quotes
 
     var label: String {
         switch self {
         case .digits: "digits"
-        case .lowercase: "lowercase"
         case .fillerWords: "cut filler words"
         case .contractions: "contractions"
         case .lists: "lists"
@@ -25,7 +24,6 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
     var example: String {
         switch self {
         case .digits: "one → 1"
-        case .lowercase: "Hello Sam → hello sam"
         case .fillerWords: "like, you know, basically"
         case .contractions: "do not → don't"
         case .lists: "first, second → 1. 2."
@@ -36,7 +34,7 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
     /// The rule as the model reads it, or nil for a style applied in code only.
     var rule: String? {
         switch self {
-        case .digits, .lowercase, .lists, .quotes: nil
+        case .digits, .lists, .quotes: nil
         case .fillerWords:
             "Also delete these filler words, and only these: like, actually, sort of, kind of, wherever they add nothing (it was like really good → it was really good; it's kind of late → it's late; actually I think → I think). Never delete the verb like (I like it, I do not like it) or a comparison (like rain), and never delete the words around a filler. Keep every other word, including I think and I guess."
         case .contractions:
@@ -52,8 +50,7 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
     }
 
     /// The code-applied styles, on the cleaned text (or the raw transcript
-    /// when clean-up returned nothing). Lowercase goes last so a sentence
-    /// start restored by the filler cut is lowered again.
+    /// when clean-up returned nothing).
     static func apply(_ styles: Set<WritingStyle>, to text: String) -> String {
         var t = text
         if styles.contains(.fillerWords) { t = cutFillers(t) }
@@ -61,7 +58,6 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
         if styles.contains(.contractions) { t = contract(t) }
         if styles.contains(.quotes) { t = quote(t) }
         if styles.contains(.digits) { t = digits(t) }
-        if styles.contains(.lowercase) { t = t.lowercased() }
         return t
     }
 
