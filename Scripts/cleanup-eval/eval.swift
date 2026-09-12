@@ -155,7 +155,7 @@ struct Result: Encodable {
             for r in rs {
                 if r.wish != nil, !inWishes {
                     inWishes = true
-                    out += "<tr class=\"divider\"><td colspan=\"\(columns)\">not yet: wanted, not passing on today's model, never counted as a failure</td></tr>\n"
+                    out += "<tr class=\"divider\"><td colspan=\"\(columns)\">not yet</td></tr>\n"
                 }
                 let mark = r.wish != nil ? (r.pass ? "granted" : "not yet") : (r.pass ? "pass" : "fail")
                 var expected = "<div class=\"text\">\(esc(r.expected[0]))</div>"
