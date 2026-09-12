@@ -395,7 +395,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
       <details class="evals"><summary>how learning is tested</summary>
       <div class="sub">
         <div><b>unit tests</b>50 in <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeItTests/LearningTests.swift">LearningTests.swift</a> with a scripted stand-in for the model: the diff rules, the size limits, the fillers and function words, the known and undone lists, and every overrule above.</div>
-        <div><b>the live check</b>one test asks the real model about four pairs (ChargeBee, walked to, SDK, from) and expects two vocabulary and two not. it is skipped unless <span class="mono">HANDY_LIVE_MODEL</span> is set, so it does not run by default.</div>
+        <div><b>the live check</b>one test asks the real model about four pairs (ChargeBee, walked to, SDK, from) and expects two vocabulary and two not. it is skipped unless <span class="mono">TYPEMEIT_LIVE_MODEL</span> is set, so it does not run by default.</div>
         <div><b>what is missing</b>the instructions carry a note that they scored 1.00 precision and 0.88 recall over 62 labelled pairs, but those pairs are not in the repo, so that number cannot be re-run. there is no case file, no report and no wish list for learning the way there is for clean-up. that is the gap.</div>
       </div></details>
       <div class="chips"><span class="chip">learn from corrections<em>intelligence › clean-up</em></span><span class="chip">custom words<em>intelligence › custom words</em></span></div>

@@ -79,7 +79,7 @@ final class CategoryTests: XCTestCase {
         let ghostty = "com.mitchellh.ghostty"
         XCTAssertEqual(classify(ghostty, "Ghostty", "zsh"), .code)
         XCTAssertEqual(classify(ghostty, "Ghostty", nil), .code)
-        XCTAssertEqual(classify(ghostty, "Ghostty", "✳ Claude Code — handy"), .aiPrompts)
+        XCTAssertEqual(classify(ghostty, "Ghostty", "✳ Claude Code — typemeit"), .aiPrompts)
         XCTAssertEqual(classify("com.apple.Terminal", "Terminal", "codex — 80×24"), .aiPrompts)
     }
 
@@ -213,10 +213,10 @@ final class InsightsTests: XCTestCase {
     }
 
     func testFixesComeFromTheDictionaryCounterAndPostProcessingDiffs() {
-        var a = row(day(2026, 9, 3), "we shipped handy today")
+        var a = row(day(2026, 9, 3), "we shipped typemeit today")
         a.dictionaryFixes = 2
         a.postProcessRequested = true
-        a.postProcessed = "We shipped handy today."
+        a.postProcessed = "We shipped typemeit today."
         var b = row(day(2026, 9, 3), "meet at five pm tomorrow ok")
         b.postProcessRequested = true
         b.postProcessed = "Meet at 5pm tomorrow."

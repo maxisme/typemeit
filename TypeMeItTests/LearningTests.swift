@@ -452,11 +452,11 @@ final class CheckTests: XCTestCase {
     }
 
     /// Talks to the on-device model. Run by hand on a Mac with Apple
-    /// Intelligence: `HANDY_LIVE_MODEL=1 swift test --filter appleIntelligenceClassifiesRealPairs`.
+    /// Intelligence: `TYPEMEIT_LIVE_MODEL=1 swift test --filter appleIntelligenceClassifiesRealPairs`.
     func testAppleIntelligenceClassifiesRealPairs() async throws {
         try XCTSkipUnless(
-            ProcessInfo.processInfo.environment["HANDY_LIVE_MODEL"] != nil,
-            "set HANDY_LIVE_MODEL=1 to talk to the on-device model"
+            ProcessInfo.processInfo.environment["TYPEMEIT_LIVE_MODEL"] != nil,
+            "set TYPEMEIT_LIVE_MODEL=1 to talk to the on-device model"
         )
         let candidates = [
             Candidate(heard: "Charge B", meant: "ChargeBee"),
