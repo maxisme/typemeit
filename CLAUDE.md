@@ -39,3 +39,12 @@ sits over already tells the reader what the numbers are. When you find yourself
 writing an explainer inside a label, the label is wrong. This rule holds even
 when a longer version scans fine on its own: on a page of short strings a long
 one snags, and the page reads as noisier than it is.
+
+## Eval variants are observed, never predicted
+
+An `alsoAccepted` entry in `Scripts/cleanup-eval/cases.json` records an output
+the model actually produced in a run and that was judged fine. Do not add one
+because the model might plausibly do something; run `make eval`, read the
+output, then add it with a `why` that says what was seen. Behaviour that is
+pure code (lowercase, digits, lists, the safe contractions) is tested in
+`TypeMeItTests`, not with eval cases.
