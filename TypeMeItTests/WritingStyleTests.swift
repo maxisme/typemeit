@@ -121,9 +121,7 @@ final class WritingStyleTests: XCTestCase {
 
     func testApplyRunsTheCodeStyles() {
         XCTAssertEqual(WritingStyle.apply([.fillerWords, .digits], to: "Basically Sam brought three."), "Sam brought 3.")
-        XCTAssertEqual(WritingStyle.apply([.lists, .contractions], to: "Two things. First, I am in. Second, you are out."), "Two things.
-1. I'm in.
-2. You're out.")
+        XCTAssertEqual(WritingStyle.apply([.lists, .contractions], to: "Two things. First, I am in. Second, you are out."), "Two things.\n1. I'm in.\n2. You're out.")
         XCTAssertEqual(WritingStyle.apply([], to: "Unchanged Text"), "Unchanged Text")
     }
 
