@@ -791,6 +791,7 @@ in vec2 aPos; void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
       gl.uniform4f(u.uTint, r, g, b, 1);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
+    if (!reduce) requestAnimationFrame(frame);
   }
   // One frame straight away, so the cloud is there before the first animation
   // frame and stays there in a tab the browser is not painting.
