@@ -354,5 +354,127 @@
     ],
     "input": "send the invoice to the client please",
     "expected": "Send the invoice to the client please."
+  },
+  {
+    "input": "we need one more chair and three more tables for the twenty people coming",
+    "styles": [
+      "digits"
+    ],
+    "expected": "We need 1 more chair and 3 more tables for the 20 people coming."
+  },
+  {
+    "input": "can you grab a coffee and two croissants",
+    "styles": [
+      "digits"
+    ],
+    "expected": "Can you grab a coffee and 2 croissants?"
+  },
+  {
+    "input": "she came first and I came fourth",
+    "styles": [
+      "digits"
+    ],
+    "expected": "She came 1st and I came 4th."
+  },
+  {
+    "input": "no one told me it costs one hundred and twenty pounds",
+    "styles": [
+      "digits"
+    ],
+    "expected": "No one told me it costs £120.",
+    "alsoAccepted": [
+      {
+        "text": "No one told me it costs 120 pounds.",
+        "why": "the model rarely writes the currency symbol"
+      }
+    ]
+  },
+  {
+    "input": "hey sam I will send the report to john on monday",
+    "styles": [
+      "lowercase"
+    ],
+    "exact": true,
+    "expected": "hey sam, i will send the report to john on monday.",
+    "alsoAccepted": [
+      {
+        "text": "hey sam i will send the report to john on monday.",
+        "why": "the comma after hey is optional"
+      }
+    ]
+  },
+  {
+    "input": "what time does the meeting start",
+    "styles": [
+      "lowercase"
+    ],
+    "exact": true,
+    "expected": "what time does the meeting start?"
+  },
+  {
+    "input": "so it was like really good and you know we should basically do it again",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "So it was really good and we should do it again."
+  },
+  {
+    "input": "I like the blue one more than the red one",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I like the blue one more than the red one."
+  },
+  {
+    "input": "you know I think we should just go",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I think we should just go."
+  },
+  {
+    "input": "I do not think we will make it because it is too far",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "I don't think we'll make it because it's too far."
+  },
+  {
+    "input": "we can't come tonight because I'm not feeling well",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "We can't come tonight because I'm not feeling well."
+  },
+  {
+    "input": "I do not think we will make it because it is too far and there are three of us",
+    "styles": [
+      "contractions",
+      "digits",
+      "lowercase"
+    ],
+    "exact": true,
+    "expected": "i don't think we'll make it because it's too far and there are 3 of us."
+  },
+  {
+    "input": "okay so three things for tomorrow first we need to finish the landing page second um call the accountant about the vat return and third book the train tickets for friday",
+    "styles": [
+      "lists"
+    ],
+    "exact": true,
+    "expected": "Okay so three things for tomorrow.\n1. We need to finish the landing page.\n2. Call the accountant about the VAT return.\n3. Book the train tickets for Friday.",
+    "alsoAccepted": [
+      {
+        "text": "Okay, so three things for tomorrow.\n1. We need to finish the landing page.\n2. Call the accountant about the VAT return.\n3. Book the train tickets for Friday.",
+        "why": "the comma after okay is optional"
+      }
+    ]
+  },
+  {
+    "input": "she came first and I came fourth",
+    "styles": [
+      "lists"
+    ],
+    "expected": "She came first and I came fourth."
   }
 ]

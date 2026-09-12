@@ -65,13 +65,14 @@ final class VerifyCustomWord {
 
         state = .checking(word: normalized, scanned: 0, total: candidates.count)
         let updatedWords = existingWords + [normalized]
+        let styles = Settings.shared.writingStyles
         task = Task { [weak self] in
             guard let self else { return }
             var matches: [Match] = []
             var scanned = 0
             for entry in candidates {
                 if Task.isCancelled { return }
-                if let processed = await VerifyCustomWord.reclean(entry.transcript, customWords: updatedWords),
+                if let processed = await VerifyCustomWord.reclean(entry.transcript, customWords: updatedWords, styles: styles),
                    processed.lowercased().contains(lookup),
                    !VerifyCustomWord.same(processed, entry.displayText) {
                     matches.append(Match(id: entry.id, timestamp: entry.timestamp,
@@ -103,12 +104,12 @@ final class VerifyCustomWord {
 
     /// One-shot Apple Intelligence cleanup with the same prompt and options
     /// the live pipeline uses, in an isolated session.
-    private static func reclean(_ transcript: String, customWords: [String]) async -> String? {
+    private static func reclean(_ transcript: String, customWords: [String], styles: Set<WritingStyle>) async -> String? {
         let source = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !source.isEmpty else { return nil }
         let model = SystemLanguageModel(guardrails: .permissiveContentTransformations)
         guard case .available = model.availability else { return nil }
-        let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions)
+        let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions(screenTerms: [], styles: styles))
         let prompt = PostProcessor.prompt(for: source, customWords: customWords)
         do {
             let r = try await session.respond(to: prompt,

@@ -233,6 +233,7 @@ final class Pipeline {
     private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, entryId: UUID, recordingFile: String?, generation gen: Int) async {
         if ModelText.isBlank(raw) { finishIdle(discarding: recordingFile); return }
         let customWords = settings.customWords
+        let styles = settings.writingStyles
         let requested = settings.postProcessingEnabled
         var finalText = raw
         var postProcessed: String?
@@ -246,12 +247,13 @@ final class Pipeline {
             if self.screenTerms == nil, settings.screenContextEnabled { Log.screenContext.info("Screen read not finished; cleaning up without it") }
             if !screenTerms.isEmpty { Log.screenContext.info("Screen terms: \(screenTerms.joined(separator: ", "), privacy: .private)") }
             let start = ContinuousClock.now
-            postProcessed = await PostProcessor.shared.run(raw, customWords: customWords, screenTerms: screenTerms)
+            postProcessed = await PostProcessor.shared.run(raw, customWords: customWords, screenTerms: screenTerms, styles: styles)
             let ms = Pipeline.elapsedMs(since: start)
             postProcessMs = ms
             Log.postProcess.info("Post-processing took \(ms) ms (\(postProcessed == nil ? "no result, transcript typed as heard" : "applied"))")
             guard gen == generation else { return }
             if let postProcessed { finalText = postProcessed }
+            finalText = WritingStyle.apply(styles, to: finalText)
             finalText = ModelText.stripTrailingFullStop(finalText)
         }
 

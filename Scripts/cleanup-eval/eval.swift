@@ -8,9 +8,12 @@ import FoundationModels
 /// `screen`, lines of text standing in for the window the user dictates into,
 /// goes through ScreenContext's term filter first and the model is told the
 /// terms, the way the read-the-screen setting does; it is also run without
-/// them so the summary says whether the screen helped. A case passes
+/// them so the summary says whether the screen helped. A case with `styles`
+/// runs with those writing styles on, the way the writing-style rows do: the
+/// rules in the instructions, then WritingStyle.apply on the output. A case passes
 /// when the output matches the expected text, or any entry in `alsoAccepted`,
-/// each of which says why it counts. Case and punctuation are ignored.
+/// each of which says why it counts. Case and punctuation are ignored unless
+/// the case says `exact`.
 struct Variant: Decodable { let text: String; let why: String }
 
 struct Case: Decodable {
@@ -22,6 +25,10 @@ struct Case: Decodable {
     let alsoAccepted: [Variant]
     /// The user's custom words, as they would be at the time; empty when the case has none.
     let customWords: [String]
+    /// The writing styles turned on, by raw value; empty when the case has none.
+    let styles: Set<WritingStyle>
+    /// Compare case and punctuation too, for styles that are about those.
+    let exact: Bool
     var accepted: [String] { [expected] + alsoAccepted.map(\.text) }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -30,13 +37,19 @@ struct Case: Decodable {
         expected = try c.decode(String.self, forKey: .expected)
         alsoAccepted = try c.decodeIfPresent([Variant].self, forKey: .alsoAccepted) ?? []
         customWords = try c.decodeIfPresent([String].self, forKey: .customWords) ?? []
+        styles = Set(try c.decodeIfPresent([WritingStyle].self, forKey: .styles) ?? [])
+        exact = try c.decodeIfPresent(Bool.self, forKey: .exact) ?? false
     }
-    enum CodingKeys: CodingKey { case input, screen, expected, alsoAccepted, customWords }
+    enum CodingKeys: CodingKey { case input, screen, expected, alsoAccepted, customWords, styles, exact }
+    func matches(_ out: String) -> Bool {
+        accepted.contains { exact ? Eval.tidy(out) == Eval.tidy($0) : Eval.normalise(out) == Eval.normalise($0) }
+    }
 }
 
 /// One entry of result.json per case, for anything that renders the run.
 struct Result: Encodable {
     let input, output: String
+    let styles: [String]
     let pass: Bool
     let expected: [String]
     let screen: [String]?
@@ -46,6 +59,15 @@ struct Result: Encodable {
 }
 
 @main struct Eval {
+    /// Whitespace runs collapsed within a line, curly quotes straightened, a
+    /// trailing full stop dropped as the pipeline drops it; everything else kept.
+    static func tidy(_ s: String) -> String {
+        var t = s.replacingOccurrences(of: "’", with: "'").replacingOccurrences(of: "‘", with: "'")
+            .split(separator: "\n").map { $0.split(whereSeparator: \.isWhitespace).joined(separator: " ") }.joined(separator: "\n")
+        if t.hasSuffix(".") { t.removeLast() }
+        return t
+    }
+
     static func normalise(_ s: String) -> String {
         s.lowercased().split { !$0.isLetter && !$0.isNumber && !"$£€%".contains($0) }.joined(separator: " ")
     }
@@ -59,23 +81,24 @@ struct Result: Encodable {
         var results: [Result] = []
         for c in cases {
             let terms = await MainActor.run { ScreenContext.terms(from: c.screen ?? [], excluding: c.customWords) }
-            let out = await PostProcessor.shared.run(c.input, customWords: c.customWords, screenTerms: terms) ?? c.input
-            let ok = c.accepted.contains { normalise(out) == normalise($0) }
+            let out = WritingStyle.apply(c.styles, to: await PostProcessor.shared.run(c.input, customWords: c.customWords, screenTerms: terms, styles: c.styles) ?? c.input)
+            let ok = c.matches(out)
             if !ok { failed += 1 }
-            print("\(ok ? "PASS" : "FAIL")  \(c.input)")
+            let tag = c.styles.isEmpty ? "" : "  [\(c.styles.map(\.rawValue).sorted().joined(separator: ", "))]"
+            print("\(ok ? "PASS" : "FAIL")  \(c.input)\(tag)")
             if !ok { print("      expected: \(c.accepted.joined(separator: "\n             or: "))\n      got:      \(out)") }
             var blind: String?, blindOk: Bool?
             if c.screen != nil {
                 screened += 1
                 let b = await PostProcessor.shared.run(c.input, customWords: c.customWords) ?? c.input
-                let bOk = c.accepted.contains { normalise(b) == normalise($0) }
+                let bOk = c.matches(b)
                 if ok, !bOk { helped += 1 }
                 if !ok, bOk { hurt += 1 }
                 print("      screen terms: \(terms.joined(separator: ", "))")
                 if b != out { print("      without screen: \(b)") }
                 blind = b; blindOk = bOk
             }
-            results.append(Result(input: c.input, output: out, pass: ok, expected: c.accepted, screen: c.screen, terms: terms, withoutScreen: blind, withoutScreenPass: blindOk))
+            results.append(Result(input: c.input, output: out, styles: c.styles.map(\.rawValue).sorted(), pass: ok, expected: c.accepted, screen: c.screen, terms: terms, withoutScreen: blind, withoutScreenPass: blindOk))
         }
         print("\n\(cases.count - failed)/\(cases.count) passed")
         if screened > 0 { print("screen: \(screened) cases, helped \(helped), hurt \(hurt)") }

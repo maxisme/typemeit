@@ -5,5 +5,5 @@
 set -e
 cd "$(dirname "$0")"
 PP="${1:-../../TypeMeIt/PostProcessor.swift}"
-swiftc -parse-as-library -O eval.swift "$PP" ../../TypeMeIt/Log.swift ../../TypeMeIt/ModelText.swift ../../TypeMeIt/ScreenContext.swift -o eval
+swiftc -parse-as-library -O eval.swift "$PP" ../../TypeMeIt/Log.swift ../../TypeMeIt/ModelText.swift ../../TypeMeIt/ScreenContext.swift ../../TypeMeIt/WritingStyle.swift -o eval
 ./eval
