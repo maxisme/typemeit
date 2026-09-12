@@ -18,6 +18,8 @@ enum SettingsTab: String, CaseIterable {
 struct SettingsView: View {
     @State private var tab: SettingsTab? = .insights
     @State private var appState = AppState.shared
+    /// `.key` while this window is in front.
+    @Environment(\.controlActiveState) private var activeState
 
     var body: some View {
         NavigationSplitView {
@@ -61,8 +63,9 @@ struct SettingsView: View {
         }
         .tint(DesignTokens.Colors.ink)
         .frame(minWidth: 780, minHeight: 700)
-        .onAppear(perform: takeRequestedTab)
+        .onAppear { takeRequestedTab(); Updates.shared.checkNow() }
         .onChange(of: appState.settingsTab) { _, _ in takeRequestedTab() }
+        .onChange(of: activeState) { _, state in if state == .key { Updates.shared.checkNow() } }
     }
 
     private func takeRequestedTab() {
@@ -416,15 +419,16 @@ struct MainSettingsTab: View {
         .onReceive(poll) { _ in screenGranted = CGPreflightScreenCaptureAccess() }
     }
 
-    /// Where the background update check got to. There is no button to check;
-    /// the only action is installing a version that is already downloaded.
+    /// Where the update check got to. It runs again each time the window
+    /// comes to the front; the only action is installing a version that is
+    /// already downloaded.
     @ViewBuilder
     private var updateStatus: some View {
         if Updates.isDevBuild {
             statusText("dev build · never updates")
         } else {
             switch updates.state {
-            case .checking: statusText("checking for updates…")
+            case .checking: statusText("checking…")
             case .upToDate: statusText("the latest version")
             case .downloading(let v): statusText("downloading \(v)…")
             case .readyToInstall(let v):

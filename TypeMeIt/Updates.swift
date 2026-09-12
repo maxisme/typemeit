@@ -43,6 +43,10 @@ final class Updates: NSObject, SPUUpdaterDelegate {
     /// once, a ready update once the user has put it off.
     @ObservationIgnored private var announced: Set<String> = []
     @ObservationIgnored private var retry: Timer?
+    /// Ends a check that never comes back, so the row does not sit on
+    /// "checking" when the feed is down.
+    @ObservationIgnored private var checkTimeout: Task<Void, Never>?
+    static let checkTimeoutSeconds: Double = 10
 
     private override init() {
         super.init()
@@ -57,6 +61,7 @@ final class Updates: NSObject, SPUUpdaterDelegate {
             try updater.start()
             self.updater = updater
             updater.checkForUpdatesInBackground()
+            armCheckTimeout()
         } catch {
             Log.app.error("Updater failed to start: \(error.localizedDescription)")
             state = .unreachable
@@ -89,6 +94,34 @@ final class Updates: NSObject, SPUUpdaterDelegate {
         return true
     }
 
+    /// Checks the feed again. Called when the settings window comes to the
+    /// front, so the row never shows a stale answer. A download or install
+    /// in progress is left alone.
+    func checkNow() {
+        guard let updater else { return }
+        switch state {
+        case .checking, .upToDate, .unreachable: break
+        case .downloading, .readyToInstall, .installing, .downloadFailed: return
+        }
+        guard updater.canCheckForUpdates else { return }
+        set(.checking)
+        updater.checkForUpdatesInBackground()
+        armCheckTimeout()
+    }
+
+    /// A check still running after `checkTimeoutSeconds` is treated as
+    /// unreachable. A late answer is dropped by the delegate's guard, and the
+    /// next focus asks again.
+    private func armCheckTimeout() {
+        checkTimeout?.cancel()
+        checkTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(Updates.checkTimeoutSeconds))
+            guard !Task.isCancelled, let self, case .checking = self.state else { return }
+            Log.app.notice("Update check timed out")
+            self.set(.unreachable)
+        }
+    }
+
     /// Installs the downloaded update and relaunches. Does nothing unless an
     /// update is ready.
     func install() {
@@ -111,6 +144,7 @@ final class Updates: NSObject, SPUUpdaterDelegate {
 
     fileprivate func set(_ state: State) {
         self.state = state
+        if case .checking = state {} else { checkTimeout?.cancel() }
         switch state {
         case .readyToInstall(let version):
             AppState.shared.updateReady = version
