@@ -34,7 +34,6 @@ code{background:var(--ink-a08);padding:1px 5px;border-radius:3px}
 
 /* the rail */
 .flow{display:grid;grid-template-columns:104px 1fr;column-gap:0;position:relative}
-.flow::before{content:"";position:absolute;left:104px;top:0;bottom:0;width:1px;background:var(--rule-control)}
 .t{font-family:var(--mono);font-size:11px;color:var(--ink-3);text-align:right;padding:18px 16px 0 0;font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .t b{display:block;color:var(--ink);font-weight:500}
 .step{position:relative;padding:12px 0 12px 28px}
@@ -74,7 +73,7 @@ details.nest summary:focus-visible{outline:2px solid var(--ink);outline-offset:2
 details.nest[open]>summary{margin-bottom:12px}
 details.nest>*:not(summary){margin-left:0}
 details.nest .nestlede{margin:0 0 8px 16px;color:var(--ink-2);font-size:13px;max-width:60ch}
-details.nest .flow.nested{margin-left:16px;border-left:2px solid var(--ink);padding-left:0}
+details.nest .flow.nested{margin-left:16px}
 details.evals{margin:10px 0 0}
 details.evals summary{cursor:pointer;font:500 12px/1.3 var(--mono);color:var(--ink);list-style:none;display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--rule-control);border-radius:999px}
 details.evals summary::-webkit-details-marker{display:none}
@@ -83,7 +82,6 @@ details.evals[open] summary::before{content:"−"}
 details.evals[open]>summary{margin-bottom:10px}
 details.evals .sub{margin-top:6px}
 .flow.nested{grid-template-columns:72px 1fr}
-.flow.nested::before{left:72px}
 .flow.nested .t{padding-top:16px;padding-right:12px}
 .flow.nested .step{padding:8px 0 8px 22px}
 .flow.nested .step::before{top:20px}
@@ -99,10 +97,9 @@ details.evals .sub{margin-top:6px}
 .sub div{background:var(--paper-sunk);border-radius:4px;padding:8px 10px;font-size:13px;color:var(--ink-2)}
 .sub div b{display:block;font:500 12px/1.3 var(--mono);color:var(--ink);margin-bottom:2px}
 /* the side lane */
-.lane{border-left:1px solid var(--rule-control);margin:0 0 4px 0;padding:0 0 0 28px;position:relative}
+.lane{margin:0 0 4px 0;padding:0;position:relative}
 .lane .box{border-style:dashed;background:var(--paper)}
-.lane::after{content:"";position:absolute;left:0;bottom:-1px;width:28px;height:1px;background:var(--rule-control)}
-.join{font:400 11px/1.3 var(--mono);color:var(--ink-3);padding:4px 0 0 28px}
+.join{font:400 11px/1.3 var(--mono);color:var(--ink-3);padding:4px 0 0 0}
 .slabbox{background:var(--slab);color:var(--on-slab);border-color:var(--slab)}
 .slabbox p,.slabbox li{color:var(--on-slab);opacity:.8}
 .slabbox h3 .mono{color:var(--on-slab);opacity:.6}
@@ -113,12 +110,12 @@ th{font:600 11px/1.3 var(--ui);letter-spacing:.085em;text-transform:uppercase;co
 td:nth-child(1){font-family:var(--mono);font-size:12px}
 td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-family:var(--mono);font-size:12px}
 .wrap{overflow-x:auto}
-@media (max-width:640px){.flow{grid-template-columns:64px 1fr}.flow::before{left:64px}.t{padding-right:10px}}
+@media (max-width:640px){.flow{grid-template-columns:64px 1fr}.t{padding-right:10px}}
 </style>
 
 <main>
 <h1>after fn up</h1>
-<p class="lede">what one dictation does between the key coming up and the text landing in the field, on the happy path with every setting on. the cloud on the left is the real one, drawn by the app's own shader, in the state it is in at that moment: breathing while you speak, struck by lightning once a second from fn up until the text is typed, then drawing in and fading over 0.35 s as the overlay hides. code names in mono; timings are medians from 556 dictations on this mac plus the fixed delays in <code>Fixed</code>.</p>
+<p class="lede">what one dictation does between the key coming up and the text landing in the field, on the happy path with every setting on. the cloud on the left is drawn by the app's own shader, in the state it is in at that moment: breathing while you speak, struck by lightning once a second from fn up until the text is typed, then drawing in and fading over 0.35 s as the overlay hides. code names in mono; timings are medians from 556 dictations on this mac plus the fixed delays in <code>Fixed</code>.</p>
 <p class="meta"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Pipeline.swift">Pipeline.swift</a> · endRecording → deliver · median dictation 4.7 s of audio</p>
 <div class="key"><span class="disk">written to disk <em>· ~/Library/Application Support/TypeMeIt</em></span><span style="border:0">a chip names a setting that touches the step, as its row reads in the settings window, with its tab and group. every one is on for the path drawn. the table at the end says what each does.</span></div>
 
@@ -129,10 +126,11 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
     <div class="lane">
       <div class="box">
         <h3>screen read <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Pipeline.swift">readScreen</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ScreenContext.swift">ScreenContext</a></span></h3>
-        <p>started with the recording, never waited for. the frontmost window's text is OCR'd, tokenised and filtered to names, identifiers and terms the dictionary does not know. the result is kept for this dictation's generation and reused for 60 s if the next dictation goes into the same window.</p>
+        <p>starts with the recording and runs in the background; clean-up does not wait for it. the app's frontmost window (the first one larger than a tooltip) is captured at 2× with screencapturekit, then read into lines by vision's accurate text recogniser with language correction off, so a name is read as written and not corrected into a word. each line is split on spaces and code punctuation, paths and urls dropped, and every token is trimmed of surrounding punctuation and a trailing 's; it has to be 2 to 30 characters with a letter in it.</p>
+      <p>a token is kept when it looks like a name or an identifier: an @handle or #channel, letters with digits (LOT-1482), snake_case or a dotted name (parse_config, user.name), kebab-case with a side the dictionary does not know, an acronym of 2 to 6 capitals, camelCase, two capitals in one word (GitHub), or any word the macos dictionary does not know. an ordinary capitalised word is kept only beside an unknown one, so Tomasz Wieczorek comes through whole while a Delete button does not. custom words are left out, since the model already has them. the survivors are counted and the 40 most frequent are the terms. the result is kept for this dictation and reused for 60 s if the next one goes into the same window.</p>
         <div class="chips"><span class="chip">read the screen<em>intelligence › clean-up</em></span><span class="chip">clean up with apple intelligence<em>intelligence › clean-up</em></span></div>
       </div>
-      <div class="join">joins at clean-up below · not finished by then means clean-up runs without it · kept in memory only, never written</div>
+      <div class="join">used at clean-up below if it has finished by then · kept in memory, not written to disk</div>
     </div>
   </div>
 </div>
@@ -151,10 +149,10 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   </div>
 
   <div class="t">+0 ms</div>
-  <div class="step">
+  <div class="step mark"><canvas class="puffgl" data-state="struck" width="88" height="88" aria-hidden="true"></canvas>
     <div class="box">
       <h3>remember where you are <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Frontmost.swift">Frontmost.capture()</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/RecordingArchive.swift">RecordingArchive.save</a></span></h3>
-      <p>the frontmost app and its focused window's title are read now and held in memory until the history entry is written at the end. read at fn up rather than fn down, because with pin you can switch windows while still talking and the text lands where you finish; read before any await, so the second of transcribe and clean-up cannot change the answer. the app and title are what insights uses to sort dictations into email, chat, code and so on, and what the screen read keys its 60 s reuse on.</p>
+      <p>the frontmost app and its focused window's title are read now and held in memory until the history entry is written at the end. read at fn up, not fn down: with pin you can switch windows while talking, and the text lands where you finish. read before anything asynchronous, so nothing during transcribe or clean-up can change it. the app and title are what insights uses to sort dictations into email, chat, code and so on, and what the screen read keys its 60 s reuse on.</p>
       <div class="disk">Recordings/&lt;entry id&gt;.m4a <em>· the audio, under the id the history entry will carry</em></div>
       <div class="chips"><span class="chip">keep the audio<em>history › keep</em></span></div>
     </div>
@@ -173,27 +171,27 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step mark"><canvas class="puffgl" data-state="struck" width="88" height="88" aria-hidden="true"></canvas>
     <div class="box">
       <h3>the model and the code around it <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">PostProcessor.clean</a></span></h3>
-      <p>the pill shows cleaning up. code before the model, the on-device model, two guards on what it returns, code after it, then the writing styles. this is the one function the eval scores, so what the eval sees is what gets typed. every part is drawn out below.</p>
+      <p>the pill shows cleaning up. code before the model, the on-device model, two guards on what it returns, code after it, then the writing styles. this is the one function the eval scores, so what the eval sees is what gets typed. each pass is below.</p>
       <details class="evals"><summary>how the eval works</summary>
 <div class="sub">
 <div><b>what runs</b><code>make eval</code> compiles this app's own clean-up code into a small tool and runs every case in <a href="https://github.com/typemeit/typemeit/blob/main/Scripts/cleanup-eval/cases.json">cases.json</a> through <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">PostProcessor.clean</a> on this mac's apple intelligence. the same function the pipeline calls, so the eval scores exactly what gets typed.</div>
 <div><b>a case</b>an input as parakeet would write it, the one expected text, the styles turned on, and for screen cases the lines on the window. alternatives are allowed only where both are as good, such as an optional comma, and only ones the model has actually produced in a run.</div>
 <div><b>combinations</b>a case marked matrix runs under every combination of the five styles, 32 runs, with its expected text as a template that reads differently per style, so the styles are checked together and not only alone.</div>
 <div><b>pass or fail</b>words are compared ignoring case and punctuation, with quotes kept. a case marked exact compares everything; a list is only right when its line breaks match.</div>
-<div><b>wish list</b>a case marked wish is wanted but not passing on today's model. it runs and is reported, never counts as a failure, and carries a note on what should happen and why it does not yet. the list to re-check when a new model lands.</div>
+<div><b>wish list</b>a case marked wish is wanted but not passing on today's model. it runs and is reported, never counts as a failure, and carries a note on what should happen and why it does not yet. re-run it when a new model ships.</div>
 <div><b>the report</b>each run writes <a href="https://github.com/typemeit/typemeit/blob/main/Scripts/cleanup-eval/evals.html">evals.html</a>: one table per style with input, expected, alternatives with their reasons, screen terms where given, and what came back. last run: 327 of 327, 14 wishes.</div>
 </div></details>
       <div class="chips"><span class="chip">clean up with apple intelligence<em>intelligence › clean-up</em></span><span class="chip">read the screen<em>intelligence › clean-up</em></span><span class="chip">digits · cut filler words · contractions · lists · quotes<em>intelligence › writing style</em></span><span class="chip">custom words<em>intelligence › custom words</em></span></div>
       <div class="gate">esc here cancels the model call and types nothing. the generation check runs again after the await.</div>
     </div>
-<details class="nest"><summary>see inside clean-up, pass by pass</summary><p class="nestlede">the same 929 ms, one rail per pass. the left column says where each pass runs. "as heard" means parakeet's text exactly as it wrote it; "as cleaned" means whatever this pass received from the one above.</p>
+<details class="nest"><summary>see inside clean-up, pass by pass</summary><p class="nestlede">the same 929 ms, one pass per row. the left column says where the pass runs. "as heard" means parakeet's text exactly as it wrote it; "as cleaned" means whatever this pass received from the one above.</p>
 <div class="flow nested">
 
   <div class="t">code</div>
   <div class="step">
     <div class="box">
       <h3>cancel the last one <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">run</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">current?.cancel()</a></span></h3>
-      <p>one clean-up at a time. a new dictation arriving while the model is still answering the previous one cancels it; a cancelled task returns nil and its caller has already left through the generation check.</p>
+      <p>one clean-up at a time. a new dictation while the model is still answering the previous one cancels that call; it returns nil, and its caller has already left through the generation check.</p>
       <div class="gate">exit if apple intelligence is not <span class="mono">.available</span> on this mac: returns nil, the transcript as heard is used, and the styles still run on it.</div>
     </div>
   </div>
@@ -203,7 +201,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
     <div class="box">
       <h3>spelled letters become an acronym <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">ModelText.joinSpelledLetters</a></span></h3>
       <p>a run of two or more single-letter words, split on spaces, is joined and uppercased: <code>lottie h q</code> → <code>lottie HQ</code>, <code>a p d f</code> → <code>a PDF</code>. an <code>a</code> or <code>i</code> at either end of the run is a word and stays outside it. one lone letter is left alone, for the false-start rule to remove.</p>
-      <p>this runs before the model because the prompt's rule 7 deletes stranded letters, and once they are gone nothing downstream can recover the acronym.</p>
+      <p>this runs before the model because the prompt's rule 7 deletes stranded letters, and once they are gone the acronym cannot be recovered.</p>
     </div>
   </div>
 
@@ -239,7 +237,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
     <div class="box slabbox">
       <h3>apple intelligence <span class="mono"><a href="https://developer.apple.com/documentation/foundationmodels/languagemodelsession/respond(to:generating:includeschemainprompt:options:)">LanguageModelSession.respond</a></span></h3>
       <p><span class="mono"><a href="https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel">SystemLanguageModel(guardrails: .permissiveContentTransformations)</a></span>, so a transcript about anything is still cleaned rather than refused. a fresh session per dictation, prewarmed at fn down so the first response is not slowed by loading. guided generation into one struct with one field, <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">CleanedTranscript.cleanedText</a></span>, so the model cannot answer in prose around the text. greedy sampling, so the same transcript gives the same answer every time; the eval relies on that.</p>
-      <div class="gate" style="border-color:var(--on-slab);opacity:.8">a thrown error other than cancellation is logged and returns nil. the model's own text passes through <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">stripThinkBlock</a></span>, which drops a leading <code>&lt;think&gt;…&lt;/think&gt;</code> if one is there, then is trimmed. empty means nil.</div>
+      <div class="gate" style="border-color:var(--on-slab);opacity:.8">a thrown error other than cancellation is logged and returns nil. the model's text passes through <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">stripThinkBlock</a></span>, which drops a leading <code>&lt;think&gt;…&lt;/think&gt;</code> if one is there, then is trimmed. empty means nil.</div>
     </div>
   </div>
 
@@ -280,10 +278,10 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step">
     <div class="box">
       <h3>the writing styles <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">WritingStyle.apply</a></span></h3>
-      <p>on the model's text, or on the transcript as heard when there was none, in this fixed order. each is off unless the user turned it on.</p>
+      <p>on the model's text, or on the transcript as heard when there was none, in this fixed order.</p>
       <div class="sub">
         <div><b>1 cut filler words</b>in code, the fillers that never carry meaning: you know (not after do, did, if and the like), basically, literally, i mean, actually, kind of and sort of before an adjective, and like before an intensifier or opening a sentence before a pronoun. an aside set off by commas goes with both commas. sentence starts are re-capitalised. the model's rule handles like, actually, sort of and kind of where the sentence decides. <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">cutFillers</a></span></div>
-        <div><b>2 lists</b>a run of spoken counters in order from first, at sentence starts or, when the model left the text unpunctuated, anywhere except after the, a, my, came and the like. the lead-in on its own line, one numbered item per line, counters and a leading and dropped, um and uh cut, endings made alike. fewer than two counters, or out of order: prose stays prose. <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">numberedList</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">counters</a></span></div>
+        <div><b>2 lists</b>a run of spoken counters in order from first, at sentence starts or, when the model left the text unpunctuated, anywhere except after the, a, my, came and the like. the lead-in on its own line, one numbered item per line, counters and a leading and dropped, um and uh cut, endings made alike. fewer than two counters, or out of order: left as prose. <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">numberedList</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">counters</a></span></div>
         <div><b>3 contractions</b>whole-word replacement keeping the first letter's case. negatives first (cannot, will not, do not …, would have), except is not, are not, am not; then subject joins only when a word follows, so "that is what it is" and "here i am" keep their last word, and not after where or how; then those three negatives, so "it is not" reads it's not, not it isn't. has joins only before a past participle. let us never joins. <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">contract</a></span></div>
         <div><b>4 quotes</b>after said, says, told me, asked, replied, goes, was like and the rest, the words up to the end of the sentence or the next clause with its own subject are wrapped in straight double quotes. that, if, whether, to, about or a pronoun object after the verb means indirect speech: left alone. no comma, no capital. <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">quote</a></span></div>
         <div><b>5 digits</b>a small number parser: units, tens, hundred, thousand, million, and after a scale word; hyphens and spaces; ordinals to 1st, 2nd; a hundred as 100; digits read out one at a time joined, oh as 0; five thirty as 5:30; n percent as n%. kept as words: a pronoun one (no one, one of, the red one), second unless after the or my with a word following, a counter opening a sentence or belonging to a spoken list. <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">digits</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">isPronounOne</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/WritingStyle.swift">isCounter</a></span></div>
@@ -297,7 +295,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step">
     <div class="box">
       <h3>currency, then the full stop <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">currencySymbols</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">stripTrailingFullStop</a></span></h3>
-      <p>"n dollars" → $n, "n pounds" → £n, "n euros" → €n, on whatever the text now says; this runs after the styles because the digits pass may be what just produced the number. then one trailing full stop is removed, never an ellipsis, so a dictation into a chat box does not end in a period the next dictation runs on from.</p>
+      <p>"n dollars" → $n, "n pounds" → £n, "n euros" → €n, on whatever the text now says; this runs after the styles because the digits pass may be what just produced the number. then one trailing full stop is removed, never an ellipsis, so a dictation into a chat box does not end in a full stop.</p>
     </div>
   </div>
 
