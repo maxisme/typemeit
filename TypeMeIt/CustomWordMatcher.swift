@@ -20,8 +20,23 @@ import Foundation
 /// a hint: "whisper" may be the product wispr or the quiet voice, and only
 /// the sentence says which, so the clean-up model is asked to decide that
 /// one word. A run that already spells a term is never replaced by another
-/// term.
+/// term, and a run of stop words ("or", "the") is never matched by sound.
+///
+/// A term may carry aliases, spellings the speech model has produced for
+/// it before ("Titemere" for typeme.it). A run spelling an alias counts as
+/// a full sound match, so it follows the confidence rule above rather than
+/// being applied blindly: the aliases come from the user's corrections and
+/// some of those are wrong.
 enum CustomWordMatcher {
+    struct Term: Equatable, Sendable {
+        let text: String
+        let aliases: [String]
+
+        init(_ text: String, aliases: [String] = []) {
+            self.text = text; self.aliases = aliases
+        }
+    }
+
     /// One transcript word with how sure the speech model was of it, or
     /// nil when no confidence is known (stored history, the eval).
     struct Word: Equatable, Sendable {
@@ -53,7 +68,17 @@ enum CustomWordMatcher {
     /// at 0.66 to 0.83.
     static let confidentAbove: Float = 0.9
     /// Sound keys must be at least this similar (1 - edits / longer length).
-    static let minSoundSimilarity = 0.75
+    /// Rises with the size of the list: every term that is not in the audio
+    /// is a chance of a false match, so a long list has to be stricter.
+    static func minSoundSimilarity(terms: Int, confidence: Float?) -> Double {
+        let base: Double = terms <= 10 ? 0.75 : terms <= 100 ? 0.8 : 0.85
+        // A word scored this low is nearly always a mishearing (28 of 6,963
+        // correct words scored under 0.8), so a looser sound match is taken.
+        if let confidence, confidence < 0.75 { return base - 0.1 }
+        return base
+    }
+    /// Words that never stand for a term on their own: "or" is not "VR".
+    static let stopWords: Set<String> = ["a", "an", "the", "and", "or", "but", "of", "to", "in", "on", "at", "by", "for", "with", "as", "is", "are", "was", "were", "be", "been", "it", "its", "this", "that", "these", "those", "i", "you", "he", "she", "we", "they", "me", "him", "her", "us", "them", "my", "your", "his", "our", "their", "so", "if", "not", "no", "yes", "do", "does", "did", "have", "has", "had", "can", "will", "would", "should", "could", "just", "then", "than", "there", "here", "what", "which", "who", "how", "when", "where", "why", "up", "out", "about", "into", "over", "also", "very", "all", "any", "some", "one", "two"]
     /// Shorter of the two compacted letter strings over the longer.
     static let minLengthRatio = 0.7
     /// Terms with fewer letters than this match only exactly: "ack" or "lib"
@@ -61,11 +86,16 @@ enum CustomWordMatcher {
     static let minFuzzyTermLetters = 4
 
     static func apply(_ words: [Word], terms: [String]) -> Outcome {
-        let terms = terms.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !letters($0).isEmpty }
+        apply(words, terms: terms.map { Term($0) })
+    }
+
+    static func apply(_ words: [Word], terms: [Term]) -> Outcome {
+        let terms = terms.map { Term($0.text.trimmingCharacters(in: .whitespaces), aliases: $0.aliases.map(letters).filter { !$0.isEmpty }) }
+            .filter { !letters($0.text).isEmpty }
         guard !terms.isEmpty, !words.isEmpty else {
             return Outcome(text: words.map(\.text).joined(separator: " "), fixes: 0)
         }
-        let termLetters = terms.map(letters)
+        let termLetters = terms.map { letters($0.text) }
         let termKeys = termLetters.map { soundKey(compact($0)) }
         let tokens = words.map { LocalCleanup.Token($0.text) }
         var out: [String] = []
@@ -79,27 +109,35 @@ enum CustomWordMatcher {
                 let runLetters = run.map { letters($0.core) }.joined()
                 guard !runLetters.isEmpty else { continue }
                 // Already one of the terms: leave it, and never trade it for another.
-                if run.contains(where: { token in terms.contains { $0 == token.core } }) { continue }
+                if run.contains(where: { token in terms.contains { $0.text == token.core } }) { continue }
+                let allStopWords = run.allSatisfy { stopWords.contains($0.key) }
+                let confidences = words[i..<(i + length)].compactMap(\.confidence)
+                let lowest = confidences.min()
                 for (t, term) in terms.enumerated() {
                     if runLetters == termLetters[t] {
-                        if best?.similarity != 2 { best = (length, term, 2) }
+                        if best?.similarity != 2 { best = (length, term.text, 2) }
                         continue
                     }
-                    guard termLetters[t].count >= minFuzzyTermLetters else { continue }
-                    let a = compact(runLetters), b = compact(termLetters[t])
-                    guard Double(min(a.count, b.count)) / Double(max(a.count, b.count)) >= minLengthRatio else { continue }
-                    let sim = similarity(soundKey(compact(runLetters)), termKeys[t])
-                    guard sim >= minSoundSimilarity else { continue }
-                    // A leading word that adds nothing to the match belongs to
-                    // the sentence, not the term: "to TypeMeet" keeps its "to".
-                    if length > 1, similarity(soundKey(compact(run.dropFirst().map { letters($0.core) }.joined())), termKeys[t]) >= sim { continue }
-                    let confidences = words[i..<(i + length)].compactMap(\.confidence)
-                    if let low = confidences.min(), low >= confidentAbove {
-                        let hint = Hint(heard: run.map(\.core).joined(separator: " "), term: term)
+                    guard !allStopWords else { continue }
+                    var sim: Double
+                    if term.aliases.contains(runLetters) {
+                        sim = 1
+                    } else {
+                        guard termLetters[t].count >= minFuzzyTermLetters else { continue }
+                        let a = compact(runLetters), b = compact(termLetters[t])
+                        guard Double(min(a.count, b.count)) / Double(max(a.count, b.count)) >= minLengthRatio else { continue }
+                        sim = similarity(soundKey(compact(runLetters)), termKeys[t])
+                        guard sim >= minSoundSimilarity(terms: terms.count, confidence: lowest) else { continue }
+                        // A leading word that adds nothing to the match belongs to
+                        // the sentence, not the term: "to TypeMeet" keeps its "to".
+                        if length > 1, similarity(soundKey(compact(run.dropFirst().map { letters($0.core) }.joined())), termKeys[t]) >= sim { continue }
+                    }
+                    if let lowest, lowest >= confidentAbove {
+                        let hint = Hint(heard: run.map(\.core).joined(separator: " "), term: term.text)
                         if !hints.contains(hint) { hints.append(hint) }
                         continue
                     }
-                    if sim > (best?.similarity ?? 0) { best = (length, term, sim) }
+                    if sim > (best?.similarity ?? 0) { best = (length, term.text, sim) }
                 }
             }
             if let best {

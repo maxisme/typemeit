@@ -70,6 +70,27 @@ final class CustomWordMatcherTests: XCTestCase {
         XCTAssertEqual(CustomWordMatcher.present(in: "ask eliza", terms: terms), [])
     }
 
+    func testAnAliasIsReplacedWhenUncertainAndHintedWhenConfident() {
+        let terms = [CustomWordMatcher.Term("typeme.it", aliases: ["Titemere"])]
+        let uncertain = "changed to Titemere".split(separator: " ").map { CustomWordMatcher.Word(text: String($0), confidence: $0 == "Titemere" ? 0.74 : 1) }
+        XCTAssertEqual(CustomWordMatcher.apply(uncertain, terms: terms), .init(text: "changed to typeme.it", fixes: 1))
+        let confident = "changed to Titemere".split(separator: " ").map { CustomWordMatcher.Word(text: String($0), confidence: 1) }
+        XCTAssertEqual(CustomWordMatcher.apply(confident, terms: terms), .init(text: "changed to Titemere", fixes: 0, hints: [.init(heard: "Titemere", term: "typeme.it")]))
+    }
+
+    func testStopWordsNeverStandForATerm() {
+        XCTAssertEqual(run("this or that", confidence: ["or": 0.5], terms: ["VR"]), .init(text: "this or that", fixes: 0))
+        XCTAssertEqual(run("give it to them", confidence: ["to": 0.5, "them": 0.5], terms: ["Totem"]).fixes, 0)
+    }
+
+    func testTheBarRisesWithTheSizeOfTheList() {
+        XCTAssertEqual(CustomWordMatcher.minSoundSimilarity(terms: 5, confidence: nil), 0.75)
+        XCTAssertEqual(CustomWordMatcher.minSoundSimilarity(terms: 50, confidence: nil), 0.8)
+        XCTAssertEqual(CustomWordMatcher.minSoundSimilarity(terms: 500, confidence: nil), 0.85)
+        XCTAssertEqual(CustomWordMatcher.minSoundSimilarity(terms: 5, confidence: 0.6), 0.65)
+        XCTAssertEqual(CustomWordMatcher.minSoundSimilarity(terms: 5, confidence: 0.9), 0.75)
+    }
+
     func testSoundKeys() {
         XCTAssertEqual(CustomWordMatcher.soundKey("typemeit"), "tpmt")
         XCTAssertEqual(CustomWordMatcher.soundKey("typemeet"), "tpmt")

@@ -412,5 +412,31 @@
       "fucking",
       "lib"
     ]
+  },
+  {
+    "input": "Why did it get changed to Titemere",
+    "expected": "Why did it get changed to typeme.it?",
+    "customWords": [
+      "typeme.it",
+      "Eliza",
+      "lottie.org",
+      "ack",
+      "fucking",
+      "lib"
+    ],
+    "confidence": {
+      "Titemere": 0.74
+    },
+    "aliases": {
+      "typeme.it": [
+        "Titemere"
+      ]
+    },
+    "alsoAccepted": [
+      {
+        "text": "Why did it get changed to typeme.it",
+        "why": "a fragment need not be punctuated"
+      }
+    ]
   }
 ]

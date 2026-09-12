@@ -28,6 +28,8 @@ struct Case: Decodable {
     let customWords: [String]
     /// Speech-model confidence per word of `input`; unlisted words are confident.
     let confidence: [String: Float]
+    /// Spellings the speech model has produced for a custom word before.
+    let aliases: [String: [String]]
     var accepted: [String] { [expected] + alsoAccepted.map(\.text) }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -37,12 +39,13 @@ struct Case: Decodable {
         alsoAccepted = try c.decodeIfPresent([Variant].self, forKey: .alsoAccepted) ?? []
         customWords = try c.decodeIfPresent([String].self, forKey: .customWords) ?? []
         confidence = try c.decodeIfPresent([String: Float].self, forKey: .confidence) ?? [:]
+        aliases = try c.decodeIfPresent([String: [String]].self, forKey: .aliases) ?? [:]
     }
-    enum CodingKeys: CodingKey { case input, screen, expected, alsoAccepted, customWords, confidence }
+    enum CodingKeys: CodingKey { case input, screen, expected, alsoAccepted, customWords, confidence, aliases }
     /// The transcript as the model receives it, custom words applied.
     var matched: CustomWordMatcher.Outcome {
         let words = input.split(whereSeparator: \.isWhitespace).map { CustomWordMatcher.Word(text: String($0), confidence: confidence[String($0)] ?? 1) }
-        return CustomWordMatcher.apply(words, terms: customWords)
+        return CustomWordMatcher.apply(words, terms: customWords.map { CustomWordMatcher.Term($0, aliases: aliases[$0] ?? []) })
     }
     var keep: [String] { CustomWordMatcher.present(in: matched.text, terms: customWords) }
 }

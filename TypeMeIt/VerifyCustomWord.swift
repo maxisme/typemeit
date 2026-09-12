@@ -38,9 +38,9 @@ final class VerifyCustomWord {
     /// Kicks off a verification for `word` against `history`. Cancels any
     /// verification in flight. A no-op when the model is unavailable, when
     /// nothing in the history kept its audio, or when the word does not
-    /// pre-filter to a candidate. Existing custom words are what the pipeline
-    /// currently applies; the new word is appended for the re-check.
-    func run(for word: String, existingWords: [String], history: [HistoryEntry]) {
+    /// pre-filter to a candidate. `existing` is what the pipeline currently
+    /// applies; the new word, with any aliases, is appended for the re-check.
+    func run(for word: String, existing: [CustomWordMatcher.Term], aliases: [String] = [], history: [HistoryEntry]) {
         task?.cancel()
         let normalized = word.trimmingCharacters(in: .whitespaces)
         guard !normalized.isEmpty else { state = .idle; return }
@@ -60,14 +60,14 @@ final class VerifyCustomWord {
         }
 
         state = .checking(word: normalized, scanned: 0, total: candidates.count)
-        let updatedWords = existingWords + [normalized]
+        let updated = existing + [CustomWordMatcher.Term(normalized, aliases: aliases)]
         task = Task { [weak self] in
             guard let self else { return }
             var matches: [Match] = []
             var scanned = 0
             for entry in candidates {
                 if Task.isCancelled { return }
-                let processed = VerifyCustomWord.rematch(entry.transcript, customWords: updatedWords)
+                let processed = VerifyCustomWord.rematch(entry.transcript, terms: updated)
                 if processed.lowercased().contains(lookup),
                    !VerifyCustomWord.same(processed, entry.displayText) {
                     matches.append(Match(id: entry.id, timestamp: entry.timestamp,
@@ -98,8 +98,8 @@ final class VerifyCustomWord {
     }
 
     /// The same matcher the live pipeline runs before the model.
-    private static func rematch(_ transcript: String, customWords: [String]) -> String {
+    private static func rematch(_ transcript: String, terms: [CustomWordMatcher.Term]) -> String {
         let words = transcript.split(whereSeparator: \.isWhitespace).map { CustomWordMatcher.Word(text: String($0), confidence: nil) }
-        return CustomWordMatcher.apply(words, terms: customWords).text
+        return CustomWordMatcher.apply(words, terms: terms).text
     }
 }

@@ -233,7 +233,7 @@ final class Pipeline {
     private func deliver(raw: Transcriber.Transcript, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, entryId: UUID, recordingFile: String?, generation gen: Int) async {
         if ModelText.isBlank(raw.text) { finishIdle(discarding: recordingFile); return }
         let requested = settings.postProcessingEnabled
-        let matched = CustomWordMatcher.apply(raw.matcherWords, terms: settings.customWords)
+        let matched = CustomWordMatcher.apply(raw.matcherWords, terms: store.terms(for: settings.customWords))
         if matched.fixes > 0 { Log.postProcess.info("Custom words replaced \(matched.fixes) run(s)") }
         var finalText = matched.text
         var postProcessed: String?
