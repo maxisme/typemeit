@@ -727,13 +727,7 @@
     "input": "hey it's me just leaving you a message because I could not get through um so there are three things first can you pick up the parcel from the post office it closes at five thirty second I have booked the table for eight so if you could be home by seven that would be great and third my mum is coming on saturday so we need to sort the spare room at some point this week anyway call me back when you get this bye",
     "wish": "An 80-word voicemail cleaned up with full punctuation. Today the base prompt returns it as spoken, minus the um, every time; oddly, appending the contractions rule makes the model clean it properly.",
     "exact": true,
-    "expected": "Hey, it's me, just leaving you a message because I could not get through. So there are three things. First, can you pick up the parcel from the post office? It closes at 5:30. Second, I have booked the table for 8, so if you could be home by 7 that would be great. And third, my mum is coming on Saturday, so we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye.",
-    "alsoAccepted": [
-      {
-        "text": "Hey, it's me. Just leaving you a message because I could not get through. So, there are three things. First, can you pick up the parcel from the post office? It closes at 5:30. Second, I have booked the table for 8. So, if you could be home by 7, that would be great. Third, my mum is coming on Saturday. So, we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye.",
-        "why": "the punctuation the model produces when it does clean this up (seen with the contractions rule on)"
-      }
-    ]
+    "expected": "Hey, it's me, just leaving you a message because I could not get through. So there are three things. First, can you pick up the parcel from the post office? It closes at 5:30. Second, I have booked the table for 8, so if you could be home by 7 that would be great. And third, my mum is coming on Saturday, so we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye."
   },
   {
     "input": "there is no way she has finished already",
