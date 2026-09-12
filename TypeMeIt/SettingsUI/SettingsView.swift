@@ -318,7 +318,7 @@ struct MainSettingsTab: View {
                     SettingsRow(label: "hold to talk") { Keycap("fn") }
                     SettingsRow(label: "pin", subtitle: "fn again to finish") { Keycap("space") }
                     SettingsRow(label: "cancel") { Keycap("esc") }
-                    SettingsRow(label: "copy last transcript", subtitle: "off until a shortcut is set", last: true) {
+                    SettingsRow(label: "copy last transcript", last: true) {
                         ShortcutRecorder(combo: $settings.copyLastShortcut)
                     }
                 }
@@ -336,7 +336,7 @@ struct MainSettingsTab: View {
                     }
                 }
                 SettingsGroup(title: "cloud") {
-                    SettingsRow(label: "cloud colour", subtitle: "off, it is white or grey with the appearance") {
+                    SettingsRow(label: "cloud colour") {
                         Toggle("", isOn: $settings.cloudColorEnabled).toggleStyle(.switch).labelsHidden()
                     }
                     if settings.cloudColorEnabled {
@@ -387,14 +387,14 @@ struct MainSettingsTab: View {
                     SettingsRow(label: "open at login") {
                         Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "ask before updating", subtitle: "otherwise it restarts itself when idle") {
+                    SettingsRow(label: "ask before updating", subtitle: "restarts itself when idle when turned off") {
                         Toggle("", isOn: Binding(get: { settings.askBeforeUpdating }, set: { settings.askBeforeUpdating = $0; Updates.shared.askPreferenceChanged() })).toggleStyle(.switch).labelsHidden()
                             .disabled(Updates.isDevBuild)
                     }
                     SettingsRow(label: "dock icon") {
                         Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "appearance", subtitle: "the windows and the recording cloud", last: true) {
+                    SettingsRow(label: "appearance", subtitle: "both the app window and the cloud", last: true) {
                         Picker("", selection: Binding(get: { settings.appearance }, set: { settings.appearance = $0; AppDelegate.shared?.applyAppearance() })) {
                             ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
                         }.labelsHidden().fixedSize()
