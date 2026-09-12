@@ -261,7 +261,8 @@ extension SettingsRow {
     /// a subtitle carries the same underline the standalone `Link` rows do.
     /// Plain strings render unchanged; a malformed markdown string falls back
     /// to a plain AttributedString.
-    static func subtitleAttributed(_ s: String) -> AttributedString {
+    /// Labels and subtitles are markdown, so either can carry a link.
+    static func attributed(_ s: String) -> AttributedString {
         var attr = (try? AttributedString(markdown: s)) ?? AttributedString(s)
         for run in attr.runs where run.link != nil {
             attr[run.range].underlineStyle = .single
@@ -280,9 +281,9 @@ struct SettingsRow<Control: View>: View {
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(label).font(DesignTokens.Fonts.ui.monospaced())
+                    Text(SettingsRow.attributed(label)).font(DesignTokens.Fonts.ui.monospaced()).tint(DesignTokens.Colors.ink)
                     if let subtitle {
-                        Text(SettingsRow.subtitleAttributed(subtitle)).font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2).tint(DesignTokens.Colors.ink).frame(maxWidth: 400, alignment: .leading)
+                        Text(SettingsRow.attributed(subtitle)).font(.system(size: 11)).foregroundStyle(DesignTokens.Colors.ink2).tint(DesignTokens.Colors.ink).frame(maxWidth: 400, alignment: .leading)
                     }
                 }
                 Spacer()
@@ -401,7 +402,7 @@ struct MainSettingsTab: View {
                     }
                 }
                 SettingsGroup(title: "about") {
-                    SettingsRow(label: "version \(AppVersion.current)", subtitle: "[parakeet 0.6b](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) · [apple intelligence](https://www.apple.com/apple-intelligence/)") {
+                    SettingsRow(label: "[version \(AppVersion.current)](\(Fixed.releaseURL(AppVersion.current)))", subtitle: "[parakeet 0.6b](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) · [apple intelligence](https://www.apple.com/apple-intelligence/)") {
                         updateStatus
                     }
                     SettingsRow(label: "website", last: true) {
