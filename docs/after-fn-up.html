@@ -39,6 +39,14 @@ code{background:var(--ink-a08);padding:1px 5px;border-radius:3px}
 .step{position:relative;padding:12px 0 12px 28px}
 .step::before{content:"";position:absolute;left:-4px;top:24px;width:9px;height:9px;border-radius:50%;background:var(--paper);border:1px solid var(--ink)}
 .step.exit::before{background:var(--ink)}
+.step.mark::before{display:none}
+.step.mark .puff{position:absolute;left:-15px;top:14px;width:32px;height:32px;color:var(--ink);background:var(--paper);border-radius:50%}
+.step.mark .puff .bolt{stroke-width:2.5}
+.disk{display:inline-flex;align-items:center;gap:6px;font:400 11px/1.3 var(--mono);color:var(--ink-2);border:1px solid var(--ink);border-radius:4px;padding:3px 8px;margin-top:10px;letter-spacing:.01em}
+.disk::before{content:"";width:8px;height:8px;border:1px solid var(--ink);border-bottom-width:3px;border-radius:1px}
+.disk em{font-style:normal;color:var(--ink-3)}
+.key span.disk{border:1px solid var(--ink);border-radius:4px;padding:3px 8px;margin:0}
+.key span.disk::before{border-radius:1px;border-bottom-width:3px;width:8px;height:8px}
 .box{border:1px solid var(--rule);background:var(--paper-raised);border-radius:6px;padding:12px 14px;max-width:640px}
 .box h3{margin:0;font:600 15px/1.3 var(--ui);letter-spacing:-.012em}
 .box h3 .mono{color:var(--ink-3);font-weight:400;margin-left:8px}
@@ -88,19 +96,19 @@ td:nth-child(3){color:var(--ink-2);font-family:var(--mono);font-size:12px;min-wi
 <h1>after fn up</h1>
 <p class="lede">what one dictation does between the key coming up and the text landing in the field, on the happy path with every setting on. code names in mono; timings are medians from 556 dictations on this mac plus the fixed delays in <code>Fixed</code>.</p>
 <p class="meta">Pipeline.swift · endRecording → deliver · median dictation 4.7 s of audio</p>
-<div class="key"><span class="on">setting on by default</span><span>off by default</span><span style="border:0">each chip names the row as it reads in the settings window, its tab and group, and the default. every one is on for the path drawn here.</span></div>
+<div class="key"><span class="on">setting on by default</span><span>off by default</span><span class="disk">written to disk <em>· ~/Library/Application Support/TypeMeIt</em></span><span style="border:0">a chip names a setting as its row reads in the settings window, its tab and group, and the default; every one is on for the path drawn here. a box marks a file written at that step.</span></div>
 
 <h2>already running when the key comes up</h2>
 <div class="flow">
   <div class="t"><b>fn down</b>t − 4.7 s</div>
-  <div class="step">
+  <div class="step mark"><svg class="puff" viewBox="2.45 1.45 60 60" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/><path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/><path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/><path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/><path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/></svg>
     <div class="lane">
       <div class="box">
         <h3>screen read <span class="mono">readScreen · ScreenContext</span></h3>
         <p>started with the recording, never waited for. the frontmost window's text is OCR'd, tokenised and filtered to names, identifiers and terms the dictionary does not know. the result is kept for this dictation's generation and reused for 60 s if the next dictation goes into the same window.</p>
         <div class="chips"><span class="chip off">read the screen <em>· intelligence › clean-up · off</em></span><span class="chip on">clean up with apple intelligence <em>· intelligence › clean-up · on</em></span></div>
       </div>
-      <div class="join">joins at clean-up below · not finished by then means clean-up runs without it</div>
+      <div class="join">joins at clean-up below · not finished by then means clean-up runs without it · kept in memory only, never written</div>
     </div>
   </div>
 </div>
@@ -109,7 +117,7 @@ td:nth-child(3){color:var(--ink-2);font-family:var(--mono);font-size:12px;min-wi
 <div class="flow">
 
   <div class="t"><b>fn up</b>t = 0</div>
-  <div class="step">
+  <div class="step mark"><svg class="puff struck" viewBox="2.45 1.45 60 60" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/><path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93" opacity=".35"/><path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62" opacity=".35"/><path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48" opacity=".35"/><path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66" opacity=".35"/><path class="bolt" d="M 36 22 L 28 35 L 34 35 L 30 47 L 40 31 L 34 31 Z" fill="var(--paper)"/></svg>
     <div class="box">
       <h3>stop the capture <span class="mono">endRecording · capture.stop()</span></h3>
       <p>recording stops and the audio is handed over as one buffer. other audio is unmuted. the stop sound plays 80 ms later, because the device drops a sound played the moment it is unmuted.</p>
@@ -122,7 +130,8 @@ td:nth-child(3){color:var(--ink-2);font-family:var(--mono);font-size:12px;min-wi
   <div class="step">
     <div class="box">
       <h3>remember where you are <span class="mono">Frontmost.capture() · RecordingArchive.save</span></h3>
-      <p>the frontmost app and its focused window's title are taken now, at fn up rather than fn down, because with pin you can switch windows while still talking and the text lands where you finish. taken before any await, so the second of transcribe and clean-up cannot change the answer. the app and title are what insights uses to sort dictations into email, chat, code and so on, and what the screen read keys its 60 s reuse on. the audio is written to the archive under the entry's id.</p>
+      <p>the frontmost app and its focused window's title are read now and held in memory until the history entry is written at the end. read at fn up rather than fn down, because with pin you can switch windows while still talking and the text lands where you finish; read before any await, so the second of transcribe and clean-up cannot change the answer. the app and title are what insights uses to sort dictations into email, chat, code and so on, and what the screen read keys its 60 s reuse on.</p>
+      <div class="disk">Recordings/&lt;entry id&gt;.wav <em>· the audio, under the id the history entry will carry</em></div>
       <div class="chips"><span class="chip off">keep the audio <em>· history › keep · off</em></span></div>
     </div>
   </div>
@@ -169,7 +178,8 @@ td:nth-child(3){color:var(--ink-2);font-family:var(--mono);font-size:12px;min-wi
   <div class="step exit">
     <div class="box">
       <h3>write history, go idle <span class="mono">store.append · phase = .idle</span></h3>
-      <p>one entry with the transcript as heard, the cleaned text, both durations, the app and window, and the recording file. the pill hides and the next fn down is accepted.</p>
+      <p>one entry with the transcript as heard, the cleaned text, both durations, the app and window, and the recording file's name. the whole history is rewritten atomically after every change; it is small enough to hold in memory. the pill hides and the next fn down is accepted.</p>
+      <div class="disk">history.json <em>· the entry, appended; the oldest beyond the keep limit go, with their recordings</em></div>
       <ul>
         <li>focused element was a text input: read-back starts, watching the field for your corrections to learn from. <span class="mono">ReadBack.start</span></li>
         <li>not a text input, or the paste failed: the pill offers copy for 8 s instead. <span class="mono">showCopyPrompt</span></li>
