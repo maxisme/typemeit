@@ -41,6 +41,7 @@ struct Case: Decodable {
     /// counted as a failure. The list to re-check when a new model lands.
     let wish: Bool
     var accepted: [String] { [expected] + alsoAccepted.map(\.text) }
+    var whys: [String] { alsoAccepted.map(\.why) }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         input = try c.decode(String.self, forKey: .input)
@@ -57,11 +58,11 @@ struct Case: Decodable {
 
     /// The runs this case stands for: itself, or one per style combination.
     var runs: [Run] {
-        guard matrix else { return [Run(input: input, styles: styles, accepted: accepted, exact: exact)] }
+        guard matrix else { return [Run(input: input, styles: styles, accepted: accepted, whys: whys, exact: exact)] }
         let all = WritingStyle.allCases.filter { $0 != .lowercase }
         return (0..<(1 << all.count)).map { bits in
             let on = Set(all.enumerated().filter { bits & (1 << $0.offset) != 0 }.map(\.element))
-            return Run(input: input, styles: on, accepted: accepted.map { Case.expand($0, on) }, exact: exact)
+            return Run(input: input, styles: on, accepted: accepted.map { Case.expand($0, on) }, whys: whys, exact: exact)
         }
     }
 
@@ -84,6 +85,8 @@ struct Run {
     let input: String
     let styles: Set<WritingStyle>
     let accepted: [String]
+    /// Why each `accepted` entry after the first counts.
+    let whys: [String]
     let exact: Bool
     /// Line breaks always count, so a list is only right when it is one;
     /// within a line, case and punctuation are ignored as usual. Returns the
@@ -103,6 +106,7 @@ struct Result: Encodable {
     /// Which accepted text matched: 0 is `expected`, 1 the first `alsoAccepted`.
     let matched: Int?
     let expected: [String]
+    let whys: [String]
     let screen: [String]?
     let terms: [String]
     let withoutScreen: String?
@@ -126,7 +130,8 @@ struct Result: Encodable {
             let screen = rs.contains { $0.screen != nil }
             out += "\n## \(key) (\(rs.count))\n\n| | input | expected |\(screen ? " screen terms |" : "") got |\n|---|---|---|\(screen ? "---|" : "")---|\n"
             for r in rs {
-                let expected = r.expected.map(cell).joined(separator: "<br>— or —<br>")
+                var expected = cell(r.expected[0])
+                for (alt, why) in zip(r.expected.dropFirst(), r.whys) { expected += "<br>— or, \(cell(why)) —<br>" + cell(alt) }
                 var got = cell(r.output)
                 if let b = r.withoutScreen, b != r.output { got += "<br>*without screen:* " + cell(b) }
                 let mark = r.wish ? (r.pass ? "granted" : "not yet") : (r.pass ? "pass" : "**fail**")
@@ -186,7 +191,7 @@ struct Result: Encodable {
                     if b != out { print("      without screen: \(b)") }
                     blind = b; blindOk = bOk
                 }
-                results.append(Result(input: r.input, output: out, styles: r.styles.map(\.rawValue).sorted(), pass: ok, wish: c.wish, matched: matched, expected: r.accepted, screen: c.screen, terms: terms, withoutScreen: blind, withoutScreenPass: blindOk))
+                results.append(Result(input: r.input, output: out, styles: r.styles.map(\.rawValue).sorted(), pass: ok, wish: c.wish, matched: matched, expected: r.accepted, whys: r.whys, screen: c.screen, terms: terms, withoutScreen: blind, withoutScreenPass: blindOk))
             }
         }
         print("\n\(total - failed)/\(total) passed")
