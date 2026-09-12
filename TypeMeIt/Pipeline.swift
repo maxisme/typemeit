@@ -50,6 +50,7 @@ final class Pipeline {
             self.shortcuts.cancelFromOverlay()
         }
         overlay.model.onCopy = { [weak self] in self?.copyFromPrompt() }
+        overlay.model.onOpenAccessibility = { NSWorkspace.shared.open(SecureInput.accessibilitySettingsURL) }
         overlay.model.onKeep = { [weak self] in self?.keepLearned() }
         overlay.model.onUndo = { [weak self] in self?.undoLearned() }
         overlay.model.onOpenIntelligence = { [weak self] in
@@ -273,7 +274,7 @@ final class Pipeline {
         }
 
         if settings.copyPromptEnabled, !pasted || focusedIsTextInput == false {
-            showCopyPrompt(finalText)
+            showCopyPrompt(finalText, cantType: !pasted)
         } else {
             overlay.hide()
         }
@@ -283,9 +284,9 @@ final class Pipeline {
 
     private var copyPromptText = ""
 
-    private func showCopyPrompt(_ text: String) {
+    private func showCopyPrompt(_ text: String, cantType: Bool) {
         copyPromptText = text
-        overlay.show(.copyPrompt)
+        overlay.show(.copyPrompt(cantType: cantType))
         copyPromptTask?.cancel()
         copyPromptTask = Task { [weak self] in
             try? await Task.sleep(for: Fixed.copyPromptTimeout)

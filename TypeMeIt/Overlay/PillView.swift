@@ -68,8 +68,8 @@ struct PillView: View {
 
     @ViewBuilder private var centre: some View {
         switch model.state {
-        case .copyPrompt:
-            label("nowhere to type it")
+        case .copyPrompt(let cantType):
+            label(cantType ? "accessibility is off, so it can't type" : "nowhere to type it")
         case .learned(_, let words):
             if words.count == 1 {
                 // The word itself in bold, kept as the user spelt it, since
@@ -99,8 +99,11 @@ struct PillView: View {
 
     @ViewBuilder private var rightSlot: some View {
         switch model.state {
-        case .copyPrompt:
+        case .copyPrompt(let cantType):
             HStack(spacing: 6) {
+                if cantType {
+                    Button("system settings") { model.onOpenAccessibility?() }.buttonStyle(InkButtonStyle())
+                }
                 // Sized for "copy transcript" from the start, so the button
                 // does not shrink when the label changes.
                 Button { model.onCopy?() } label: { Text(model.copied ? "copied" : "copy transcript").frame(minWidth: 110) }

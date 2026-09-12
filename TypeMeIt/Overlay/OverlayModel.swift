@@ -13,7 +13,9 @@ final class OverlayModel {
         case pinned
         case transcribing
         case cleaningUp
-        case copyPrompt
+        /// The text had nowhere to land. `cantType` when the paste itself could
+        /// not be posted, which means the accessibility grant is missing.
+        case copyPrompt(cantType: Bool)
         case learned(batchId: UUID, words: [String])
         case undone
         /// An update is downloaded and waiting for the install button.
@@ -53,6 +55,7 @@ final class OverlayModel {
     /// Pill width per state, from the design.
     var width: CGFloat {
         switch state {
+        case .copyPrompt(cantType: true): 470
         case .copyPrompt: 368
         default: 320
         }
@@ -74,4 +77,5 @@ final class OverlayModel {
     var onUndo: (@MainActor () -> Void)?
     var onInstall: (@MainActor () -> Void)?
     var onOpenIntelligence: (@MainActor () -> Void)?
+    var onOpenAccessibility: (@MainActor () -> Void)?
 }
