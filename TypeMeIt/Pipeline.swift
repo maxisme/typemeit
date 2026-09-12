@@ -249,11 +249,14 @@ final class Pipeline {
             postProcessed = await PostProcessor.shared.run(raw, customWords: customWords, screenTerms: screenTerms)
             let ms = Pipeline.elapsedMs(since: start)
             postProcessMs = ms
-            Log.postProcess.info("Post-processing took \(ms) ms (\(postProcessed == nil ? "no result, transcript typed as heard" : "applied"))")
+            Log.postProcess.info("Post-processing took \(ms) ms (\(postProcessed == nil ? "no result, local clean-up only" : "applied"))")
             guard gen == generation else { return }
             if let postProcessed { finalText = postProcessed }
-            finalText = ModelText.stripTrailingFullStop(finalText)
         }
+        finalText = LocalCleanup.run(finalText)
+        if requested { finalText = ModelText.stripTrailingFullStop(finalText) }
+        // Fillers alone ("um", "uh") clean down to nothing; that is silence, not a dictation.
+        if finalText.isEmpty { finishIdle(discarding: recordingFile); return }
 
         if settings.appendTrailingSpace { finalText += " " }
         let focusedIsTextInput = Focus.focusedElementIsTextInput()
