@@ -166,6 +166,8 @@ enum AppVersion {
 
 enum Fixed {
     static let websiteURL = URL(string: "https://typeme.it")!
+    /// The GitHub release page for a version, linked from the about row.
+    static func releaseURL(_ version: String) -> String { "https://github.com/typemeit/typemeit/releases/tag/v\(version)" }
     static let holdThresholdMs = 300
     static let pasteDelayBeforeMs = 60
     static let pasteDelayAfterMs = 60
