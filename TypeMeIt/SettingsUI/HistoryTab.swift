@@ -62,6 +62,7 @@ struct HistoryTab: View {
     /// The row a range is measured from: the last one whose box was clicked.
     @State private var anchor: UUID?
     @State private var confirmDeleteAll = false
+    @State private var reporting: HistoryEntry?
 
     private var filtered: [HistoryEntry] {
         let q = search.trimmingCharacters(in: .whitespaces).lowercased()
@@ -106,6 +107,7 @@ struct HistoryTab: View {
                     } message: { Text("This cannot be undone.") }
             }
             .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 18)
+            .sheet(item: $reporting) { FeedbackSheet(entry: $0) }
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 18) {
                     if groups.isEmpty {
@@ -176,6 +178,7 @@ struct HistoryTab: View {
                         iconButton(on ? "akar-stop" : "akar-play", on ? "stop" : "play the audio") { player.toggle(e) }
                     }
                     iconButton("akar-copy", "copy") { Output.copyToClipboard(e.displayText) }
+                    iconButton("akar-flag", e.reportId == nil ? "report a problem" : "reported · report again") { reporting = e }
                     iconButton("akar-trash-can", "delete") { store.delete(id: e.id) }
                 }
             }

@@ -25,6 +25,7 @@ jobs:
       contents: write # create the release and upload the DMG and appcast
     env:
       DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
+      FEEDBACK_KEY: ${{ secrets.FEEDBACK_KEY }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: brew install xcodegen

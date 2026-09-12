@@ -23,6 +23,8 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Equatable {
     var dictionaryFixes: Int
     /// File name in `RecordingArchive.directory`; nil when audio was not kept.
     var recordingFile: String?
+    /// Id the feedback endpoint gave the last report sent about this entry.
+    var reportId: String?
 
     var displayText: String { edited ?? postProcessed ?? transcript }
 }
@@ -139,6 +141,12 @@ final class Store {
     func toggleStar(id: UUID) {
         guard let i = history.firstIndex(where: { $0.id == id }) else { return }
         history[i].starred.toggle()
+        save(history, to: historyURL)
+    }
+
+    func setReportId(id: UUID, reportId: String) {
+        guard let i = history.firstIndex(where: { $0.id == id }) else { return }
+        history[i].reportId = reportId
         save(history, to: historyURL)
     }
 
