@@ -126,7 +126,7 @@ struct Result: Encodable {
             let screen = rs.contains { $0.screen != nil }
             out += "\n## \(key) (\(rs.count))\n\n| | input | expected |\(screen ? " screen terms |" : "") got |\n|---|---|---|\(screen ? "---|" : "")---|\n"
             for r in rs {
-                let expected = r.expected.map(cell).joined(separator: "<br><hr>*or*<br>")
+                let expected = r.expected.map(cell).joined(separator: "<br>— or —<br>")
                 var got = cell(r.output)
                 if let b = r.withoutScreen, b != r.output { got += "<br>*without screen:* " + cell(b) }
                 let mark = r.wish ? (r.pass ? "granted" : "not yet") : (r.pass ? "pass" : "**fail**")
