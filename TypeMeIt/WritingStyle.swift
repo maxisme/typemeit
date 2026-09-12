@@ -242,7 +242,8 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
     /// "one" → 1 except as a pronoun ("no one", "one of them"). "a" and "an"
     /// are untouched, "second" stays a word since it is also a unit of time,
     /// a sentence-opening "First," or the counters of a spoken list stay
-    /// words, "N percent" becomes N%, and "five thirty" becomes 5:30.
+    /// words, "N percent" becomes N%, "five thirty" becomes 5:30, and digits
+    /// read out one at a time ("oh seven seven one…") become one number.
     static func digits(_ text: String) -> String {
         let tokens = tokenise(text)
         let listCounters = counters(in: text).map { $0.range(at: 1) }
@@ -268,7 +269,17 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
             out.append(ordinal ? ordinalString(value) : String(value))
             i = end
         }
-        return out.joined()
+        var joined = out.joined()
+            .replacingOccurrences(of: #"(?i)\b(?:oh|o)\b(?= \d)"#, with: "0", options: .regularExpression)
+            .replacingOccurrences(of: #"(?<=\d )(?i)\b(?:oh|o)\b"#, with: "0", options: .regularExpression)
+        // Digits read out one at a time, four or more of them, are one number.
+        if let re = try? NSRegularExpression(pattern: #"\b\d(?: \d){3,}\b"#) {
+            for m in re.matches(in: joined, range: NSRange(joined.startIndex..., in: joined)).reversed() {
+                let r = Range(m.range, in: joined)!
+                joined.replaceSubrange(r, with: joined[r].replacingOccurrences(of: " ", with: ""))
+            }
+        }
+        return joined
             .replacingOccurrences(of: #"(\d) ?percent\b"#, with: "$1%", options: .regularExpression)
             .replacingOccurrences(of: #"\b(1[0-2]|[1-9]) ([0-5]\d)\b"#, with: "$1:$2", options: .regularExpression)
     }

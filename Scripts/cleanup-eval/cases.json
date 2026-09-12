@@ -16,16 +16,6 @@
     "expected": "What is the capital of France?"
   },
   {
-    "input": "that will be 25 dollars please",
-    "expected": "That will be $25 please.",
-    "alsoAccepted": [
-      {
-        "text": "That will be 25 dollars please.",
-        "why": "the model rarely writes the currency symbol; keeping every word is what matters"
-      }
-    ]
-  },
-  {
     "input": "um so I think we should uh ship it on friday",
     "expected": "So I think we should ship it on Friday."
   },
@@ -156,36 +146,8 @@
       "thanks! also ping ola about LottieHQ x Anthropic",
       "Message #eng-platform"
     ],
-    "input": "ping tomash about the kavu contract",
-    "expected": "Ping Tomasz about the Kavuu contract.",
-    "alsoAccepted": [
-      {
-        "text": "Ping Tomash about the Kavuu contract.",
-        "why": "Tomasz and Wieczorek are both in the macOS dictionary, so the filter treats them as ordinary capitalised words and drops them"
-      }
-    ]
-  },
-  {
-    "screen": [
-      "#eng-platform",
-      "Priya Raghunathan  10:42",
-      "the Zentryx cluster is back on 1.29, staging rollout at 3",
-      "Tomasz Wieczorek  10:44",
-      "nice. can someone look at the Kavuu contract renewal before friday?",
-      "@maxisme  10:45",
-      "on it. PR-1234 has the fix for the enquiry dedupe",
-      "Priya Raghunathan  10:47",
-      "thanks! also ping ola about LottieHQ x Anthropic",
-      "Message #eng-platform"
-    ],
     "input": "can you deploy centrix to staging",
-    "expected": "Can you deploy Zentryx to staging?",
-    "alsoAccepted": [
-      {
-        "text": "Can you deploy Centrix to staging?",
-        "why": "a first-letter change is beyond what the model will bridge from sound alone; the fuzzy matcher is the tool for this"
-      }
-    ]
+    "expected": "Can you deploy Zentryx to staging?"
   },
   {
     "screen": [
@@ -227,35 +189,6 @@
     ],
     "input": "the use state hook rerenders every time",
     "expected": "The useState hook rerenders every time."
-  },
-  {
-    "screen": [
-      "EXPLORER",
-      "  src/",
-      "    parse_config.ts",
-      "    fetchUser.ts",
-      "    useEnquiries.ts",
-      "parse_config.ts",
-      "1  import { useState } from 'react'",
-      "2  export const MAX_RETRIES = 3",
-      "3  export function parse_config(raw: string): Config {",
-      "4    const [state, setState] = useState<Config | null>(null)",
-      "5    return fetchUser(raw, MAX_RETRIES)",
-      "6  }",
-      "Ln 4, Col 12   TypeScript"
-    ],
-    "input": "bump max retries to five in parse config",
-    "expected": "Bump MAX_RETRIES to 5 in parse_config.",
-    "alsoAccepted": [
-      {
-        "text": "Bump max retries to 5 in parse config.",
-        "why": "spoken words for a snake_case or ALLCAPS identifier are not fused today"
-      },
-      {
-        "text": "Bump MAX_RETRIES to five in parse config.",
-        "why": "the model fuses one identifier and leaves the rest of the sentence as spoken"
-      }
-    ]
   },
   {
     "screen": [
@@ -357,19 +290,6 @@
       "digits"
     ],
     "expected": "She came 1st and I came 4th."
-  },
-  {
-    "input": "no one told me it costs one hundred and twenty pounds",
-    "styles": [
-      "digits"
-    ],
-    "expected": "No one told me it costs £120.",
-    "alsoAccepted": [
-      {
-        "text": "No one told me it costs 120 pounds.",
-        "why": "the model rarely writes the currency symbol"
-      }
-    ]
   },
   {
     "input": "so it was like really good and you know we should basically do it again",
@@ -555,34 +475,11 @@
     "expected": "The basics are done but not the actual deploy."
   },
   {
-    "input": "so um basically I was like you know we should actually just uh go for it",
-    "styles": [
-      "fillerWords"
-    ],
-    "expected": "So I was we should just go for it.",
-    "alsoAccepted": [
-      {
-        "text": "So I was like we should just go for it.",
-        "why": "like as a quotative verb may stay"
-      }
-    ]
-  },
-  {
     "input": "can you like literally just send me the link",
     "styles": [
       "fillerWords"
     ],
     "expected": "Can you just send me the link?"
-  },
-  {
-    "input": "it was like really cold out there",
-    "expected": "It was like really cold out there.",
-    "alsoAccepted": [
-      {
-        "text": "It was really cold out there.",
-        "why": "the base prompt sometimes drops a filler like on its own"
-      }
-    ]
   },
   {
     "input": "I actually think we should wait until monday",
@@ -608,19 +505,6 @@
       "digits"
     ],
     "expected": "The meeting is at half past 9."
-  },
-  {
-    "input": "it costs about three hundred and fifty dollars",
-    "styles": [
-      "digits"
-    ],
-    "expected": "It costs about $350.",
-    "alsoAccepted": [
-      {
-        "text": "It costs about 350 dollars.",
-        "why": "the model rarely writes the currency symbol"
-      }
-    ]
   },
   {
     "input": "there were two thousand people at the show",
@@ -655,13 +539,7 @@
     "styles": [
       "digits"
     ],
-    "expected": "My number is 07712345678.",
-    "alsoAccepted": [
-      {
-        "text": "My number is oh 7 7 1 2 3 4 5 6 7.",
-        "why": "oh is not a number word"
-      }
-    ]
+    "expected": "My number is 0771234567."
   },
   {
     "input": "the twenty first of june works for me",
@@ -683,19 +561,6 @@
       "digits"
     ],
     "expected": "Back in 2019 we had 8 people."
-  },
-  {
-    "input": "no one came to the second session",
-    "styles": [
-      "digits"
-    ],
-    "expected": "No one came to the 2nd session.",
-    "alsoAccepted": [
-      {
-        "text": "No one came to the second session.",
-        "why": "second is never converted in code, since it is also a unit of time"
-      }
-    ]
   },
   {
     "input": "ten percent off for the first three orders",
@@ -743,13 +608,7 @@
     "styles": [
       "contractions"
     ],
-    "expected": "Let's know when you've landed.",
-    "alsoAccepted": [
-      {
-        "text": "Let us know when you've landed.",
-        "why": "let us know is not let's know; the model should keep it"
-      }
-    ]
+    "expected": "Let us know when you've landed."
   },
   {
     "input": "who is coming and what is the plan",
@@ -777,34 +636,6 @@
     "expected": "I am not sure that is going to work."
   },
   {
-    "input": "two things first the build is red and second the release notes are missing",
-    "styles": [
-      "lists"
-    ],
-    "exact": true,
-    "expected": "Two things.\n1. The build is red.\n2. The release notes are missing.",
-    "alsoAccepted": [
-      {
-        "text": "Two things\n1. The build is red\n2. The release notes are missing",
-        "why": "the model returned the transcript unpunctuated; the list is still built in code"
-      }
-    ]
-  },
-  {
-    "input": "first um preheat the oven secondly mix the flour and butter and thirdly bake for twenty minutes",
-    "styles": [
-      "lists"
-    ],
-    "exact": true,
-    "expected": "1. Preheat the oven.\n2. Mix the flour and butter.\n3. Bake for 20 minutes.",
-    "alsoAccepted": [
-      {
-        "text": "1. Preheat the oven\n2. Mix the flour and butter\n3. Bake for twenty minutes",
-        "why": "the model returned the transcript unpunctuated; without the digits style twenty stays a word"
-      }
-    ]
-  },
-  {
     "input": "first of all thanks for coming",
     "styles": [
       "lists"
@@ -819,15 +650,9 @@
     "expected": "We came second in the league and first in the cup."
   },
   {
-    "input": "I am actually going to be like five minutes late",
+    "input": "I am actually going to be five minutes late",
     "matrix": true,
-    "expected": "{contractions:I am|I'm} {fillerWords:actually |}going to be {fillerWords:like |}{digits:five|5} minutes late.",
-    "alsoAccepted": [
-      {
-        "text": "{contractions:I am|I'm} {fillerWords:actually |}going to be {digits:five|5} minutes late.",
-        "why": "the base prompt sometimes drops a filler like on its own"
-      }
-    ]
+    "expected": "{contractions:I am|I'm} {fillerWords:actually |}going to be {digits:five|5} minutes late."
   },
   {
     "input": "hey sam can you pick up milk on the way home",
@@ -851,13 +676,13 @@
     "expected": "Do you know if the {digits:first|1st} one is {fillerWords:actually |}cheaper?"
   },
   {
-    "input": "it is not that I do not like it I just think it is kind of expensive",
+    "input": "it is not that I do not want it I just think it is too expensive",
     "matrix": true,
-    "expected": "{contractions:It is|It's} not that I {contractions:do not|don't} like it, I just think {contractions:it is|it's} {fillerWords:kind of |}expensive.",
+    "expected": "{contractions:It is|It's} not that I {contractions:do not|don't} want it, I just think {contractions:it is|it's} too expensive.",
     "alsoAccepted": [
       {
-        "text": "{contractions:It is|It's} not that I {contractions:do not|don't} like it, I just think {contractions:it is|it's} kind of expensive.",
-        "why": "kind of is left to the model, which may keep it"
+        "text": "{contractions:It is|It's} not that I {contractions:do not|don't} want it. I just think {contractions:it is|it's} too expensive.",
+        "why": "two sentences is fine"
       }
     ]
   },
@@ -865,16 +690,6 @@
     "input": "we sold forty two units in the first week you know",
     "matrix": true,
     "expected": "We sold {digits:forty two|42} units in the {digits:first|1st} week{fillerWords:, you know|}."
-  },
-  {
-    "input": "so I just got off the call with the client and um basically they want to move the launch back by two weeks which I think is actually fine because we were never going to hit the original date anyway the main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account and I said we could probably get a first version of that done by the end of next week can you let the design team know and also um can you check whether the analytics events for the pricing page are actually firing because last time I looked they were not",
-    "expected": "So I just got off the call with the client and basically they want to move the launch back by two weeks, which I think is actually fine because we were never going to hit the original date anyway. The main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account, and I said we could probably get a first version of that done by the end of next week. Can you let the design team know? And also, can you check whether the analytics events for the pricing page are actually firing? Because last time I looked they were not.",
-    "alsoAccepted": [
-      {
-        "text": "So I just got off the call with the client and basically they want to move the launch back by two weeks which I think is actually fine because we were never going to hit the original date anyway. The main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account. I said we could probably get a first version of that done by the end of next week. Can you let the design team know and also can you check whether the analytics events for the pricing page are actually firing because last time I looked they were not",
-        "why": "seen: the model splits the sentence at account and drops the and"
-      }
-    ]
   },
   {
     "input": "so I just got off the call with the client and um basically they want to move the launch back by two weeks which I think is actually fine because we were never going to hit the original date anyway the main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account and I said we could probably get a first version of that done by the end of next week can you let the design team know and also um can you check whether the analytics events for the pricing page are actually firing because last time I looked they were not",
@@ -904,13 +719,13 @@
     "alsoAccepted": [
       {
         "text": "{lists:Hey, it's me. Just leaving you a message because I {contractions:could not|couldn't} get through. So, there are {digits:three|3} things. First, can you pick up the parcel from the post office? It closes at 5:30. Second, {contractions:I have|I've} booked the table for 8. So, if you could be home by 7, that would be great. Third, my mum is coming on Saturday. So, we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye.|Hey, it's me. Just leaving you a message because I {contractions:could not|couldn't} get through. So, there are {digits:three|3} things.\n1. Can you pick up the parcel from the post office? It closes at 5:30.\n2. {contractions:I have|I've} booked the table for 8. So, if you could be home by 7, that would be great.\n3. My mum is coming on Saturday. So, we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye.}",
-        "why": "seen with the contractions rule on: the model writes the times as digits under the base prompt and drops the spoken and before third"
+        "why": "seen with the contractions rule on: the base prompt writes spoken times as digits whatever the style, and the model drops the spoken and before third"
       }
     ]
   },
   {
     "input": "hey it's me just leaving you a message because I could not get through um so there are three things first can you pick up the parcel from the post office it closes at five thirty second I have booked the table for eight so if you could be home by seven that would be great and third my mum is coming on saturday so we need to sort the spare room at some point this week anyway call me back when you get this bye",
-    "wish": true,
+    "wish": "An 80-word voicemail cleaned up with full punctuation. Today the base prompt returns it as spoken, minus the um, every time; oddly, appending the contractions rule makes the model clean it properly.",
     "exact": true,
     "expected": "Hey, it's me, just leaving you a message because I could not get through. So there are three things. First, can you pick up the parcel from the post office? It closes at 5:30. Second, I have booked the table for 8, so if you could be home by 7 that would be great. And third, my mum is coming on Saturday, so we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye.",
     "alsoAccepted": [
@@ -922,7 +737,7 @@
   },
   {
     "input": "there is no way she has finished already",
-    "wish": true,
+    "wish": "she has + participle joined to she's. Code never joins has because she has a car must stay, so this needs the model, which does not do it.",
     "styles": [
       "contractions"
     ],
@@ -930,7 +745,7 @@
   },
   {
     "input": "a hundred percent yes",
-    "wish": true,
+    "wish": "a hundred percent read as 100%. Code leaves a hundred alone because a is not a number word; the model does not convert it either.",
     "styles": [
       "digits"
     ],
@@ -938,7 +753,7 @@
   },
   {
     "input": "we need milk eggs bread and butter",
-    "wish": true,
+    "wish": "A spoken run of items written as a bulleted list. There is no spoken marker for a bullet, so only the model could do this, and it does not.",
     "styles": [
       "lists"
     ],
@@ -946,12 +761,12 @@
   },
   {
     "input": "that will be 25 dollars please",
-    "wish": true,
+    "wish": "25 dollars written as $25, which base rule 4 asks for. The model keeps the words.",
     "expected": "That will be $25 please."
   },
   {
     "input": "no one told me it costs one hundred and twenty pounds",
-    "wish": true,
+    "wish": "£120, as base rule 4 asks. The model writes 120 pounds.",
     "styles": [
       "digits"
     ],
@@ -959,7 +774,7 @@
   },
   {
     "input": "it costs about three hundred and fifty dollars",
-    "wish": true,
+    "wish": "$350, as base rule 4 asks. The model writes 350 dollars.",
     "styles": [
       "digits"
     ],
@@ -967,12 +782,12 @@
   },
   {
     "input": "lottie h q signed with anthropic yesterday",
-    "wish": true,
+    "wish": "LottieHQ recovered with nothing on the screen. The prompt's false-start rule deletes the stranded h and q first, so only the screen can supply it today.",
     "expected": "LottieHQ signed with Anthropic yesterday."
   },
   {
     "input": "ping tomash about the kavu contract",
-    "wish": true,
+    "wish": "Tomasz and Kavuu from the screen. Tomasz is in the macOS dictionary, so the screen filter drops it as an ordinary capitalised word before the model sees it.",
     "screen": [
       "#eng-platform",
       "Priya Raghunathan  10:42",
@@ -988,25 +803,8 @@
     "expected": "Ping Tomasz about the Kavuu contract."
   },
   {
-    "input": "can you deploy centrix to staging",
-    "wish": true,
-    "screen": [
-      "#eng-platform",
-      "Priya Raghunathan  10:42",
-      "the Zentryx cluster is back on 1.29, staging rollout at 3",
-      "Tomasz Wieczorek  10:44",
-      "nice. can someone look at the Kavuu contract renewal before friday?",
-      "@maxisme  10:45",
-      "on it. PR-1234 has the fix for the enquiry dedupe",
-      "Priya Raghunathan  10:47",
-      "thanks! also ping ola about LottieHQ x Anthropic",
-      "Message #eng-platform"
-    ],
-    "expected": "Can you deploy Zentryx to staging?"
-  },
-  {
     "input": "bump max retries to five in parse config",
-    "wish": true,
+    "wish": "MAX_RETRIES and parse_config fused from the spoken words. The model fuses one identifier at most and leaves the rest as spoken.",
     "screen": [
       "EXPLORER",
       "  src/",
@@ -1026,7 +824,7 @@
   },
   {
     "input": "so um basically I was like you know we should actually just uh go for it",
-    "wish": true,
+    "wish": "Every filler cut at once, leaving the sentence that was meant. The model cuts some and leaves the quotative I was like.",
     "styles": [
       "fillerWords"
     ],
@@ -1034,35 +832,27 @@
   },
   {
     "input": "it was like really cold out there",
-    "wish": true,
+    "wish": "With no style on, every word kept, like included. The base prompt deletes this like by itself.",
     "exact": true,
     "expected": "It was like really cold out there."
   },
   {
     "input": "I am actually going to be like five minutes late",
-    "wish": true,
+    "wish": "With no style on, every word kept, like included. The base prompt deletes this like by itself.",
     "exact": true,
     "expected": "I am actually going to be like five minutes late."
   },
   {
     "input": "no one came to the second session",
-    "wish": true,
+    "wish": "second read as 2nd from context. Code never converts second because it is also a unit of time, so this needs the model, which does not do it.",
     "styles": [
       "digits"
     ],
     "expected": "No one came to the 2nd session."
   },
   {
-    "input": "my number is oh seven seven one two three four five six seven",
-    "wish": true,
-    "styles": [
-      "digits"
-    ],
-    "expected": "My number is 07712345678."
-  },
-  {
     "input": "two things first the build is red and second the release notes are missing",
-    "wish": true,
+    "wish": "A punctuated list. The model returns this transcript unpunctuated, so the list is built from the raw words.",
     "styles": [
       "lists"
     ],
@@ -1071,7 +861,7 @@
   },
   {
     "input": "first um preheat the oven secondly mix the flour and butter and thirdly bake for twenty minutes",
-    "wish": true,
+    "wish": "A punctuated list with the number converted. The model returns this transcript unpunctuated.",
     "styles": [
       "lists"
     ],
@@ -1080,7 +870,7 @@
   },
   {
     "input": "it is not that I do not like it I just think it is kind of expensive",
-    "wish": true,
+    "wish": "kind of cut as a hedge. The model keeps it on this sentence.",
     "styles": [
       "fillerWords"
     ],
@@ -1089,18 +879,26 @@
   },
   {
     "input": "so I just got off the call with the client and um basically they want to move the launch back by two weeks which I think is actually fine because we were never going to hit the original date anyway the main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account and I said we could probably get a first version of that done by the end of next week can you let the design team know and also um can you check whether the analytics events for the pricing page are actually firing because last time I looked they were not",
-    "wish": true,
+    "wish": "A 100-word dictation with every word kept. The model drops the and after account and splits the sentence.",
     "exact": true,
     "expected": "So I just got off the call with the client and basically they want to move the launch back by two weeks, which I think is actually fine because we were never going to hit the original date anyway. The main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account, and I said we could probably get a first version of that done by the end of next week. Can you let the design team know? And also, can you check whether the analytics events for the pricing page are actually firing? Because last time I looked they were not."
   },
   {
     "input": "hey it's me just leaving you a message because I could not get through um so there are three things first can you pick up the parcel from the post office it closes at five thirty second I have booked the table for eight so if you could be home by seven that would be great and third my mum is coming on saturday so we need to sort the spare room at some point this week anyway call me back when you get this bye",
-    "wish": true,
+    "wish": "The same voicemail with both model rules on. Today the model returns it unpunctuated whenever the filler rule is appended.",
     "styles": [
       "contractions",
       "fillerWords"
     ],
     "exact": true,
     "expected": "Hey, it's me, just leaving you a message because I couldn't get through. So there are three things. First, can you pick up the parcel from the post office? It closes at 5:30. Second, I've booked the table for 8, so if you could be home by 7 that would be great. And third, my mum is coming on Saturday, so we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye."
+  },
+  {
+    "input": "it is not that I do not like it I just think it is too expensive",
+    "styles": [
+      "fillerWords"
+    ],
+    "wish": "Every word kept: this like is a verb. With the filler rule on, the model deletes the whole clause that holds it, although the rule says to keep I like it.",
+    "expected": "It is not that I do not like it, I just think it is too expensive."
   }
 ]

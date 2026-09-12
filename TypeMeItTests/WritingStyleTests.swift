@@ -14,6 +14,8 @@ final class WritingStyleTests: XCTestCase {
         XCTAssertEqual(WritingStyle.digits("two thousand and six"), "2006")
         XCTAssertEqual(WritingStyle.digits("three million"), "3000000")
         XCTAssertEqual(WritingStyle.digits("call one two three"), "call 1 2 3")
+        XCTAssertEqual(WritingStyle.digits("my number is oh seven seven one two three four five six seven"), "my number is 0771234567")
+        XCTAssertEqual(WritingStyle.digits("oh no, seven of them"), "oh no, 7 of them")
     }
 
     func testDigitsWritesOrdinals() {
