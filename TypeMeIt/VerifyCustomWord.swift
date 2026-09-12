@@ -1,16 +1,13 @@
 import Foundation
-import FoundationModels
 import Observation
 
-/// After a word is added to the custom-words list, re-runs the Apple
-/// Intelligence cleanup on the last few kept-audio dictations with the new
-/// word in the list. Where the word now appears in the output that did not
-/// have it before, the row is recorded as a "would have caught it" match so
-/// the user can see the change would take next time the same audio came in.
-///
-/// The verification runs in its own `LanguageModelSession` rather than the
-/// shared `PostProcessor`, so a dictation happening in parallel is not
-/// cancelled by this check.
+/// After a word is added to the custom-words list, runs the custom-word
+/// matcher over the last few kept-audio dictations with the new word in the
+/// list. Where the word now appears in the output that did not have it
+/// before, the row is recorded as a "would have caught it" match so the user
+/// can see the change would take next time the same audio came in. Stored
+/// transcripts carry no per-word confidence, so every word counts as
+/// uncertain here.
 @MainActor
 @Observable
 final class VerifyCustomWord {
@@ -47,7 +44,6 @@ final class VerifyCustomWord {
         task?.cancel()
         let normalized = word.trimmingCharacters(in: .whitespaces)
         guard !normalized.isEmpty else { state = .idle; return }
-        guard case .available = PostProcessor.availability else { state = .idle; return }
 
         let lookup = normalized.lowercased()
         // Newest first; only dictations that still have audio; skip anything
@@ -71,8 +67,8 @@ final class VerifyCustomWord {
             var scanned = 0
             for entry in candidates {
                 if Task.isCancelled { return }
-                if let processed = await VerifyCustomWord.reclean(entry.transcript, customWords: updatedWords),
-                   processed.lowercased().contains(lookup),
+                let processed = VerifyCustomWord.rematch(entry.transcript, customWords: updatedWords)
+                if processed.lowercased().contains(lookup),
                    !VerifyCustomWord.same(processed, entry.displayText) {
                     matches.append(Match(id: entry.id, timestamp: entry.timestamp,
                                          before: entry.displayText, after: processed,
@@ -101,23 +97,9 @@ final class VerifyCustomWord {
             == b.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
-    /// One-shot Apple Intelligence cleanup with the same prompt and options
-    /// the live pipeline uses, in an isolated session.
-    private static func reclean(_ transcript: String, customWords: [String]) async -> String? {
-        let source = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !source.isEmpty else { return nil }
-        let model = SystemLanguageModel(guardrails: .permissiveContentTransformations)
-        guard case .available = model.availability else { return nil }
-        let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions)
-        let prompt = PostProcessor.prompt(for: source, customWords: customWords)
-        do {
-            let r = try await session.respond(to: prompt,
-                                              generating: PostProcessor.CleanedTranscript.self,
-                                              options: GenerationOptions(sampling: .greedy))
-            let out = ModelText.stripThinkBlock(r.content.cleanedText).trimmingCharacters(in: .whitespacesAndNewlines)
-            return out.isEmpty ? nil : out
-        } catch {
-            return nil
-        }
+    /// The same matcher the live pipeline runs before the model.
+    private static func rematch(_ transcript: String, customWords: [String]) -> String {
+        let words = transcript.split(whereSeparator: \.isWhitespace).map { CustomWordMatcher.Word(text: String($0), confidence: nil) }
+        return CustomWordMatcher.apply(words, terms: customWords).text
     }
 }

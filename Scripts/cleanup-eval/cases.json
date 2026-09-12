@@ -159,7 +159,11 @@
     "customWords": [
       "Maxxo",
       "Bluebird"
-    ]
+    ],
+    "confidence": {
+      "maxo": 0.7,
+      "blebird": 0.7
+    }
   },
   {
     "screen": [
@@ -354,5 +358,59 @@
     ],
     "input": "send the invoice to the client please",
     "expected": "Send the invoice to the client please."
+  },
+  {
+    "input": "Surely there's a fucking lib for this",
+    "expected": "Surely there's a fucking lib for this.",
+    "customWords": [
+      "typeme.it",
+      "Eliza",
+      "lottie.org",
+      "ack",
+      "fucking",
+      "lib"
+    ],
+    "alsoAccepted": [
+      {
+        "text": "Surely there's a fucking lib for this",
+        "why": "a fragment need not be punctuated"
+      }
+    ]
+  },
+  {
+    "input": "Check history, I said there is a fucking lib for this.",
+    "expected": "Check history, I said there is a fucking lib for this.",
+    "customWords": [
+      "typeme.it",
+      "Eliza",
+      "lottie.org",
+      "ack",
+      "fucking",
+      "lib"
+    ]
+  },
+  {
+    "input": "Yeah, let's just do the RAF rate limit. I think that's the easiest, right?",
+    "expected": "Yeah, let's just do the RAF rate limit. I think that's the easiest, right?",
+    "customWords": [
+      "typeme.it",
+      "Eliza",
+      "lottie.org",
+      "ack",
+      "fucking",
+      "lib"
+    ]
+  },
+  {
+    "input": "When I said type me it, it didn't write anything. What the hell?",
+    "expected": "When I said typeme.it, it didn't write anything. What the hell?",
+    "customWords": [
+      "typeme.it",
+      "Eliza",
+      "lottie.org",
+      "ack",
+      "fucking",
+      "lib"
+    ]
   }
 ]

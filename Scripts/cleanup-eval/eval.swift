@@ -8,7 +8,11 @@ import FoundationModels
 /// `screen`, lines of text standing in for the window the user dictates into,
 /// goes through ScreenContext's term filter first and the model is told the
 /// terms, the way the read-the-screen setting does; it is also run without
-/// them so the summary says whether the screen helped. A case passes
+/// them so the summary says whether the screen helped. `customWords` go
+/// through CustomWordMatcher first, as in the pipeline; `confidence` gives
+/// the speech model's score for particular words. Every other word counts as
+/// confident, which is what the speech model reports for nine words in ten;
+/// a case about a mishearing gives that word its low score. A case passes
 /// when the output matches the expected text, or any entry in `alsoAccepted`,
 /// each of which says why it counts. Case and punctuation are ignored.
 struct Variant: Decodable { let text: String; let why: String }
@@ -22,6 +26,8 @@ struct Case: Decodable {
     let alsoAccepted: [Variant]
     /// The user's custom words, as they would be at the time; empty when the case has none.
     let customWords: [String]
+    /// Speech-model confidence per word of `input`; unlisted words are confident.
+    let confidence: [String: Float]
     var accepted: [String] { [expected] + alsoAccepted.map(\.text) }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -30,8 +36,15 @@ struct Case: Decodable {
         expected = try c.decode(String.self, forKey: .expected)
         alsoAccepted = try c.decodeIfPresent([Variant].self, forKey: .alsoAccepted) ?? []
         customWords = try c.decodeIfPresent([String].self, forKey: .customWords) ?? []
+        confidence = try c.decodeIfPresent([String: Float].self, forKey: .confidence) ?? [:]
     }
-    enum CodingKeys: CodingKey { case input, screen, expected, alsoAccepted, customWords }
+    enum CodingKeys: CodingKey { case input, screen, expected, alsoAccepted, customWords, confidence }
+    /// The transcript as the model receives it, custom words applied.
+    var matched: CustomWordMatcher.Outcome {
+        let words = input.split(whereSeparator: \.isWhitespace).map { CustomWordMatcher.Word(text: String($0), confidence: confidence[String($0)] ?? 1) }
+        return CustomWordMatcher.apply(words, terms: customWords)
+    }
+    var keep: [String] { CustomWordMatcher.present(in: matched.text, terms: customWords) }
 }
 
 /// One entry of result.json per case, for anything that renders the run.
@@ -59,7 +72,7 @@ struct Result: Encodable {
         var results: [Result] = []
         for c in cases {
             let terms = await MainActor.run { ScreenContext.terms(from: c.screen ?? [], excluding: c.customWords) }
-            let out = await PostProcessor.shared.run(c.input, customWords: c.customWords, screenTerms: terms) ?? c.input
+            let out = await PostProcessor.shared.run(c.matched.text, keep: c.keep, hints: c.matched.hints, screenTerms: terms) ?? c.matched.text
             let ok = c.accepted.contains { normalise(out) == normalise($0) }
             if !ok { failed += 1 }
             print("\(ok ? "PASS" : "FAIL")  \(c.input)")
@@ -67,7 +80,7 @@ struct Result: Encodable {
             var blind: String?, blindOk: Bool?
             if c.screen != nil {
                 screened += 1
-                let b = await PostProcessor.shared.run(c.input, customWords: c.customWords) ?? c.input
+                let b = await PostProcessor.shared.run(c.matched.text, keep: c.keep, hints: c.matched.hints) ?? c.matched.text
                 let bOk = c.accepted.contains { normalise(b) == normalise($0) }
                 if ok, !bOk { helped += 1 }
                 if !ok, bOk { hurt += 1 }
