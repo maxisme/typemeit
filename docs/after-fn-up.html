@@ -118,7 +118,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
 <h1>after fn up</h1>
 <p class="lede">what one dictation does between the key coming up and the text landing in the field, on the happy path with every setting on. the cloud on the left is drawn by the app's own shader, in the state it is in at that moment: breathing while you speak, struck by lightning once a second from fn up until the text is typed, then drawing in and fading over 0.35 s as the text lands. code names in mono; timings are medians from 556 dictations on this mac plus the fixed delays in <code>Fixed</code>.</p>
 <p class="meta"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Pipeline.swift">Pipeline.swift</a> · endRecording → deliver · median dictation 4.7 s of audio</p>
-<div class="key"><span class="disk">written to disk <em>· ~/Library/Application Support/TypeMeIt</em></span><span style="border:0">a chip names a setting that touches the step, as its row reads in the settings window, with its tab and group. every one is on for the path drawn. the table at the end says what each does.</span></div>
+<div class="key"><span class="disk">written to disk <em>· ~/Library/Application Support/TypeMeIt</em></span><span style="border:0">a chip names a setting that touches the step, as its row reads in the settings window, with its tab and group; the step's own text says what it does. every one is on for the path drawn.</span></div>
 
 <h2>already running when the key comes up</h2>
 <div class="flow">
@@ -351,26 +351,6 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
     </div>
   </div>
 
-</div>
-
-<h2>the settings on this path</h2>
-<p class="lede">every setting on the path, as its row reads in the settings window, where it lives, its key in <code>Settings</code>, and what it does. the eval runs with all of them on except keep the audio and key after typing, which do not touch the text.</p>
-<div class="wrap">
-<table>
-<tr><th>row</th><th>tab › group</th><th>key</th><th>what it does</th></tr>
-<tr><td>mute other audio</td><td>settings › microphone</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">muteWhileRecording</a></td><td>mutes other audio at fn down and restores it at fn up; the stop sound waits 80 ms for the device to come back.</td></tr>
-<tr><td>sounds</td><td>settings › cloud</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">audioFeedback</a></td><td>the stop sound at fn up.</td></tr>
-<tr><td>keep the audio</td><td>history › keep</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">keepRecordings</a></td><td>writes the recording to Recordings/ under the entry's id, playable from history.</td></tr>
-<tr><td>clean up with apple intelligence</td><td>intelligence › clean-up</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">postProcessingEnabled</a></td><td>the clean-up step: code, model, guards, styles. off, the words as heard go straight to the paste.</td></tr>
-<tr><td>read the screen</td><td>intelligence › clean-up</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">screenContextEnabled</a></td><td>reads the frontmost window at fn down; its terms go to the model and the fuse pass. needs screen recording.</td></tr>
-<tr><td>custom words</td><td>intelligence › custom words</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">customWords</a></td><td>listed after the transcript for the model and fused in code after it.</td></tr>
-<tr><td>digits · cut filler words · contractions · lists · quotes</td><td>intelligence › writing style</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">writingStyles</a></td><td>that style's pass on the output; filler words and contractions also add a rule to the prompt.</td></tr>
-<tr><td>space after typing</td><td>settings › typing</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">appendTrailingSpace</a></td><td>a space after the text.</td></tr>
-<tr><td>key after typing · key</td><td>settings › typing</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">autoSubmit · autoSubmitKey</a></td><td>return, ctrl-return or cmd-return 50 ms after the paste.</td></tr>
-<tr><td>learn from corrections</td><td>intelligence › clean-up</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">learnFromCorrections</a></td><td>read-back watches the field after a paste into a text input. never in password managers, terminals or under secure input.</td></tr>
-<tr><td>offer to copy when no text box is focused</td><td>settings › typing</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">copyPromptEnabled</a></td><td>the copy capsule for 8 s when the paste had nowhere to go.</td></tr>
-<tr><td>keep</td><td>history › keep</td><td><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Settings.swift">historyLimit</a></td><td>how many entries are kept, oldest out first with their recordings.</td></tr>
-</table>
 </div>
 
 <h2>not on this page</h2>
