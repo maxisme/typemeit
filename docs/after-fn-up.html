@@ -131,7 +131,7 @@ td:nth-child(3){color:var(--ink-2);font-family:var(--mono);font-size:12px;min-wi
   <div class="step">
     <div class="box">
       <h3>speech to text <span class="mono">Transcriber.transcribe · parakeet 0.6b</span></h3>
-      <p>the pill shows transcribing. parakeet runs the whole buffer in one pass, about 3% of the audio's length. the result is the transcript as heard: lowercase, unpunctuated, fillers and all.</p>
+      <p>the pill shows transcribing. parakeet runs the whole buffer in one pass, about 3% of the audio's length. the result is the transcript as heard. parakeet already capitalises and punctuates: of the last 552 on this mac, 529 start with a capital and 416 carry punctuation. what it leaves are mishearings, spoken numbers and currency, the odd um (24 of 552), false starts, and names it does not know.</p>
       <div class="gate">exit if the result is blank, or if a new recording started meanwhile: the generation counter no longer matches and this task returns without touching anything. <span class="mono">gen == generation</span></div>
     </div>
   </div>
@@ -181,7 +181,7 @@ td:nth-child(3){color:var(--ink-2);font-family:var(--mono);font-size:12px;min-wi
 </div>
 
 <h2 id="inside">inside clean-up</h2>
-<p class="lede">the same 929 ms, one rail per pass. the left column says where each pass runs. "as heard" means the transcript exactly as parakeet wrote it; "as cleaned" means whatever this pass received from the one above.</p>
+<p class="lede">the same 929 ms, one rail per pass. the left column says where each pass runs. "as heard" means the transcript exactly as parakeet wrote it, capitals and punctuation included; "as cleaned" means whatever this pass received from the one above.</p>
 <div class="flow">
 
   <div class="t">code</div>
