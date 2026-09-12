@@ -482,8 +482,8 @@ struct IntelligenceTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                SettingsGroup(title: "clean-up") {
-                    SettingsRow(label: "clean up with apple intelligence", subtitle: unavailableSubtitle) {
+                SettingsGroup(title: "apple intelligence") {
+                    SettingsRow(label: "clean up", subtitle: unavailableSubtitle) {
                         HStack(spacing: 8) {
                             if case .unavailable(.appleIntelligenceNotEnabled) = availability {
                                 Button("system settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }.buttonStyle(InkButtonStyle())
@@ -492,11 +492,7 @@ struct IntelligenceTab: View {
                                 .disabled(!modelAvailable)
                         }
                     }
-                    SettingsRow(label: "learn from corrections", subtitle: modelAvailable ? nil : "needs apple intelligence") {
-                        Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
-                            .disabled(!modelAvailable)
-                    }
-                    SettingsRow(label: "read the screen", subtitle: screenSubtitle, last: true) {
+                    SettingsRow(label: "read the screen for names and terms", subtitle: screenSubtitle, last: true) {
                         HStack(spacing: 8) {
                             if settings.screenContextEnabled, !screenGranted {
                                 Button("system settings") { NSWorkspace.shared.open(SecureInput.screenRecordingSettingsURL) }.buttonStyle(InkButtonStyle())
@@ -512,6 +508,10 @@ struct IntelligenceTab: View {
                 }
                 SettingsGroup(title: "custom words") {
                     VStack(alignment: .leading, spacing: 0) {
+                        SettingsRow(label: "learn from corrections", subtitle: modelAvailable ? nil : "needs apple intelligence") {
+                            Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
+                                .disabled(!modelAvailable)
+                        }
                         if !settings.customWords.isEmpty {
                             FlowLayout(spacing: 6) {
                                 ForEach(settings.customWords, id: \.self) { word in
