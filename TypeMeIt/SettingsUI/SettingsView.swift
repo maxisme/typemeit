@@ -478,7 +478,7 @@ struct IntelligenceTab: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 SettingsGroup(title: "clean-up") {
-                    SettingsRow(label: "clean up with apple intelligence", subtitle: unavailableSubtitle ?? "on device") {
+                    SettingsRow(label: "clean up with apple intelligence", subtitle: unavailableSubtitle) {
                         HStack(spacing: 8) {
                             if case .unavailable(.appleIntelligenceNotEnabled) = availability {
                                 Button("system settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }.buttonStyle(InkButtonStyle())
