@@ -198,10 +198,10 @@ final class Pipeline {
 
         Task { [weak self] in
             guard let self else { return }
-            let raw: String
+            let raw: Transcriber.Transcript
             let transcribeStart = ContinuousClock.now
             do {
-                raw = try await Transcriber.shared.transcribe(pcm)
+                raw = try await Transcriber.shared.transcribeScored(pcm)
             } catch {
                 if gen == self.generation {
                     Log.transcriber.error("\(error.localizedDescription)")
@@ -230,11 +230,12 @@ final class Pipeline {
         return Int(d.components.seconds * 1000) + Int(d.components.attoseconds / 1_000_000_000_000_000)
     }
 
-    private func deliver(raw: String, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, entryId: UUID, recordingFile: String?, generation gen: Int) async {
-        if ModelText.isBlank(raw) { finishIdle(discarding: recordingFile); return }
-        let customWords = settings.customWords
+    private func deliver(raw: Transcriber.Transcript, durationMs: Int, transcribeMs: Int, target: Frontmost.Target?, entryId: UUID, recordingFile: String?, generation gen: Int) async {
+        if ModelText.isBlank(raw.text) { finishIdle(discarding: recordingFile); return }
         let requested = settings.postProcessingEnabled
-        var finalText = raw
+        let matched = CustomWordMatcher.apply(raw.matcherWords, terms: store.terms(for: settings.customWords))
+        if matched.fixes > 0 { Log.postProcess.info("Custom words replaced \(matched.fixes) run(s)") }
+        var finalText = matched.text
         var postProcessed: String?
         var postProcessMs: Int?
 
@@ -246,7 +247,7 @@ final class Pipeline {
             if self.screenTerms == nil, settings.screenContextEnabled { Log.screenContext.info("Screen read not finished; cleaning up without it") }
             if !screenTerms.isEmpty { Log.screenContext.info("Screen terms: \(screenTerms.joined(separator: ", "), privacy: .private)") }
             let start = ContinuousClock.now
-            postProcessed = await PostProcessor.shared.run(raw, customWords: customWords, screenTerms: screenTerms)
+            postProcessed = await PostProcessor.shared.run(matched.text, keep: CustomWordMatcher.present(in: matched.text, terms: settings.customWords), hints: matched.hints, screenTerms: screenTerms)
             let ms = Pipeline.elapsedMs(since: start)
             postProcessMs = ms
             Log.postProcess.info("Post-processing took \(ms) ms (\(postProcessed == nil ? "no result, local clean-up only" : "applied"))")
@@ -264,9 +265,9 @@ final class Pipeline {
         guard gen == generation else { return }
 
         let entry = HistoryEntry(
-            id: entryId, timestamp: Date(), transcript: raw, postProcessed: postProcessed, postProcessRequested: requested,
+            id: entryId, timestamp: Date(), transcript: raw.text, postProcessed: postProcessed, postProcessRequested: requested,
             durationMs: durationMs, transcribeMs: transcribeMs, postProcessMs: postProcessMs, appId: target?.appId, appName: target?.appName, windowTitle: target?.windowTitle,
-            dictionaryFixes: 0, recordingFile: recordingFile)
+            dictionaryFixes: matched.fixes, recordingFile: recordingFile)
         store.append(entry, limit: settings.historyLimit)
 
         phase = .idle

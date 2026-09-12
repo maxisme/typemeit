@@ -170,6 +170,30 @@ final class Store {
 
     /// The record behind a custom word that learning added, or nil when the
     /// user typed it in themselves.
+    /// Spellings the speech model has produced for `word`, from corrections
+    /// that were not undone, plus any the user typed. Newest first.
+    func aliases(for word: String) -> [String] {
+        var seen: [String] = []
+        for r in learned.reversed() where !r.undone && r.meant.caseInsensitiveCompare(word) == .orderedSame {
+            let h = r.heard.trimmingCharacters(in: .whitespaces)
+            if !h.isEmpty, h.caseInsensitiveCompare(word) != .orderedSame, !seen.contains(where: { $0.caseInsensitiveCompare(h) == .orderedSame }) { seen.append(h) }
+        }
+        return seen
+    }
+
+    /// The custom words with their aliases, as the matcher takes them.
+    func terms(for words: [String]) -> [CustomWordMatcher.Term] {
+        words.map { CustomWordMatcher.Term($0, aliases: aliases(for: $0)) }
+    }
+
+    /// Records that `heard` is how the speech model writes `word`, as a
+    /// learned record the user typed rather than corrected.
+    func addAlias(heard: String, for word: String) {
+        let h = heard.trimmingCharacters(in: .whitespaces)
+        guard !h.isEmpty, !aliases(for: word).contains(where: { $0.caseInsensitiveCompare(h) == .orderedSame }) else { return }
+        appendLearned([LearnedWord(batchId: UUID(), heard: h, meant: word, source: "typed", historyId: nil, learnedAt: Date())])
+    }
+
     func learnedRecord(for word: String) -> LearnedWord? {
         learned.last { !$0.undone && $0.meant.caseInsensitiveCompare(word) == .orderedSame }
     }

@@ -87,8 +87,41 @@ actor Transcriber {
         scheduleUnload()
     }
 
+    /// One word of a transcript with how sure the model was of it.
+    struct Word: Sendable, Equatable {
+        let text: String
+        /// The lowest per-token probability among the word's tokens. Parakeet
+        /// reports a joint-softmax probability per emitted token; the library
+        /// calls it a confidence hint, not a calibrated probability. NaN when
+        /// the model produced none.
+        let confidence: Float
+        let start: Duration
+        let end: Duration
+    }
+
+    struct Transcript: Sendable {
+        let text: String
+        /// Empty when the model returned no word rows.
+        let words: [Word]
+
+        /// The text split on whitespace with confidence attached where the
+        /// word rows line up with it one to one; otherwise every word is
+        /// unknown, which the matcher treats as uncertain.
+        var matcherWords: [CustomWordMatcher.Word] {
+            let parts = text.split(whereSeparator: \.isWhitespace).map(String.init)
+            guard parts.count == words.count, zip(parts, words).allSatisfy({ $0 == $1.text }) else {
+                return parts.map { CustomWordMatcher.Word(text: $0, confidence: nil) }
+            }
+            return zip(parts, words).map { CustomWordMatcher.Word(text: $0, confidence: $1.confidence.isNaN ? nil : $1.confidence) }
+        }
+    }
+
     /// pcm: mono Float32 at 16 kHz.
     func transcribe(_ pcm: [Float]) throws -> String {
+        try transcribeScored(pcm).text
+    }
+
+    func transcribeScored(_ pcm: [Float]) throws -> Transcript {
         unloadTask?.cancel()
         try ensureLoaded()
         abortFlag.set(false)
@@ -100,7 +133,32 @@ actor Transcriber {
         try Transcriber.check(st)
         let text = String(cString: transcribe_full_text(session))
         Log.transcriber.info("Transcribed \(pcm.count / 16000) s of audio in \(ContinuousClock.now - started)")
-        return text
+        return Transcript(text: text, words: Transcriber.words(of: session))
+    }
+
+    /// Word rows with the confidence folded in from their token rows. The
+    /// library says to read the returned timestamp kind rather than assume
+    /// rows exist: a family without word alignment returns no word rows.
+    static func words(of session: OpaquePointer?) -> [Word] {
+        guard transcribe_returned_timestamp_kind(session).rawValue >= TRANSCRIBE_TIMESTAMPS_WORD.rawValue else { return [] }
+        let n = Int(transcribe_n_words(session))
+        var words: [Word] = []
+        words.reserveCapacity(n)
+        for i in 0..<n {
+            var w = transcribe_word()
+            transcribe_word_init(&w)
+            guard transcribe_get_word(session, Int32(i), &w) == TRANSCRIBE_OK, let text = w.text else { continue }
+            var confidence = Float.nan
+            for t in w.first_token..<(w.first_token + w.n_tokens) {
+                var tok = transcribe_token()
+                transcribe_token_init(&tok)
+                guard transcribe_get_token(session, t, &tok) == TRANSCRIBE_OK, tok.text != nil, !tok.p.isNaN else { continue }
+                confidence = confidence.isNaN ? tok.p : min(confidence, tok.p)
+            }
+            words.append(Word(text: String(cString: text).trimmingCharacters(in: .whitespaces), confidence: confidence,
+                              start: .milliseconds(w.t0_ms), end: .milliseconds(w.t1_ms)))
+        }
+        return words
     }
 
     nonisolated func cancel() { abortFlag.set(true) }
