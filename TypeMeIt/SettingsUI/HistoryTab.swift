@@ -133,7 +133,7 @@ struct HistoryTab: View {
                         Text("nothing · never keep").tag(-1)
                     }.labelsHidden().fixedSize()
                 }
-                SettingsRow(label: "keep the audio", subtitle: "about 120 KB a minute, deleted with the dictation", last: true) {
+                SettingsRow(label: "keep the audio", subtitle: "deleted along with the dictation", last: true) {
                     Toggle("", isOn: $settings.keepRecordings).toggleStyle(.switch).labelsHidden()
                         .disabled(settings.historyLimit < 0)
                 }
