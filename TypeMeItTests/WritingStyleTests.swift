@@ -37,6 +37,19 @@ final class WritingStyleTests: XCTestCase {
         XCTAssertEqual(WritingStyle.cutFillers("I mean it."), "It.")
     }
 
+    func testCutFillersKeepsRealPhrases() {
+        XCTAssertEqual(WritingStyle.cutFillers("Do you know what time it is?"), "Do you know what time it is?")
+        XCTAssertEqual(WritingStyle.cutFillers("If you know the answer, say so."), "If you know the answer, say so.")
+        XCTAssertEqual(WritingStyle.cutFillers("It looks like rain. I like it."), "It looks like rain. I like it.")
+        XCTAssertEqual(WritingStyle.cutFillers("Not the actual deploy."), "Not the actual deploy.")
+    }
+
+    func testCutFillersCutsLikeAndActually() {
+        XCTAssertEqual(WritingStyle.cutFillers("It was like really cold."), "It was really cold.")
+        XCTAssertEqual(WritingStyle.cutFillers("Like I don't even know."), "I don't even know.")
+        XCTAssertEqual(WritingStyle.cutFillers("I actually think so. Actually, no."), "I think so. No.")
+    }
+
     func testNumberedListSplitsSpokenCounters() {
         XCTAssertEqual(WritingStyle.numberedList("Okay so three things for tomorrow. First we need to finish the landing page. Second, call the accountant. And third, book the tickets."),
                        "Okay so three things for tomorrow.\n1. We need to finish the landing page.\n2. Call the accountant.\n3. Book the tickets.")
@@ -47,6 +60,30 @@ final class WritingStyleTests: XCTestCase {
         XCTAssertEqual(WritingStyle.numberedList("She came first and I came fourth."), "She came first and I came fourth.")
         XCTAssertEqual(WritingStyle.numberedList("First, the good news."), "First, the good news.")
         XCTAssertEqual(WritingStyle.numberedList("Second, wait. First, no."), "Second, wait. First, no.")
+    }
+
+    func testNumberedListWorksWithoutPunctuation() {
+        XCTAssertEqual(WritingStyle.numberedList("two things first the build is red and second the notes are missing"),
+                       "Two things\n1. The build is red\n2. The notes are missing")
+        XCTAssertEqual(WritingStyle.numberedList("first um preheat the oven secondly mix the flour"), "1. Preheat the oven\n2. Mix the flour")
+        XCTAssertEqual(WritingStyle.numberedList("we came second in the league and first in the cup"), "we came second in the league and first in the cup")
+    }
+
+    func testContractJoinsSafePairs() {
+        XCTAssertEqual(WritingStyle.contract("I am not sure that is going to work."), "I'm not sure that's going to work.")
+        XCTAssertEqual(WritingStyle.contract("You are right, it does not matter. We will see."), "You're right, it doesn't matter. We'll see.")
+        XCTAssertEqual(WritingStyle.contract("He would have called if he could not make it."), "He would've called if he couldn't make it.")
+        XCTAssertEqual(WritingStyle.contract("I cannot believe it is Friday. Do not go."), "I can't believe it's Friday. Don't go.")
+    }
+
+    func testContractLeavesAmbiguousOnes() {
+        XCTAssertEqual(WritingStyle.contract("That is what it is."), "That's what it is.")
+        XCTAssertEqual(WritingStyle.contract("Here I am."), "Here I am.")
+        XCTAssertEqual(WritingStyle.contract("She has a car. Let us know."), "She has a car. Let us know.")
+    }
+
+    func testDigitsWritesPercent() {
+        XCTAssertEqual(WritingStyle.digits("ten percent off the red one"), "10% off the red one")
     }
 
     func testApplyLowercasesLast() {

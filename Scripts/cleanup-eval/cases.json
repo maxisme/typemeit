@@ -476,5 +476,502 @@
       "lists"
     ],
     "expected": "She came first and I came fourth."
+  },
+  {
+    "input": "it was like really cold out there",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "It was really cold out there."
+  },
+  {
+    "input": "I actually think we should wait until monday",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I think we should wait until Monday."
+  },
+  {
+    "input": "the meeting was sort of a waste of time",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "The meeting was a waste of time."
+  },
+  {
+    "input": "it's kind of late so let's do it tomorrow",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "It's late so let's do it tomorrow."
+  },
+  {
+    "input": "we could basically ship it today",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "We could ship it today."
+  },
+  {
+    "input": "I was literally about to call you",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I was about to call you."
+  },
+  {
+    "input": "I mean we could just cancel the whole thing",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "We could just cancel the whole thing."
+  },
+  {
+    "input": "the deck is you know pretty much done",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "The deck is pretty much done."
+  },
+  {
+    "input": "basically the api is down again",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "The API is down again."
+  },
+  {
+    "input": "actually can you send that to sam instead",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "Can you send that to Sam instead?"
+  },
+  {
+    "input": "like I don't even know where to start",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I don't even know where to start."
+  },
+  {
+    "input": "it was fine you know",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "It was fine."
+  },
+  {
+    "input": "I like the new logo more than the old one",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I like the new logo more than the old one."
+  },
+  {
+    "input": "it looks like rain so bring a coat",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "It looks like rain so bring a coat."
+  },
+  {
+    "input": "do you know what time the train leaves",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "Do you know what time the train leaves?"
+  },
+  {
+    "input": "she is not the kind of person who gives up",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "She is not the kind of person who gives up."
+  },
+  {
+    "input": "what does this sort of error usually mean",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "What does this sort of error usually mean?"
+  },
+  {
+    "input": "I literally mean every word of it",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I mean every word of it."
+  },
+  {
+    "input": "the basics are done but not the actual deploy",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "The basics are done but not the actual deploy."
+  },
+  {
+    "input": "so um basically I was like you know we should actually just uh go for it",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "So I was we should just go for it.",
+    "alsoAccepted": [
+      {
+        "text": "So I was like we should just go for it.",
+        "why": "like as a quotative verb may stay"
+      },
+      {
+        "text": "So we should just go for it.",
+        "why": "the stranded I was may go with its like"
+      }
+    ]
+  },
+  {
+    "input": "can you like literally just send me the link",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "Can you just send me the link?"
+  },
+  {
+    "input": "it was like really cold out there",
+    "expected": "It was like really cold out there.",
+    "alsoAccepted": [
+      {
+        "text": "It was really cold out there.",
+        "why": "the base prompt sometimes drops a filler like on its own"
+      }
+    ]
+  },
+  {
+    "input": "I actually think we should wait until monday",
+    "expected": "I actually think we should wait until Monday."
+  },
+  {
+    "input": "I'll be there in five minutes with two friends",
+    "styles": [
+      "digits"
+    ],
+    "expected": "I'll be there in 5 minutes with 2 friends."
+  },
+  {
+    "input": "we sold forty two units in the first week",
+    "styles": [
+      "digits"
+    ],
+    "expected": "We sold 42 units in the 1st week."
+  },
+  {
+    "input": "the meeting is at half past nine",
+    "styles": [
+      "digits"
+    ],
+    "expected": "The meeting is at half past 9."
+  },
+  {
+    "input": "it costs about three hundred and fifty dollars",
+    "styles": [
+      "digits"
+    ],
+    "expected": "It costs about $350.",
+    "alsoAccepted": [
+      {
+        "text": "It costs about 350 dollars.",
+        "why": "the model rarely writes the currency symbol"
+      }
+    ]
+  },
+  {
+    "input": "there were two thousand people at the show",
+    "styles": [
+      "digits"
+    ],
+    "expected": "There were 2000 people at the show.",
+    "alsoAccepted": [
+      {
+        "text": "There were 2,000 people at the show.",
+        "why": "the model may add the thousands separator before the pass runs"
+      }
+    ]
+  },
+  {
+    "input": "which one do you want the red one or the blue one",
+    "styles": [
+      "digits"
+    ],
+    "expected": "Which one do you want, the red one or the blue one?",
+    "alsoAccepted": [
+      {
+        "text": "Which one do you want? The red one or the blue one?",
+        "why": "two questions is fine"
+      }
+    ]
+  },
+  {
+    "input": "one of us has to stay",
+    "styles": [
+      "digits"
+    ],
+    "expected": "One of us has to stay."
+  },
+  {
+    "input": "give me a second I need one more minute",
+    "styles": [
+      "digits"
+    ],
+    "expected": "Give me a second, I need 1 more minute.",
+    "alsoAccepted": [
+      {
+        "text": "Give me a second. I need 1 more minute.",
+        "why": "two sentences is fine"
+      }
+    ]
+  },
+  {
+    "input": "my number is oh seven seven one two three four five six seven",
+    "styles": [
+      "digits"
+    ],
+    "expected": "My number is 07712345678.",
+    "alsoAccepted": [
+      {
+        "text": "My number is 0 7 7 1 2 3 4 5 6 7.",
+        "why": "digits spoken one by one are not joined"
+      },
+      {
+        "text": "My number is 07 7 1 2 3 4 5 6 7.",
+        "why": "the model may join the leading pair"
+      },
+      {
+        "text": "My number is oh 7 7 1 2 3 4 5 6 7.",
+        "why": "oh is not a number word"
+      }
+    ]
+  },
+  {
+    "input": "the twenty first of june works for me",
+    "styles": [
+      "digits"
+    ],
+    "expected": "The 21st of June works for me."
+  },
+  {
+    "input": "it was the third time this week",
+    "styles": [
+      "digits"
+    ],
+    "expected": "It was the 3rd time this week."
+  },
+  {
+    "input": "back in twenty nineteen we had eight people",
+    "styles": [
+      "digits"
+    ],
+    "expected": "Back in 2019 we had 8 people.",
+    "alsoAccepted": [
+      {
+        "text": "Back in 2019, we had 8 people.",
+        "why": "comma after the opener is fine"
+      }
+    ]
+  },
+  {
+    "input": "a hundred percent yes",
+    "styles": [
+      "digits"
+    ],
+    "expected": "100% yes.",
+    "alsoAccepted": [
+      {
+        "text": "A hundred percent yes.",
+        "why": "a hundred is not converted in code; only the model may"
+      },
+      {
+        "text": "A 100% yes.",
+        "why": "the model writes the percent and keeps the article"
+      }
+    ]
+  },
+  {
+    "input": "no one came to the second session",
+    "styles": [
+      "digits"
+    ],
+    "expected": "No one came to the 2nd session.",
+    "alsoAccepted": [
+      {
+        "text": "No one came to the second session.",
+        "why": "second is never converted in code, since it is also a unit of time"
+      }
+    ]
+  },
+  {
+    "input": "ten percent off for the first three orders",
+    "styles": [
+      "digits"
+    ],
+    "expected": "10% off for the 1st 3 orders."
+  },
+  {
+    "input": "I am not sure that is going to work",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "I'm not sure that's going to work."
+  },
+  {
+    "input": "we will see what they have got",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "We'll see what they've got."
+  },
+  {
+    "input": "you are right it does not matter",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "You're right, it doesn't matter.",
+    "alsoAccepted": [
+      {
+        "text": "You're right. It doesn't matter.",
+        "why": "two sentences is fine"
+      }
+    ]
+  },
+  {
+    "input": "he would have called if he could not make it",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "He'd have called if he couldn't make it.",
+    "alsoAccepted": [
+      {
+        "text": "He would've called if he couldn't make it.",
+        "why": "either contraction of would have"
+      }
+    ]
+  },
+  {
+    "input": "there is no way she has finished already",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "There's no way she's finished already.",
+    "alsoAccepted": [
+      {
+        "text": "There's no way she has finished already.",
+        "why": "has is never joined in code, since she has a car must stay; only the model may"
+      }
+    ]
+  },
+  {
+    "input": "let us know when you have landed",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "Let's know when you've landed.",
+    "alsoAccepted": [
+      {
+        "text": "Let us know when you've landed.",
+        "why": "let us know is not let's know; the model should keep it"
+      }
+    ]
+  },
+  {
+    "input": "who is coming and what is the plan",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "Who's coming and what's the plan?"
+  },
+  {
+    "input": "I cannot believe it is friday already",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "I can't believe it's Friday already."
+  },
+  {
+    "input": "that is what it is",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "That's what it is."
+  },
+  {
+    "input": "I am not sure that is going to work",
+    "expected": "I am not sure that is going to work."
+  },
+  {
+    "input": "two things first the build is red and second the release notes are missing",
+    "styles": [
+      "lists"
+    ],
+    "exact": true,
+    "expected": "Two things.\n1. The build is red.\n2. The release notes are missing.",
+    "alsoAccepted": [
+      {
+        "text": "Two things:\n1. The build is red.\n2. The release notes are missing.",
+        "why": "a colon before the list is fine"
+      },
+      {
+        "text": "Two things.\n1. The build is red\n2. The release notes are missing",
+        "why": "the model may leave the items unpunctuated"
+      },
+      {
+        "text": "Two things\n1. The build is red\n2. The release notes are missing",
+        "why": "the model returned the transcript unpunctuated; the list is still built in code"
+      }
+    ]
+  },
+  {
+    "input": "first um preheat the oven secondly mix the flour and butter and thirdly bake for twenty minutes",
+    "styles": [
+      "lists"
+    ],
+    "exact": true,
+    "expected": "1. Preheat the oven.\n2. Mix the flour and butter.\n3. Bake for 20 minutes.",
+    "alsoAccepted": [
+      {
+        "text": "1. Preheat the oven\n2. Mix the flour and butter\n3. Bake for 20 minutes",
+        "why": "the model may leave the items unpunctuated"
+      },
+      {
+        "text": "1. Preheat the oven\n2. Mix the flour and butter\n3. Bake for twenty minutes",
+        "why": "the model returned the transcript unpunctuated; without the digits style twenty stays a word"
+      }
+    ]
+  },
+  {
+    "input": "first of all thanks for coming",
+    "styles": [
+      "lists"
+    ],
+    "expected": "First of all, thanks for coming."
+  },
+  {
+    "input": "we came second in the league and first in the cup",
+    "styles": [
+      "lists"
+    ],
+    "expected": "We came second in the league and first in the cup."
+  },
+  {
+    "input": "okay so three things for tomorrow first we need to finish the landing page second um call the accountant about the vat return and third book the train tickets for friday",
+    "styles": [
+      "lists",
+      "digits",
+      "lowercase"
+    ],
+    "exact": true,
+    "expected": "okay so 3 things for tomorrow.\n1. we need to finish the landing page.\n2. call the accountant about the vat return.\n3. book the train tickets for friday.",
+    "alsoAccepted": [
+      {
+        "text": "okay, so 3 things for tomorrow.\n1. we need to finish the landing page.\n2. call the accountant about the vat return.\n3. book the train tickets for friday.",
+        "why": "the comma after okay is optional"
+      }
+    ]
   }
 ]

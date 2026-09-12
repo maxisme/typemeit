@@ -4,7 +4,7 @@ import Foundation
 /// keeps the words as spoken, and each of these changes something the
 /// speaker did not say differently. Digits and lowercase are applied in code
 /// after clean-up, because the model ignores a rule about them on the very
-/// sentences it matters for; so are lists. Filler words and contractions go to the model
+/// sentences it matters for; so are lists and the safe contractions. Filler words and contractions go to the model
 /// as rules, with the unambiguous fillers also cut in code. Scored by
 /// Scripts/cleanup-eval with the cases that carry a `styles` field.
 enum WritingStyle: String, Codable, CaseIterable, Sendable {
@@ -36,7 +36,7 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
         switch self {
         case .digits, .lowercase, .lists: nil
         case .fillerWords:
-            "Also delete these filler words, and only these: like, actually, sort of, kind of, wherever they add nothing (it was like really good → it was really good; it's kind of late → it's late). Keep them where they carry meaning (I like it, that kind of person). Keep every other word, including I think and I guess."
+            "Also delete these filler words, and only these: like, actually, sort of, kind of, wherever they add nothing (it was like really good → it was really good; it's kind of late → it's late; actually I think → I think). Keep them where they carry meaning (I like it, that kind of person). Keep every other word, including I think and I guess."
         case .contractions:
             "Use contractions wherever one exists (do not → don't, I am → I'm, it is → it's, we will → we'll)."
         }
@@ -56,6 +56,7 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
         var t = text
         if styles.contains(.fillerWords) { t = cutFillers(t) }
         if styles.contains(.lists) { t = numberedList(t) }
+        if styles.contains(.contractions) { t = contract(t) }
         if styles.contains(.digits) { t = digits(t) }
         if styles.contains(.lowercase) { t = t.lowercased() }
         return t
@@ -63,16 +64,25 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
 
     // MARK: Filler words
 
-    /// Only the fillers that never carry meaning. "like", "actually", "sort
-    /// of" and "kind of" are left to the model, which sees the sentence.
-    private static let fillers = "you know|basically|literally|i mean"
-    /// A filler set off by commas on both sides goes with both commas.
-    private static let asidePattern = try! NSRegularExpression(pattern: #"(?i),\s*(\#(fillers)),\s*"#)
-    private static let fillerPattern = try! NSRegularExpression(pattern: #"(?i)(^|[\s,])(\#(fillers))(,\s*|\s+|(?=[.?!,]))"#)
+    /// The fillers cut in code, each with the words that make it a real
+    /// phrase instead: "you know" after do, did, if; "actually" never, since
+    /// as an adverb it is always a hedge; "like" only before an intensifier
+    /// or at a sentence start before a pronoun, so comparisons ("like rain")
+    /// and the verb ("I like it") stay. "sort of" and "kind of" are left to
+    /// the model, which sees whether a noun follows.
+    private static let asidePattern = try! NSRegularExpression(pattern: #"(?i),\s*(you know|basically|literally|i mean|actually),\s*"#)
+    private static let fillerPatterns: [NSRegularExpression] = [
+        #"(?i)(^|[\s,])(?<!\b(?:do|did|does|don't|didn't|doesn't|if|whether|as|to|let|would|could|should|will|can|must|might|i|we|they|who|that|you)\s)(you know)(,\s*|\s+|(?=[.?!,]))"#,
+        #"(?i)(^|[\s,])(basically|literally|i mean|actually)(,\s*|\s+|(?=[.?!,]))"#,
+        #"(?i)(^|[\s,])(like)(,\s*|\s+)(?=(?:really|very|just|so|super|totally|literally|basically|actually|kind of|sort of|a bit|a lot|pretty|quite)\b)"#,
+        #"(?i)(^|[.?!]\s+)(like)(,\s*|\s+)(?=(?:i|you|we|they|he|she|it|there|this|that|the|my|your|our)\b)"#,
+    ].map { try! NSRegularExpression(pattern: $0) }
 
     static func cutFillers(_ text: String) -> String {
         var t = asidePattern.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: " ")
-        t = fillerPattern.stringByReplacingMatches(in: t, range: NSRange(t.startIndex..., in: t), withTemplate: "$1")
+        for p in fillerPatterns {
+            t = p.stringByReplacingMatches(in: t, range: NSRange(t.startIndex..., in: t), withTemplate: "$1")
+        }
         t = t.replacingOccurrences(of: #"[ \t]{2,}"#, with: " ", options: .regularExpression)
         t = t.replacingOccurrences(of: #"\s+([.?!,])"#, with: "$1", options: .regularExpression)
         t = t.replacingOccurrences(of: #",\s*,"#, with: ",", options: .regularExpression)
@@ -101,25 +111,89 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
     /// A spoken counter at the start of a sentence: "First," "Secondly," "and third,".
     private static let markerPattern = try! NSRegularExpression(
         pattern: #"(?i)(?:^|(?<=[.!?:;]\s))(?:(?:and|then)\s+)?(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)(?:ly)?[,:]?\s+"#)
+    /// The same counters anywhere, for a transcript clean-up left unpunctuated.
+    private static let looseMarkerPattern = try! NSRegularExpression(
+        pattern: #"(?i)(?:^|(?<=\s))(?:(?:and|then)\s+)?(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)(?:ly)?[,:]?\s+"#)
+    private static let fillerSounds = try! NSRegularExpression(pattern: #"(?i)(^|\s)(?:um+|uh+|er+|ah+)(?=\s|$)"#)
 
     /// "Three things. First, a. Second, b. And third, c." becomes the lead-in
     /// on one line and a numbered item per line. Needs at least two counters,
-    /// in order from first; anything else is left as prose.
+    /// in order from first; anything else is left as prose. Counters are
+    /// looked for at sentence starts, and anywhere when that finds too few,
+    /// since clean-up sometimes returns the transcript without punctuation.
     static func numberedList(_ text: String) -> String {
         let ns = text as NSString
-        let found = markerPattern.matches(in: text, range: NSRange(location: 0, length: ns.length))
+        var found = markerPattern.matches(in: text, range: NSRange(location: 0, length: ns.length))
+        if found.count < 2 { found = looseMarkerPattern.matches(in: text, range: NSRange(location: 0, length: ns.length)) }
         guard found.count >= 2 else { return text }
         for (n, m) in found.enumerated() where ns.substring(with: m.range(at: 1)).lowercased() != markers[n] { return text }
         var lines: [String] = []
         let lead = ns.substring(to: found[0].range.location).trimmingCharacters(in: .whitespacesAndNewlines)
-        if !lead.isEmpty { lines.append(lead) }
+        if !lead.isEmpty { lines.append(capitaliseSentences(lead)) }
         for (n, m) in found.enumerated() {
             let start = m.range.location + m.range.length
             let end = n + 1 < found.count ? found[n + 1].range.location : ns.length
-            let item = ns.substring(with: NSRange(location: start, length: end - start)).trimmingCharacters(in: .whitespacesAndNewlines)
+            var item = ns.substring(with: NSRange(location: start, length: end - start))
+            item = fillerSounds.stringByReplacingMatches(in: item, range: NSRange(item.startIndex..., in: item), withTemplate: "$1")
+            item = item.trimmingCharacters(in: .whitespacesAndNewlines)
             lines.append("\(n + 1). " + capitaliseSentences(item))
         }
         return lines.joined(separator: "\n")
+    }
+
+    // MARK: Contractions
+
+    /// The contractions that are never wrong. A subject and verb are joined
+    /// only when a word follows, so "that is what it is" and "here I am" keep
+    /// their last word; "has" is never joined ("she has a car"); "let us" is
+    /// never joined ("let us know").
+    private static let negatives: [(String, String)] = [
+        ("cannot", "can't"), ("can not", "can't"), ("will not", "won't"), ("shall not", "shan't"),
+        ("do not", "don't"), ("does not", "doesn't"), ("did not", "didn't"), ("could not", "couldn't"),
+        ("would not", "wouldn't"), ("should not", "shouldn't"), ("is not", "isn't"), ("are not", "aren't"),
+        ("was not", "wasn't"), ("were not", "weren't"), ("has not", "hasn't"), ("have not", "haven't"),
+        ("had not", "hadn't"), ("must not", "mustn't"), ("would have", "would've"), ("could have", "could've"),
+        ("should have", "should've"),
+    ]
+    private static let joins: [(String, String)] = [
+        ("i am", "I'm"), ("i have", "I've"), ("i will", "I'll"), ("i would", "I'd"),
+        ("you are", "you're"), ("you have", "you've"), ("you will", "you'll"), ("you would", "you'd"),
+        ("we are", "we're"), ("we have", "we've"), ("we will", "we'll"), ("we would", "we'd"),
+        ("they are", "they're"), ("they have", "they've"), ("they will", "they'll"), ("they would", "they'd"),
+        ("he is", "he's"), ("he will", "he'll"), ("he would", "he'd"),
+        ("she is", "she's"), ("she will", "she'll"), ("she would", "she'd"),
+        ("it is", "it's"), ("it will", "it'll"), ("that is", "that's"), ("that will", "that'll"),
+        ("there is", "there's"), ("there will", "there'll"), ("here is", "here's"),
+        ("what is", "what's"), ("who is", "who's"), ("where is", "where's"), ("how is", "how's"),
+    ]
+
+    static func contract(_ text: String) -> String {
+        var t = text
+        for (long, short) in negatives {
+            t = replaceWords(long, with: short, in: t, needsFollowingWord: false)
+        }
+        for (long, short) in joins {
+            t = replaceWords(long, with: short, in: t, needsFollowingWord: true)
+        }
+        return t
+    }
+
+    /// Replaces a phrase as whole words, keeping the case of its first letter.
+    private static func replaceWords(_ long: String, with short: String, in text: String, needsFollowingWord: Bool) -> String {
+        let phrase = NSRegularExpression.escapedPattern(for: long).replacingOccurrences(of: " ", with: "\\s+")
+        let tail = needsFollowingWord ? #"(?=\s+[a-z])"# : #"\b"#
+        let re = try! NSRegularExpression(pattern: #"(?i)\b"# + phrase + tail)
+        let ns = text as NSString
+        var out = text
+        for m in re.matches(in: text, range: NSRange(location: 0, length: ns.length)).reversed() {
+            let original = ns.substring(with: m.range)
+            var replacement = short
+            if let f = original.first, f.isUppercase, short.first?.isLowercase == true {
+                replacement = short.prefix(1).uppercased() + short.dropFirst()
+            }
+            out = (out as NSString).replacingCharacters(in: m.range, with: replacement)
+        }
+        return out
     }
 
     // MARK: Digits
@@ -141,7 +215,7 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
     private static let scales: [String: Int] = ["hundred": 100, "thousand": 1_000, "million": 1_000_000, "billion": 1_000_000_000]
 
     /// "one" that is a pronoun rather than a count stays a word.
-    private static let pronounOneBefore: Set<String> = ["no", "any", "every", "some", "which", "this", "that", "the", "each", "another", "other", "last", "next", "new", "wrong", "right", "good", "bad", "big", "small", "little", "old", "second", "an"]
+    private static let pronounOneBefore: Set<String> = ["no", "any", "every", "some", "which", "this", "that", "the", "each", "another", "other", "last", "next", "new", "wrong", "right", "good", "bad", "big", "small", "little", "old", "second", "an", "same", "different", "only", "easy", "hard", "cheap", "free", "red", "blue", "green", "black", "white", "yellow", "pink", "purple", "orange", "grey", "gray", "brown"]
     private static let pronounOneAfter: Set<String> = ["of", "another", "day", "another's"]
 
     private struct Token { var text: String; var word: String; var isWord: Bool }
@@ -149,8 +223,8 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
     /// Rewrites every spelled-out number as digits: "twenty five" and
     /// "twenty-five" → 25, "one hundred and twenty" → 120, "first" → 1st,
     /// "one" → 1 except as a pronoun ("no one", "one of them"). "a" and "an"
-    /// are untouched; "second" is only a number next to another number word
-    /// or an ordinal context is not guessed, so it stays as it is.
+    /// are untouched, "second" stays a word since it is also a unit of time,
+    /// and "N percent" becomes N%.
     static func digits(_ text: String) -> String {
         let tokens = tokenise(text)
         var out: [String] = []
@@ -166,7 +240,7 @@ enum WritingStyle: String, Codable, CaseIterable, Sendable {
             out.append(ordinal ? ordinalString(value) : String(value))
             i = end
         }
-        return out.joined()
+        return out.joined().replacingOccurrences(of: #"(\d) ?percent\b"#, with: "$1%", options: .regularExpression)
     }
 
     private static func tokenise(_ text: String) -> [Token] {
