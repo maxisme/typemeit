@@ -191,15 +191,6 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="t">code</div>
   <div class="step">
     <div class="box">
-      <h3>cancel the last one <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">run</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">current?.cancel()</a></span></h3>
-      <p>one clean-up at a time. a new dictation while the model is still answering the previous one cancels that call; it returns nil, and its caller has already left through the generation check.</p>
-      <div class="gate">exit if apple intelligence is not <span class="mono">.available</span> on this mac: returns nil, the transcript as heard is used, and the styles still run on it.</div>
-    </div>
-  </div>
-
-  <div class="t">code</div>
-  <div class="step">
-    <div class="box">
       <h3>spelled letters become an acronym <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">ModelText.joinSpelledLetters</a></span></h3>
       <p>a run of two or more single-letter words, split on spaces, is joined and uppercased: <code>lottie h q</code> → <code>lottie HQ</code>, <code>a p d f</code> → <code>a PDF</code>. an <code>a</code> or <code>i</code> at either end of the run is a word and stays outside it. one lone letter is left alone, for the false-start rule to remove.</p>
       <p>this runs before the model because the prompt's rule 7 deletes stranded letters, and once they are gone the acronym cannot be recovered.</p>
@@ -238,7 +229,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
     <div class="box">
       <h3>apple intelligence <span class="mono"><a href="https://developer.apple.com/documentation/foundationmodels/languagemodelsession/respond(to:generating:includeschemainprompt:options:)">LanguageModelSession.respond</a></span></h3>
       <p><span class="mono"><a href="https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel">SystemLanguageModel(guardrails: .permissiveContentTransformations)</a></span>, so a transcript about anything is still cleaned rather than refused. a fresh session per dictation, prewarmed at fn down so the first response is not slowed by loading. guided generation into one struct with one field, <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">CleanedTranscript.cleanedText</a></span>, so the model cannot answer in prose around the text. greedy sampling, so the same transcript gives the same answer every time; the eval relies on that.</p>
-      <div class="gate">a thrown error other than cancellation is logged and returns nil. the model's text passes through <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">stripThinkBlock</a></span>, which drops a leading <code>&lt;think&gt;…&lt;/think&gt;</code> if one is there, then is trimmed. empty means nil.</div>
+      <div class="gate">exit if apple intelligence is not <span class="mono">.available</span> on this mac: returns nil, the transcript as heard is used, and the styles still run on it. a thrown error other than cancellation is logged and returns nil. the model's text passes through <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">stripThinkBlock</a></span>, which drops a leading <code>&lt;think&gt;…&lt;/think&gt;</code> if one is there, then is trimmed. empty means nil.</div>
     </div>
   </div>
 
