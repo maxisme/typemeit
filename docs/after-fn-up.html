@@ -63,7 +63,9 @@ a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
 .setting span i{font-style:normal;font:500 11px/1.3 var(--mono);color:var(--ink);margin-right:6px}
 .slabbox .setting{background:transparent;border:1px solid var(--on-slab);color:var(--on-slab)}
 .slabbox .setting b,.slabbox .setting b em,.slabbox .setting span i{color:var(--on-slab)}
-.step.pill::before{width:18px;height:9px;border-radius:5px;left:-9px;background:var(--ink)}
+.step.mark .puff.depart{animation:depart 3s ease-in infinite;transform-origin:50% 50%}
+@keyframes depart{0%,55%{transform:scale(1);opacity:1}70%{transform:scale(.88);opacity:0}100%{transform:scale(.88);opacity:0}}
+@media (prefers-reduced-motion:reduce){.step.mark .puff.depart{animation:none;opacity:.35}}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .chip{display:inline-flex;align-items:center;gap:6px;font:400 11px/1.3 var(--mono);color:var(--ink-2);border:1px solid var(--rule-control);border-radius:999px;padding:3px 9px 3px 7px;letter-spacing:.01em}
 .chip::before{content:"";width:7px;height:7px;border-radius:50%;border:1px solid var(--ink)}
@@ -76,6 +78,18 @@ a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
 .key{display:flex;flex-wrap:wrap;gap:14px;font:400 11px/1.3 var(--mono);color:var(--ink-3);margin:0 0 20px}
 .key span{display:inline-flex;align-items:center;gap:6px}
 .key span:not(.disk)::before{display:none}
+.nest{margin-top:14px;padding-top:12px;border-top:1px solid var(--rule)}
+.nestlede{margin:0 0 4px;color:var(--ink-2);font-size:13px;max-width:60ch}
+.flow.nested{grid-template-columns:64px 1fr}
+.flow.nested::before{left:64px}
+.flow.nested .t{padding-top:16px;padding-right:12px}
+.flow.nested .step{padding:8px 0 8px 22px}
+.flow.nested .step::before{top:20px}
+.flow.nested .box{max-width:none;padding:10px 12px}
+.flow.nested .box h3{font-size:14px}
+.flow.nested .box p,.flow.nested .box li{font-size:13px}
+.pillwrap{margin:10px 0;max-width:300px}
+.pillwrap svg{display:block;width:100%;height:auto}
 .gate{margin-top:8px;padding-top:8px;border-top:1px dashed var(--rule-control);color:var(--ink-2);font-size:13px}
 .gate .mono{color:var(--ink-3)}
 .sub{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:10px}
@@ -101,7 +115,7 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
 
 <main>
 <h1>after fn up</h1>
-<p class="lede">what one dictation does between the key coming up and the text landing in the field, on the happy path with every setting on. the mark on the left is what the cloud shows at that moment: the puff while you speak, the struck puff from fn up until the text is typed, then the pill or nothing. code names in mono; timings are medians from 556 dictations on this mac plus the fixed delays in <code>Fixed</code>.</p>
+<p class="lede">what one dictation does between the key coming up and the text landing in the field, on the happy path with every setting on. the mark on the left is what the cloud shows at that moment: the puff while you speak, the struck puff from fn up until the text is typed, then the puff drawing in and fading over 0.35 s as the overlay hides. code names in mono; timings are medians from 556 dictations on this mac plus the fixed delays in <code>Fixed</code>.</p>
 <p class="meta">Pipeline.swift · endRecording → deliver · median dictation 4.7 s of audio</p>
 <div class="key"><span class="disk">written to disk <em>· ~/Library/Application Support/TypeMeIt</em></span><span style="border:0">each step lists the settings that touch it, as their rows read in the settings window with the tab and group, and what happens with each on and off. the path drawn has every one of them on.</span></div>
 
@@ -156,50 +170,11 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step mark"><svg class="puff struck" viewBox="2.45 1.45 60 60" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/><path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93" opacity=".35"/><path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62" opacity=".35"/><path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48" opacity=".35"/><path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66" opacity=".35"/><path class="bolt" d="M 36 22 L 28 35 L 34 35 L 30 47 L 40 31 L 34 31 Z" fill="var(--paper)"/></svg>
     <div class="box">
       <h3>the model and the code around it <span class="mono">PostProcessor.clean</span></h3>
-      <p>the pill shows cleaning up. code before the model, the on-device model, two guards on what it returns, code after it, then the writing styles. this is the one function the eval scores, so what the eval sees is what gets typed. every part is drawn out in <a href="#inside">inside clean-up</a> below.</p>
+      <p>the pill shows cleaning up. code before the model, the on-device model, two guards on what it returns, code after it, then the writing styles. this is the one function the eval scores, so what the eval sees is what gets typed. every part is drawn out below, pass by pass.</p>
       <div class="settings"><div class="setting"><b>clean up with apple intelligence<em>intelligence › clean-up</em></b><span><i>on</i>this whole step runs.</span><span><i>off</i>skipped: the words as heard go straight to the paste and no writing style applies.</span></div><div class="setting"><b>read the screen<em>intelligence › clean-up</em></b><span><i>on</i>the screen terms join here.</span><span><i>off</i>the model gets no screen terms and nothing is fused after it.</span></div><div class="setting"><b>digits · cut filler words · contractions · lists · quotes<em>intelligence › writing style</em></b><span><i>on</i>that style's pass runs on the output, and for filler words and contractions its rule goes to the model too.</span><span><i>off</i>nothing of it runs.</span></div><div class="setting"><b>custom words<em>intelligence › custom words</em></b><span><i>on</i>listed after the transcript for the model, and fused after it.</span><span><i>off</i>nothing added.</span></div></div>
       <div class="gate">esc here cancels the model call and types nothing. the generation check runs again after the await.</div>
-    </div>
-  </div>
-
-  <div class="t">+0 ms</div>
-  <div class="step mark"><svg class="puff struck" viewBox="2.45 1.45 60 60" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/><path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93" opacity=".35"/><path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62" opacity=".35"/><path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48" opacity=".35"/><path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66" opacity=".35"/><path class="bolt" d="M 36 22 L 28 35 L 34 35 L 30 47 L 40 31 L 34 31 Z" fill="var(--paper)"/></svg>
-    <div class="box">
-      <h3>look at the focused element <span class="mono">Focus.focusedElementIsTextInput</span></h3>
-      <p>a trailing space is added. then accessibility is asked whether the focused element is a text input: yes, no, or no answer. the answer decides what happens after the paste, not whether it happens.</p>
-      <div class="settings"><div class="setting"><b>space after typing<em>settings › typing</em></b><span><i>on</i>a space follows the text, so the next dictation does not run into this one.</span><span><i>off</i>the text ends where it ends.</span></div></div>
-    </div>
-  </div>
-
-  <div class="t"><b>paste</b>120 ms fixed</div>
-  <div class="step mark"><svg class="puff struck" viewBox="2.45 1.45 60 60" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/><path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93" opacity=".35"/><path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62" opacity=".35"/><path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48" opacity=".35"/><path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66" opacity=".35"/><path class="bolt" d="M 36 22 L 28 35 L 34 35 L 30 47 L 40 31 L 34 31 Z" fill="var(--paper)"/></svg>
-    <div class="box slabbox">
-      <h3>type it <span class="mono">Output.paste</span></h3>
-      <p>the clipboard's text (or image) is saved, the transcript put on it, 60 ms wait, cmd+v posted as a system event, 60 ms wait, and the clipboard restored. with auto-submit on, return is posted 50 ms later with the chosen modifier.</p>
-      <div class="settings"><div class="setting"><b>key after typing<em>settings › typing</em></b><span><i>on</i>return is pressed 50 ms after the paste, with the modifier chosen under key.</span><span><i>off</i>nothing is pressed.</span></div></div>
-      <div class="gate" style="border-color:var(--on-slab);opacity:.8">if cmd+v could not be posted, accessibility is missing: the paste reports false and the copy prompt takes over below.</div>
-    </div>
-  </div>
-
-  <div class="t">+0 ms</div>
-  <div class="step pill">
-    <div class="box">
-      <h3>write history, go idle <span class="mono">store.append · phase = .idle</span></h3>
-      <p>one entry with the transcript as heard, the cleaned text, both durations, the app and window, and the recording file's name. the whole history is rewritten atomically after every change; it is small enough to hold in memory. the pill hides and the next fn down is accepted.</p>
-      <div class="disk">history.json <em>· the entry, appended; the oldest beyond the keep limit go, with their recordings</em></div>
-      <ul>
-        <li>focused element was a text input: read-back starts, watching the field for your corrections to learn from. <span class="mono">ReadBack.start</span></li>
-        <li>not a text input, or the paste failed: the pill offers copy for 8 s instead. <span class="mono">showCopyPrompt</span></li>
-      </ul>
-      <div class="settings"><div class="setting"><b>keep<em>history › keep</em></b><span><i>on</i>that many entries are kept; the oldest go, with their recordings.</span><span><i>off</i>0: nothing is kept.</span></div><div class="setting"><b>learn from corrections<em>intelligence › clean-up</em></b><span><i>on</i>read-back watches the field for your corrections.</span><span><i>off</i>nothing watches.</span></div><div class="setting"><b>offer to copy when no text box is focused<em>settings › typing</em></b><span><i>on</i>the copy pill shows when the paste had nowhere to go.</span><span><i>off</i>the pill hides either way.</span></div></div>
-    </div>
-  </div>
-
-</div>
-
-<h2 id="inside">inside clean-up</h2>
-<p class="lede">the same 929 ms, one rail per pass. the left column says where each pass runs. "as heard" means parakeet's text exactly as it wrote it; "as cleaned" means whatever this pass received from the one above.</p>
-<div class="flow">
+<div class="nest"><p class="nestlede">the same 929 ms, one rail per pass. the left column says where each pass runs. "as heard" means parakeet's text exactly as it wrote it; "as cleaned" means whatever this pass received from the one above.</p>
+<div class="flow nested">
 
   <div class="t">code</div>
   <div class="step">
@@ -318,6 +293,46 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
     <div class="box">
       <h3>return <span class="mono">(text, applied)</span></h3>
       <p><span class="mono">applied</span> is true when the model's text was used, false when the transcript as heard went through the styles instead. the pipeline stores the cleaned text in history only when it was applied, and logs the duration either way.</p>
+    </div>
+  </div>
+
+</div>
+</div>
+    </div>
+  </div>
+
+  <div class="t">+0 ms</div>
+  <div class="step mark"><svg class="puff struck" viewBox="2.45 1.45 60 60" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/><path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93" opacity=".35"/><path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62" opacity=".35"/><path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48" opacity=".35"/><path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66" opacity=".35"/><path class="bolt" d="M 36 22 L 28 35 L 34 35 L 30 47 L 40 31 L 34 31 Z" fill="var(--paper)"/></svg>
+    <div class="box">
+      <h3>look at the focused element <span class="mono">Focus.focusedElementIsTextInput</span></h3>
+      <p>a trailing space is added. then accessibility is asked whether the focused element is a text input: yes, no, or no answer. the answer decides what happens after the paste, not whether it happens.</p>
+      <div class="settings"><div class="setting"><b>space after typing<em>settings › typing</em></b><span><i>on</i>a space follows the text, so the next dictation does not run into this one.</span><span><i>off</i>the text ends where it ends.</span></div></div>
+    </div>
+  </div>
+
+  <div class="t"><b>paste</b>120 ms fixed</div>
+  <div class="step mark"><svg class="puff struck" viewBox="2.45 1.45 60 60" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/><path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93" opacity=".35"/><path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62" opacity=".35"/><path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48" opacity=".35"/><path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66" opacity=".35"/><path class="bolt" d="M 36 22 L 28 35 L 34 35 L 30 47 L 40 31 L 34 31 Z" fill="var(--paper)"/></svg>
+    <div class="box slabbox">
+      <h3>type it <span class="mono">Output.paste</span></h3>
+      <p>the clipboard's text (or image) is saved, the transcript put on it, 60 ms wait, cmd+v posted as a system event, 60 ms wait, and the clipboard restored. with auto-submit on, return is posted 50 ms later with the chosen modifier.</p>
+      <div class="settings"><div class="setting"><b>key after typing<em>settings › typing</em></b><span><i>on</i>return is pressed 50 ms after the paste, with the modifier chosen under key.</span><span><i>off</i>nothing is pressed.</span></div></div>
+      <div class="gate" style="border-color:var(--on-slab);opacity:.9">cmd+v is not typed into the app; it is a keystroke posted to the system as if from a keyboard. macOS only accepts that from an app with the accessibility grant (system settings › privacy &amp; security › accessibility, given during onboarding). without it the event cannot be created, nothing is pasted, and the paste reports false. the clipboard has already been put back, so the text is not on it either. the last step then shows this instead of hiding, for 8 s, and copy puts the text on the clipboard:
+      <div class="pillwrap"><svg class="pillart" viewBox="0 0 300 44" width="300" height="44" aria-hidden="true"><rect x="0.5" y="0.5" width="299" height="43" rx="21.5" fill="var(--paper)" stroke="var(--ink)"/><g transform="translate(16,15)" fill="none" stroke="var(--ink-2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="10" height="12" rx="1.5"/><path d="M5 2V1h4v1M4 6h6M4 9h6"/></g><text x="44" y="27" font-family="DM Mono, ui-monospace, monospace" font-size="12" fill="var(--ink)">nowhere to type it</text><rect x="228.5" y="9.5" width="52" height="25" rx="12.5" fill="var(--slab)"/><text x="254.5" y="26" text-anchor="middle" font-family="DM Mono, ui-monospace, monospace" font-size="12" fill="var(--on-slab)">copy</text></svg></div>
+      the same pill shows when the paste worked but the focused element was not a text input, such as the finder or a video player, so the text went nowhere. the history entry is written either way.</div>
+    </div>
+  </div>
+
+  <div class="t">+0 ms</div>
+  <div class="step mark"><svg class="puff depart" viewBox="2.45 1.45 60 60" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M 42.99 43.81 A 6.00 6.00 0 0 1 33.58 48.46 A 8.00 8.00 0 0 1 18.58 43.33 A 7.50 7.50 0 0 1 13.68 32.25 A 9.50 9.50 0 0 1 20.62 17.68 A 13.00 13.00 0 0 1 44.93 19.37 A 9.00 9.00 0 0 1 50.29 34.46 A 6.50 6.50 0 0 1 42.99 43.81 Z"/><path d="M 33.58 48.46 A 8.00 8.00 0 0 0 34.19 42.93"/><path d="M 13.68 32.25 A 9.50 9.50 0 0 0 21.67 36.62"/><path d="M 20.62 17.68 A 13.00 13.00 0 0 0 21.17 29.48"/><path d="M 44.93 19.37 A 9.00 9.00 0 0 0 34.88 26.66"/></svg>
+    <div class="box">
+      <h3>write history, go idle <span class="mono">store.append · phase = .idle</span></h3>
+      <p>one entry with the transcript as heard, the cleaned text, both durations, the app and window, and the recording file's name. the whole history is rewritten atomically after every change; it is small enough to hold in memory. the pill hides and the next fn down is accepted.</p>
+      <div class="disk">history.json <em>· the entry, appended; the oldest beyond the keep limit go, with their recordings</em></div>
+      <ul>
+        <li>focused element was a text input: read-back starts, watching the field for your corrections to learn from. <span class="mono">ReadBack.start</span></li>
+        <li>not a text input, or the paste failed: the pill offers copy for 8 s instead. <span class="mono">showCopyPrompt</span></li>
+      </ul>
+      <div class="settings"><div class="setting"><b>keep<em>history › keep</em></b><span><i>on</i>that many entries are kept; the oldest go, with their recordings.</span><span><i>off</i>0: nothing is kept.</span></div><div class="setting"><b>learn from corrections<em>intelligence › clean-up</em></b><span><i>on</i>read-back watches the field for your corrections.</span><span><i>off</i>nothing watches.</span></div><div class="setting"><b>offer to copy when no text box is focused<em>settings › typing</em></b><span><i>on</i>the copy pill shows when the paste had nowhere to go.</span><span><i>off</i>the pill hides either way.</span></div></div>
     </div>
   </div>
 
