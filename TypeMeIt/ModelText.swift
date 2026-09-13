@@ -3,6 +3,70 @@ import Foundation
 /// The two string operations that survive the model talking to us: reading its
 /// output, and deciding whether it rewrote rather than cleaned.
 enum ModelText {
+    /// Letters spoken one at a time are an acronym: "h q" becomes "HQ" and
+    /// "p d f" becomes "PDF", so the clean-up model keeps them instead of
+    /// deleting them as false starts. "a" and "I" at either end are words
+    /// ("as a p d f" keeps its article), and a lone letter is left for the
+    /// false-start rule.
+    /// Adjacent words that spell a screen term or custom word once joined
+    /// become that term: "Lottie HQ" → LottieHQ, "max retries" → MAX_RETRIES,
+    /// "parse config" → parse_config. Punctuation inside the term is ignored
+    /// when matching, so the spoken words need only match its letters.
+    static func fuseTerms(_ text: String, terms: [String]) -> String {
+        let candidates = terms.compactMap { term -> (letters: String, term: String)? in
+            let letters = term.lowercased().filter { $0.isLetter || $0.isNumber }
+            return letters.count >= 4 ? (letters, term) : nil
+        }
+        guard !candidates.isEmpty else { return text }
+        let words = text.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
+        var out: [String] = []
+        var i = 0
+        while i < words.count {
+            var fused = false
+            for n in stride(from: min(4, words.count - i), through: 2, by: -1) {
+                let slice = words[i..<(i + n)]
+                let core = slice.map { $0.lowercased().filter { $0.isLetter || $0.isNumber } }.joined()
+                if let hit = candidates.first(where: { $0.letters == core }) {
+                    let trailing = String(slice.last!.reversed().prefix { !$0.isLetter && !$0.isNumber }.reversed())
+                    out.append(hit.term + trailing)
+                    i += n; fused = true; break
+                }
+            }
+            if !fused { out.append(words[i]); i += 1 }
+        }
+        return out.joined(separator: " ")
+    }
+
+    /// "25 dollars" → $25, "50 pounds" → £50, "3 euros" → €3, as the prompt
+    /// asks and the model rarely does.
+    static func currencySymbols(_ text: String) -> String {
+        text.replacingOccurrences(of: #"(?i)\b(\d[\d,]*(?:\.\d+)?) dollars?\b"#, with: "\\$$1", options: .regularExpression)
+            .replacingOccurrences(of: #"(?i)\b(\d[\d,]*(?:\.\d+)?) pounds?\b"#, with: "£$1", options: .regularExpression)
+            .replacingOccurrences(of: #"(?i)\b(\d[\d,]*(?:\.\d+)?) euros?\b"#, with: "€$1", options: .regularExpression)
+    }
+
+    static func joinSpelledLetters(_ text: String) -> String {
+        var out: [String] = []
+        var run: [String] = []
+        func flush() {
+            var letters = run
+            var lead: [String] = [], tail: [String] = []
+            while let f = letters.first, ["a", "i"].contains(f.lowercased()) { lead.append(letters.removeFirst()) }
+            while let l = letters.last, ["a", "i"].contains(l.lowercased()) { tail.insert(letters.removeLast(), at: 0) }
+            if letters.count >= 2 {
+                out += lead; out.append(letters.joined().uppercased()); out += tail
+            } else {
+                out += run
+            }
+            run = []
+        }
+        for word in text.split(separator: " ", omittingEmptySubsequences: false).map(String.init) {
+            if word.count == 1, word.first!.isLetter { run.append(word) } else { flush(); out.append(word) }
+        }
+        flush()
+        return out.joined(separator: " ")
+    }
+
     /// Strips a leading `<think>...</think>` block. Some endpoints can't disable
     /// reasoning, and some local servers put the reasoning text into `content`
     /// instead of a separate field — without this the user would get the model's

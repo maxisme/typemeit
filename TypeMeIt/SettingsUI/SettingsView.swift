@@ -512,6 +512,15 @@ struct IntelligenceTab: View {
                         .disabled(!settings.postProcessingEnabled)
                     }
                 }
+                SettingsGroup(title: "writing style") {
+                    ForEach(WritingStyle.allCases, id: \.self) { style in
+                        SettingsRow(label: style.label, subtitle: style.example, last: style == WritingStyle.allCases.last) {
+                            Toggle("", isOn: Binding(get: { settings.writingStyles.contains(style) }, set: { on in if on { settings.writingStyles.insert(style) } else { settings.writingStyles.remove(style) } }))
+                                .toggleStyle(.switch).labelsHidden()
+                                .disabled(!settings.postProcessingEnabled || !modelAvailable)
+                        }
+                    }
+                }
                 SettingsGroup(title: "custom words") {
                     VStack(alignment: .leading, spacing: 0) {
                         SettingsRow(label: "learn from corrections", subtitle: modelAvailable ? nil : "needs apple intelligence") {

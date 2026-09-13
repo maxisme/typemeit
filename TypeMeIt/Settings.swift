@@ -86,6 +86,8 @@ final class Settings {
     var copyPromptEnabled: Bool { didSet { defaults.set(copyPromptEnabled, forKey: "copyPromptEnabled") } }
     var postProcessingEnabled: Bool { didSet { defaults.set(postProcessingEnabled, forKey: "postProcessingEnabled") } }
     var customWords: [String] { didSet { defaults.set(customWords, forKey: "customWords") } }
+    /// The opinionated rewrites clean-up applies on top of its fixes.
+    var writingStyles: Set<WritingStyle> { didSet { defaults.set(writingStyles.map(\.rawValue).sorted(), forKey: "writingStyles") } }
     var learnFromCorrections: Bool { didSet { defaults.set(learnFromCorrections, forKey: "learnFromCorrections") } }
     var appendTrailingSpace: Bool { didSet { defaults.set(appendTrailingSpace, forKey: "appendTrailingSpace") } }
     var autoSubmit: Bool { didSet { defaults.set(autoSubmit, forKey: "autoSubmit") } }
@@ -131,6 +133,7 @@ final class Settings {
         copyPromptEnabled = bool("copyPromptEnabled", true)
         postProcessingEnabled = bool("postProcessingEnabled", true)
         customWords = d.stringArray(forKey: "customWords") ?? []
+        writingStyles = Set((d.stringArray(forKey: "writingStyles") ?? []).compactMap(WritingStyle.init))
         learnFromCorrections = bool("learnFromCorrections", true)
         appendTrailingSpace = bool("appendTrailingSpace", true)
         autoSubmit = bool("autoSubmit", false)

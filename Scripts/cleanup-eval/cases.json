@@ -438,5 +438,712 @@
         "why": "a fragment need not be punctuated"
       }
     ]
+  },
+  {
+    "input": "we need one more chair and three more tables for the twenty people coming",
+    "styles": [
+      "digits"
+    ],
+    "expected": "We need 1 more chair and 3 more tables for the 20 people coming."
+  },
+  {
+    "input": "can you grab a coffee and two croissants",
+    "styles": [
+      "digits"
+    ],
+    "expected": "Can you grab a coffee and 2 croissants?"
+  },
+  {
+    "input": "she came first and I came fourth",
+    "styles": [
+      "digits"
+    ],
+    "expected": "She came 1st and I came 4th."
+  },
+  {
+    "input": "so it was like really good and you know we should basically do it again",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "So it was really good and we should do it again."
+  },
+  {
+    "input": "I like the blue one more than the red one",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I like the blue one more than the red one."
+  },
+  {
+    "input": "you know I think we should just go",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I think we should just go."
+  },
+  {
+    "input": "I do not think we will make it because it is too far",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "I don't think we'll make it because it's too far."
+  },
+  {
+    "input": "we can't come tonight because I'm not feeling well",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "We can't come tonight because I'm not feeling well."
+  },
+  {
+    "input": "okay so three things for tomorrow first we need to finish the landing page second um call the accountant about the vat return and third book the train tickets for friday",
+    "styles": [
+      "lists"
+    ],
+    "exact": true,
+    "expected": "Okay so three things for tomorrow.\n1. We need to finish the landing page.\n2. Call the accountant about the VAT return.\n3. Book the train tickets for Friday."
+  },
+  {
+    "input": "she came first and I came fourth",
+    "styles": [
+      "lists"
+    ],
+    "expected": "She came first and I came fourth."
+  },
+  {
+    "input": "it was like really cold out there",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "It was really cold out there."
+  },
+  {
+    "input": "I actually think we should wait until monday",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I think we should wait until Monday."
+  },
+  {
+    "input": "the meeting was sort of a waste of time",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "The meeting was a waste of time."
+  },
+  {
+    "input": "it's kind of late so let's do it tomorrow",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "It's late so let's do it tomorrow."
+  },
+  {
+    "input": "we could basically ship it today",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "We could ship it today."
+  },
+  {
+    "input": "I was literally about to call you",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I was about to call you."
+  },
+  {
+    "input": "I mean we could just cancel the whole thing",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "We could just cancel the whole thing."
+  },
+  {
+    "input": "the deck is you know pretty much done",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "The deck is pretty much done."
+  },
+  {
+    "input": "basically the api is down again",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "The API is down again."
+  },
+  {
+    "input": "actually can you send that to sam instead",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "Can you send that to Sam instead?"
+  },
+  {
+    "input": "like I don't even know where to start",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I don't even know where to start."
+  },
+  {
+    "input": "it was fine you know",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "It was fine."
+  },
+  {
+    "input": "I like the new logo more than the old one",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I like the new logo more than the old one."
+  },
+  {
+    "input": "it looks like rain so bring a coat",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "It looks like rain so bring a coat."
+  },
+  {
+    "input": "do you know what time the train leaves",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "Do you know what time the train leaves?"
+  },
+  {
+    "input": "she is not the kind of person who gives up",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "She is not the kind of person who gives up."
+  },
+  {
+    "input": "what does this sort of error usually mean",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "What does this sort of error usually mean?"
+  },
+  {
+    "input": "I literally mean every word of it",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "I mean every word of it."
+  },
+  {
+    "input": "the basics are done but not the actual deploy",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "The basics are done but not the actual deploy."
+  },
+  {
+    "input": "can you like literally just send me the link",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "Can you just send me the link?"
+  },
+  {
+    "input": "I actually think we should wait until monday",
+    "expected": "I actually think we should wait until Monday."
+  },
+  {
+    "input": "I'll be there in five minutes with two friends",
+    "styles": [
+      "digits"
+    ],
+    "expected": "I'll be there in 5 minutes with 2 friends."
+  },
+  {
+    "input": "we sold forty two units in the first week",
+    "styles": [
+      "digits"
+    ],
+    "expected": "We sold 42 units in the 1st week."
+  },
+  {
+    "input": "the meeting is at half past nine",
+    "styles": [
+      "digits"
+    ],
+    "expected": "The meeting is at half past 9."
+  },
+  {
+    "input": "there were two thousand people at the show",
+    "styles": [
+      "digits"
+    ],
+    "expected": "There were 2000 people at the show."
+  },
+  {
+    "input": "which one do you want the red one or the blue one",
+    "styles": [
+      "digits"
+    ],
+    "expected": "Which one do you want, the red one or the blue one?"
+  },
+  {
+    "input": "one of us has to stay",
+    "styles": [
+      "digits"
+    ],
+    "expected": "One of us has to stay."
+  },
+  {
+    "input": "give me a second I need one more minute",
+    "styles": [
+      "digits"
+    ],
+    "expected": "Give me a second, I need 1 more minute."
+  },
+  {
+    "input": "my number is oh seven seven one two three four five six seven",
+    "styles": [
+      "digits"
+    ],
+    "expected": "My number is 0771234567."
+  },
+  {
+    "input": "the twenty first of june works for me",
+    "styles": [
+      "digits"
+    ],
+    "expected": "The 21st of June works for me."
+  },
+  {
+    "input": "it was the third time this week",
+    "styles": [
+      "digits"
+    ],
+    "expected": "It was the 3rd time this week."
+  },
+  {
+    "input": "back in twenty nineteen we had eight people",
+    "styles": [
+      "digits"
+    ],
+    "expected": "Back in 2019 we had 8 people."
+  },
+  {
+    "input": "ten percent off for the first three orders",
+    "styles": [
+      "digits"
+    ],
+    "expected": "10% off for the 1st 3 orders."
+  },
+  {
+    "input": "I am not sure that is going to work",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "I'm not sure that's going to work."
+  },
+  {
+    "input": "we will see what they have got",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "We'll see what they've got."
+  },
+  {
+    "input": "you are right it does not matter",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "You're right, it doesn't matter."
+  },
+  {
+    "input": "he would have called if he could not make it",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "He'd have called if he couldn't make it.",
+    "alsoAccepted": [
+      {
+        "text": "He would've called if he couldn't make it.",
+        "why": "either contraction of would have"
+      }
+    ]
+  },
+  {
+    "input": "let us know when you have landed",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "Let us know when you've landed."
+  },
+  {
+    "input": "who is coming and what is the plan",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "Who's coming and what's the plan?"
+  },
+  {
+    "input": "I cannot believe it is friday already",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "I can't believe it's Friday already."
+  },
+  {
+    "input": "that is what it is",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "That's what it is."
+  },
+  {
+    "input": "I am not sure that is going to work",
+    "expected": "I am not sure that is going to work."
+  },
+  {
+    "input": "first of all thanks for coming",
+    "styles": [
+      "lists"
+    ],
+    "expected": "First of all, thanks for coming."
+  },
+  {
+    "input": "we came second in the league and first in the cup",
+    "styles": [
+      "lists"
+    ],
+    "expected": "We came second in the league and first in the cup."
+  },
+  {
+    "input": "I am actually going to be five minutes late",
+    "matrix": true,
+    "expected": "{contractions:I am|I'm} {fillerWords:actually |}going to be {digits:five|5} minutes late."
+  },
+  {
+    "input": "hey sam can you pick up milk on the way home my mum said we are out",
+    "matrix": true,
+    "expected": "Hey Sam, can you pick up milk on the way home? My mum said {quotes:we {contractions:are|'re} out|\"we {contractions:are|'re} out\"}.",
+    "alsoAccepted": [
+      {
+        "text": "Hey Sam can you pick up milk on the way home? My mum said {quotes:we {contractions:are|'re} out|\"we {contractions:are|'re} out\"}.",
+        "why": "the comma after hey is optional"
+      }
+    ]
+  },
+  {
+    "input": "okay so basically two things first I do not think we will hit friday and second we need like three more people",
+    "matrix": true,
+    "expected": "{lists:Okay so {fillerWords:basically |}{digits:two|2} things. First, I {contractions:do not|don't} think we{contractions: will|'ll} hit Friday. Second, we need {fillerWords:like |}{digits:three|3} more people.|Okay so {fillerWords:basically |}{digits:two|2} things.\n1. I {contractions:do not|don't} think we{contractions: will|'ll} hit Friday.\n2. We need {fillerWords:like |}{digits:three|3} more people.}",
+    "alsoAccepted": [
+      {
+        "text": "{lists:Okay, so {fillerWords:basically |}{digits:two|2} things. First, I {contractions:do not|don't} think we{contractions: will|'ll} hit Friday. And second, we need {fillerWords:like |}{digits:three|3} more people.|Okay, so {fillerWords:basically |}{digits:two|2} things.\n1. I {contractions:do not|don't} think we{contractions: will|'ll} hit Friday.\n2. We need {fillerWords:like |}{digits:three|3} more people.}",
+        "why": "comma after okay, and the spoken and before the last item"
+      }
+    ]
+  },
+  {
+    "input": "do you know if the first one is actually cheaper",
+    "matrix": true,
+    "expected": "Do you know if the {digits:first|1st} one is {fillerWords:actually |}cheaper?"
+  },
+  {
+    "input": "it is not that I do not want it I just think it is too expensive",
+    "matrix": true,
+    "expected": "{contractions:It is|It's} not that I {contractions:do not|don't} want it, I just think {contractions:it is|it's} too expensive.",
+    "alsoAccepted": [
+      {
+        "text": "{contractions:It is|It's} not that I {contractions:do not|don't} want it. I just think {contractions:it is|it's} too expensive.",
+        "why": "two sentences is fine"
+      }
+    ]
+  },
+  {
+    "input": "we sold forty two units in the first week you know",
+    "matrix": true,
+    "expected": "We sold {digits:forty two|42} units in the {digits:first|1st} week{fillerWords:, you know|}."
+  },
+  {
+    "input": "so I just got off the call with the client and um basically they want to move the launch back by two weeks which I think is actually fine because we were never going to hit the original date anyway the main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account and I said we could probably get a first version of that done by the end of next week can you let the design team know and also um can you check whether the analytics events for the pricing page are actually firing because last time I looked they were not",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "So I just got off the call with the client and they want to move the launch back by two weeks, which I think is fine because we were never going to hit the original date anyway. The main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account, and I said we could probably get a first version of that done by the end of next week. Can you let the design team know? And also, can you check whether the analytics events for the pricing page are firing? Because last time I looked they were not.",
+    "alsoAccepted": [
+      {
+        "text": "So I just got off the call with the client and they want to move the launch back by 2 weeks, which I think is fine because we were never going to hit the original date anyway. The main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account, and I said we could probably get a first version of that done by the end of next week. Can you let the design team know? And also, can you check whether the analytics events for the pricing page are firing? Because last time I looked they were not.",
+        "why": "two weeks may become 2 weeks under the base digits rule"
+      }
+    ]
+  },
+  {
+    "input": "right so a quick update on where we are with the migration we have moved about sixty percent of the customers over to the new database and so far there have been no complaints which is you know either a good sign or a sign that nobody has noticed yet the remaining forty percent are the larger accounts so we are going to do those one at a time starting on monday I do not think we will need the extra downtime window we booked but I would rather keep it just in case and I will send round a summary at the end of each day so everyone knows where things stand",
+    "styles": [
+      "contractions",
+      "digits"
+    ],
+    "expected": "Right so a quick update on where we are with the migration. We've moved about 60% of the customers over to the new database and so far there have been no complaints, which is you know either a good sign or a sign that nobody has noticed yet. The remaining 40% are the larger accounts so we're going to do those 1 at a time starting on Monday. I don't think we'll need the extra downtime window we booked but I'd rather keep it just in case, and I'll send round a summary at the end of each day so everyone knows where things stand.",
+    "wish": "A 100-word update with contractions and digits, punctuated and with you know kept. With the contractions rule on, the model returns this one as spoken and deletes the you know by itself."
+  },
+  {
+    "input": "hey it's me just leaving you a message because I could not get through um so there are three things first can you pick up the parcel from the post office it closes at five thirty second I have booked the table for eight so if you could be home by seven that would be great and third my mum is coming on saturday so we need to sort the spare room at some point this week anyway call me back when you get this bye",
+    "matrix": true,
+    "expected": "{lists:Hey, it's me, just leaving you a message because I {contractions:could not|couldn't} get through. So there are {digits:three|3} things. First, can you pick up the parcel from the post office? It closes at {digits:five thirty|5 30}. Second, {contractions:I have|I've} booked the table for {digits:eight|8}, so if you could be home by {digits:seven|7} that would be great. And third, my mum is coming on Saturday, so we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye.|Hey, it's me, just leaving you a message because I {contractions:could not|couldn't} get through. So there are {digits:three|3} things.\n1. Can you pick up the parcel from the post office? It closes at {digits:five thirty|5 30}.\n2. {contractions:I have|I've} booked the table for {digits:eight|8}, so if you could be home by {digits:seven|7} that would be great.\n3. My mum is coming on Saturday, so we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye.}",
+    "alsoAccepted": [
+      {
+        "text": "{lists:Hey, it's me. Just leaving you a message because I {contractions:could not|couldn't} get through. So, there are {digits:three|3} things. First, can you pick up the parcel from the post office? It closes at 5:30. Second, {contractions:I have|I've} booked the table for 8. So, if you could be home by 7, that would be great. Third, my mum is coming on Saturday. So, we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye.|Hey, it's me. Just leaving you a message because I {contractions:could not|couldn't} get through. So, there are {digits:three|3} things.\n1. Can you pick up the parcel from the post office? It closes at 5:30.\n2. {contractions:I have|I've} booked the table for 8. So, if you could be home by 7, that would be great.\n3. My mum is coming on Saturday. So, we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye.}",
+        "why": "seen with the contractions rule on: the base prompt writes spoken times as digits whatever the style, and the model drops the spoken and before third"
+      }
+    ]
+  },
+  {
+    "input": "hey it's me just leaving you a message because I could not get through um so there are three things first can you pick up the parcel from the post office it closes at five thirty second I have booked the table for eight so if you could be home by seven that would be great and third my mum is coming on saturday so we need to sort the spare room at some point this week anyway call me back when you get this bye",
+    "wish": "An 80-word voicemail cleaned up with full punctuation. Today the base prompt returns it as spoken, minus the um, every time; oddly, appending the contractions rule makes the model clean it properly.",
+    "exact": true,
+    "expected": "Hey, it's me, just leaving you a message because I could not get through. So there are three things. First, can you pick up the parcel from the post office? It closes at 5:30. Second, I have booked the table for 8, so if you could be home by 7 that would be great. And third, my mum is coming on Saturday, so we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye."
+  },
+  {
+    "input": "there is no way she has finished already",
+    "styles": [
+      "contractions"
+    ],
+    "expected": "There's no way she's finished already."
+  },
+  {
+    "input": "a hundred percent yes",
+    "styles": [
+      "digits"
+    ],
+    "expected": "100% yes."
+  },
+  {
+    "input": "we need milk eggs bread and butter",
+    "wish": "A spoken run of items written as a bulleted list. There is no spoken marker for a bullet, so only the model could do this, and it does not.",
+    "styles": [
+      "lists"
+    ],
+    "expected": "We need:\n- milk\n- eggs\n- bread\n- butter"
+  },
+  {
+    "input": "no one told me it costs one hundred and twenty pounds",
+    "styles": [
+      "digits"
+    ],
+    "expected": "No one told me it costs £120."
+  },
+  {
+    "input": "it costs about three hundred and fifty dollars",
+    "styles": [
+      "digits"
+    ],
+    "expected": "It costs about $350."
+  },
+  {
+    "input": "ping tomash about the kavu contract",
+    "wish": "Tomasz and Kavuu from the screen. Kavuu is fixed now; Tomasz is in the macOS dictionary, so the screen filter drops it as an ordinary capitalised word before the model sees it.",
+    "screen": [
+      "#eng-platform",
+      "Priya Raghunathan  10:42",
+      "the Zentryx cluster is back on 1.29, staging rollout at 3",
+      "Tomasz Wieczorek  10:44",
+      "nice. can someone look at the Kavuu contract renewal before friday?",
+      "@maxisme  10:45",
+      "on it. PR-1234 has the fix for the enquiry dedupe",
+      "Priya Raghunathan  10:47",
+      "thanks! also ping ola about LottieHQ x Anthropic",
+      "Message #eng-platform"
+    ],
+    "expected": "Ping Tomasz about the Kavuu contract."
+  },
+  {
+    "input": "bump max retries to five in parse config",
+    "wish": "MAX_RETRIES and parse_config fused from the spoken words, and five as 5. The fusing now happens in code; the model returns the rest of this sentence as spoken.",
+    "screen": [
+      "EXPLORER",
+      "  src/",
+      "    parse_config.ts",
+      "    fetchUser.ts",
+      "    useEnquiries.ts",
+      "parse_config.ts",
+      "1  import { useState } from 'react'",
+      "2  export const MAX_RETRIES = 3",
+      "3  export function parse_config(raw: string): Config {",
+      "4    const [state, setState] = useState<Config | null>(null)",
+      "5    return fetchUser(raw, MAX_RETRIES)",
+      "6  }",
+      "Ln 4, Col 12   TypeScript"
+    ],
+    "expected": "Bump MAX_RETRIES to 5 in parse_config."
+  },
+  {
+    "input": "so um basically I was like you know we should actually just uh go for it",
+    "wish": "Every filler cut at once, leaving the sentence that was meant. The model cuts some and leaves the quotative I was like.",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "So we should just go for it."
+  },
+  {
+    "input": "it was like really cold out there",
+    "wish": "With no style on, every word kept, like included. The base prompt deletes this like by itself.",
+    "exact": true,
+    "expected": "It was like really cold out there."
+  },
+  {
+    "input": "I am actually going to be like five minutes late",
+    "wish": "With no style on, every word kept, like included. The base prompt deletes this like by itself.",
+    "exact": true,
+    "expected": "I am actually going to be like five minutes late."
+  },
+  {
+    "input": "no one came to the second session",
+    "styles": [
+      "digits"
+    ],
+    "expected": "No one came to the 2nd session."
+  },
+  {
+    "input": "two things first the build is red and second the release notes are missing",
+    "wish": "A punctuated list. The model returns this transcript unpunctuated, so the list is built from the raw words.",
+    "styles": [
+      "lists"
+    ],
+    "exact": true,
+    "expected": "Two things.\n1. The build is red.\n2. The release notes are missing."
+  },
+  {
+    "input": "first um preheat the oven secondly mix the flour and butter and thirdly bake for twenty minutes",
+    "wish": "A punctuated list with the number converted. The model returns this transcript unpunctuated.",
+    "styles": [
+      "lists"
+    ],
+    "exact": true,
+    "expected": "1. Preheat the oven.\n2. Mix the flour and butter.\n3. Bake for 20 minutes."
+  },
+  {
+    "input": "it is not that I do not like it I just think it is kind of expensive",
+    "styles": [
+      "fillerWords"
+    ],
+    "exact": true,
+    "expected": "It is not that I do not like it, I just think it is expensive."
+  },
+  {
+    "input": "so I just got off the call with the client and um basically they want to move the launch back by two weeks which I think is actually fine because we were never going to hit the original date anyway the main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account and I said we could probably get a first version of that done by the end of next week can you let the design team know and also um can you check whether the analytics events for the pricing page are actually firing because last time I looked they were not",
+    "wish": "A 100-word dictation with every word kept. The model drops the and after account and splits the sentence.",
+    "exact": true,
+    "expected": "So I just got off the call with the client and basically they want to move the launch back by two weeks, which I think is actually fine because we were never going to hit the original date anyway. The main thing is that they want us to redo the onboarding flow so that new users see the pricing page before they create an account, and I said we could probably get a first version of that done by the end of next week. Can you let the design team know? And also, can you check whether the analytics events for the pricing page are actually firing? Because last time I looked they were not."
+  },
+  {
+    "input": "hey it's me just leaving you a message because I could not get through um so there are three things first can you pick up the parcel from the post office it closes at five thirty second I have booked the table for eight so if you could be home by seven that would be great and third my mum is coming on saturday so we need to sort the spare room at some point this week anyway call me back when you get this bye",
+    "wish": "The same voicemail with both model rules on. Today the model returns it unpunctuated whenever the filler rule is appended.",
+    "styles": [
+      "contractions",
+      "fillerWords"
+    ],
+    "exact": true,
+    "expected": "Hey, it's me, just leaving you a message because I couldn't get through. So there are three things. First, can you pick up the parcel from the post office? It closes at 5:30. Second, I've booked the table for 8, so if you could be home by 7 that would be great. And third, my mum is coming on Saturday, so we need to sort the spare room at some point this week. Anyway, call me back when you get this. Bye."
+  },
+  {
+    "input": "it is not that I do not like it I just think it is too expensive",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "It is not that I do not like it, I just think it is too expensive."
+  },
+  {
+    "input": "send it as a p d f to the c e o",
+    "expected": "Send it as a PDF to the CEO."
+  },
+  {
+    "input": "right so a quick update on where we are with the migration we have moved about sixty percent of the customers over to the new database and so far there have been no complaints which is you know either a good sign or a sign that nobody has noticed yet the remaining forty percent are the larger accounts so we are going to do those one at a time starting on monday I do not think we will need the extra downtime window we booked but I would rather keep it just in case and I will send round a summary at the end of each day so everyone knows where things stand",
+    "styles": [
+      "fillerWords"
+    ],
+    "expected": "Right so a quick update on where we are with the migration. We have moved about 60% of the customers over to the new database and so far there have been no complaints, which is either a good sign or a sign that nobody has noticed yet. The remaining 40% are the larger accounts so we are going to do those one at a time starting on Monday. I do not think we will need the extra downtime window we booked but I would rather keep it just in case, and I will send round a summary at the end of each day so everyone knows where things stand.",
+    "wish": "A 100-word update with the fillers cut, punctuated and with the percentages as digits. The model cuts the you know but returns the rest as spoken."
+  },
+  {
+    "input": "she said ship it",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "She said \"ship it\".",
+    "wish": "The reporting verb kept and the two words quoted. On a transcript this short the model returns only ship it, and the opening guard lets it through because ship is within two edits of she."
+  },
+  {
+    "input": "he told me don't worry about it",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "He told me \"don't worry about it\"."
+  },
+  {
+    "input": "she said that we should ship it",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "She said that we should ship it."
+  },
+  {
+    "input": "the error says file not found",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "The error says \"file not found\"."
+  },
+  {
+    "input": "my mum always says you get what you pay for",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "My mum always says \"you get what you pay for\"."
+  },
+  {
+    "input": "I asked him where the invoice was and he said I have no idea",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "I asked him \"where the invoice was\" and he said \"I have no idea\"."
+  },
+  {
+    "input": "can you pick up milk on the way home",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "Can you pick up milk on the way home?"
+  },
+  {
+    "input": "the button just says submit",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "The button just says \"submit\"."
+  },
+  {
+    "input": "she asked if we were ready and I said not yet",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "She asked if we were ready and I said \"not yet\"."
+  },
+  {
+    "input": "he was like no way and I was like yes way",
+    "styles": [
+      "quotes"
+    ],
+    "expected": "He was like \"no way\" and I was like \"yes way\"."
+  },
+  {
+    "input": "sam said we do not need three more people",
+    "styles": [
+      "quotes",
+      "contractions",
+      "digits"
+    ],
+    "expected": "Sam said \"we don't need 3 more people\"."
   }
 ]
