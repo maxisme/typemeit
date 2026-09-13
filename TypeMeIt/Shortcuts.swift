@@ -8,8 +8,6 @@ enum ShortcutEvent: Sendable {
     case pinned
     case recordingEnded
     case cancelled
-    /// Esc while post-processing: skip it and paste what we have.
-    case skipRequested
     /// The user's copy-last-transcript shortcut, while idle.
     case copyLastRequested
 }
@@ -150,12 +148,9 @@ final class Shortcuts {
             }
             if keycode == Shortcuts.escKeycode, type == .keyDown {
                 switch phase {
-                case .recording, .pinned, .transcribing:
+                case .recording, .pinned, .transcribing, .cleaningUp:
                     phase = .idle
                     onEvent?(.cancelled)
-                    return false
-                case .cleaningUp:
-                    onEvent?(.skipRequested)
                     return false
                 case .idle:
                     break
