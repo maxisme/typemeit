@@ -9,7 +9,11 @@ import FoundationModels
 /// `screen`, lines of text standing in for the window the user dictates into,
 /// goes through ScreenContext's term filter first and the model is told the
 /// terms, the way the read-the-screen setting does; it is also run without
-/// them so the summary says whether the screen helped. A case with `styles`
+/// them so the summary says whether the screen helped. `customWords` go
+/// through CustomWordMatcher first, as in the pipeline; `confidence` gives
+/// the speech model's score for particular words. Every other word counts as
+/// confident, which is what the speech model reports for nine words in ten;
+/// a case about a mishearing gives that word its low score. A case with `styles`
 /// runs with those writing styles on, the way the writing-style rows do: the
 /// rules in the instructions and the code passes on the output; a case
 /// with `matrix` runs under every combination of styles; a case with `wish`
@@ -29,6 +33,10 @@ struct Case: Decodable {
     let alsoAccepted: [Variant]
     /// The user's custom words, as they would be at the time; empty when the case has none.
     let customWords: [String]
+    /// Speech-model confidence per word of `input`; unlisted words are confident.
+    let confidence: [String: Float]
+    /// Spellings the speech model has produced for a custom word before.
+    let aliases: [String: [String]]
     /// The writing styles turned on, by raw value; empty when the case has none.
     let styles: Set<WritingStyle>
     /// Compare case and punctuation too, for styles that are about those.
@@ -51,12 +59,20 @@ struct Case: Decodable {
         expected = try c.decode(String.self, forKey: .expected)
         alsoAccepted = try c.decodeIfPresent([Variant].self, forKey: .alsoAccepted) ?? []
         customWords = try c.decodeIfPresent([String].self, forKey: .customWords) ?? []
+        confidence = try c.decodeIfPresent([String: Float].self, forKey: .confidence) ?? [:]
+        aliases = try c.decodeIfPresent([String: [String]].self, forKey: .aliases) ?? [:]
         styles = Set(try c.decodeIfPresent([WritingStyle].self, forKey: .styles) ?? [])
         exact = try c.decodeIfPresent(Bool.self, forKey: .exact) ?? false
         matrix = try c.decodeIfPresent(Bool.self, forKey: .matrix) ?? false
         wish = try c.decodeIfPresent(String.self, forKey: .wish)
     }
-    enum CodingKeys: CodingKey { case input, screen, expected, alsoAccepted, customWords, styles, exact, matrix, wish }
+    enum CodingKeys: CodingKey { case input, screen, expected, alsoAccepted, customWords, confidence, aliases, styles, exact, matrix, wish }
+
+    /// The transcript as the model receives it, custom words applied.
+    var matched: CustomWordMatcher.Outcome {
+        let words = input.split(whereSeparator: \.isWhitespace).map { CustomWordMatcher.Word(text: String($0), confidence: confidence[String($0)] ?? 1) }
+        return CustomWordMatcher.apply(words, terms: customWords.map { CustomWordMatcher.Term($0, aliases: aliases[$0] ?? []) })
+    }
 
     /// The runs this case stands for: itself, or one per style combination.
     var runs: [Run] {
@@ -203,7 +219,7 @@ struct Result: Encodable {
             let terms = await MainActor.run { ScreenContext.terms(from: c.screen ?? [], excluding: c.customWords) }
             for r in c.runs {
                 total += 1
-                let out = await PostProcessor.shared.clean(r.input, customWords: c.customWords, screenTerms: terms, styles: r.styles).text
+                let out = await PostProcessor.shared.clean(c.matched, customWords: c.customWords, screenTerms: terms, styles: r.styles).text
                 let matched = r.match(out)
                 let ok = matched != nil
                 if c.wish != nil { wished += 1; total -= 1; if ok { granted += 1 } } else if !ok { failed += 1 }
@@ -213,7 +229,7 @@ struct Result: Encodable {
                 var blind: String?, blindOk: Bool?
                 if c.screen != nil {
                     screened += 1
-                    let b = await PostProcessor.shared.clean(r.input, customWords: c.customWords, styles: r.styles).text
+                    let b = await PostProcessor.shared.clean(c.matched, customWords: c.customWords, styles: r.styles).text
                     let bOk = r.match(b) != nil
                     if ok, !bOk { helped += 1 }
                     if !ok, bOk { hurt += 1 }

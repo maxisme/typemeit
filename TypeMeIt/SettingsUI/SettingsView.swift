@@ -18,6 +18,8 @@ enum SettingsTab: String, CaseIterable {
 struct SettingsView: View {
     @State private var tab: SettingsTab? = .insights
     @State private var appState = AppState.shared
+    /// `.key` while this window is in front.
+    @Environment(\.controlActiveState) private var activeState
 
     var body: some View {
         NavigationSplitView {
@@ -61,8 +63,9 @@ struct SettingsView: View {
         }
         .tint(DesignTokens.Colors.ink)
         .frame(minWidth: 780, minHeight: 700)
-        .onAppear(perform: takeRequestedTab)
+        .onAppear { takeRequestedTab(); Updates.shared.checkNow() }
         .onChange(of: appState.settingsTab) { _, _ in takeRequestedTab() }
+        .onChange(of: activeState) { _, state in if state == .key { Updates.shared.checkNow() } }
     }
 
     private func takeRequestedTab() {
@@ -416,15 +419,16 @@ struct MainSettingsTab: View {
         .onReceive(poll) { _ in screenGranted = CGPreflightScreenCaptureAccess() }
     }
 
-    /// Where the background update check got to. There is no button to check;
-    /// the only action is installing a version that is already downloaded.
+    /// Where the update check got to. It runs again each time the window
+    /// comes to the front; the only action is installing a version that is
+    /// already downloaded.
     @ViewBuilder
     private var updateStatus: some View {
         if Updates.isDevBuild {
             statusText("dev build · never updates")
         } else {
             switch updates.state {
-            case .checking: statusText("checking for updates…")
+            case .checking: statusText("checking…")
             case .upToDate: statusText("the latest version")
             case .downloading(let v): statusText("downloading \(v)…")
             case .readyToInstall(let v):
@@ -478,8 +482,8 @@ struct IntelligenceTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                SettingsGroup(title: "clean-up") {
-                    SettingsRow(label: "clean up with apple intelligence", subtitle: unavailableSubtitle) {
+                SettingsGroup(title: "apple intelligence") {
+                    SettingsRow(label: "clean up", subtitle: unavailableSubtitle) {
                         HStack(spacing: 8) {
                             if case .unavailable(.appleIntelligenceNotEnabled) = availability {
                                 Button("system settings") { NSWorkspace.shared.open(SecureInput.appleIntelligenceSettingsURL) }.buttonStyle(InkButtonStyle())
@@ -488,11 +492,7 @@ struct IntelligenceTab: View {
                                 .disabled(!modelAvailable)
                         }
                     }
-                    SettingsRow(label: "learn from corrections", subtitle: modelAvailable ? nil : "needs apple intelligence") {
-                        Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
-                            .disabled(!modelAvailable)
-                    }
-                    SettingsRow(label: "read the screen", subtitle: screenSubtitle, last: true) {
+                    SettingsRow(label: "read the screen for names and terms", subtitle: screenSubtitle, last: true) {
                         HStack(spacing: 8) {
                             if settings.screenContextEnabled, !screenGranted {
                                 Button("system settings") { NSWorkspace.shared.open(SecureInput.screenRecordingSettingsURL) }.buttonStyle(InkButtonStyle())
@@ -517,10 +517,15 @@ struct IntelligenceTab: View {
                 }
                 SettingsGroup(title: "custom words") {
                     VStack(alignment: .leading, spacing: 0) {
+                        SettingsRow(label: "learn from corrections", subtitle: modelAvailable ? nil : "needs apple intelligence") {
+                            Toggle("", isOn: $settings.learnFromCorrections).toggleStyle(.switch).labelsHidden()
+                                .disabled(!modelAvailable)
+                        }
                         if !settings.customWords.isEmpty {
                             FlowLayout(spacing: 6) {
                                 ForEach(settings.customWords, id: \.self) { word in
                                     let learned = store.learnedRecord(for: word)
+                                    let aliases = store.aliases(for: word)
                                     HStack(spacing: 5) {
                                         if let learned {
                                             Image("akar-sparkles").resizable().frame(width: 10, height: 10)
@@ -528,6 +533,11 @@ struct IntelligenceTab: View {
                                                 .help("learned from a correction: heard “\(learned.heard)”")
                                         }
                                         Text(word).font(.system(size: 12))
+                                        if !aliases.isEmpty {
+                                            Text(aliases.joined(separator: ", ")).font(.system(size: 11))
+                                                .foregroundStyle(DesignTokens.Colors.ink2)
+                                                .help("heard as \(aliases.joined(separator: ", "))")
+                                        }
                                         Button {
                                             store.forgetLearned(word: word)
                                             settings.removeCustomWord(word)
@@ -545,7 +555,7 @@ struct IntelligenceTab: View {
                             .padding(.horizontal, 12).padding(.vertical, 10)
                             RowRule()
                         }
-                        TextField("add a word", text: $newWord)
+                        TextField("add a word, or heard = word", text: $newWord)
                             .textFieldStyle(.roundedBorder)
                             .onSubmit { addWordAndVerify() }
                         .padding(.horizontal, 12).padding(.vertical, 8)
@@ -563,17 +573,23 @@ struct IntelligenceTab: View {
         .onReceive(poll) { _ in availability = PostProcessor.availability; screenGranted = CGPreflightScreenCaptureAccess() }
     }
 
+    /// "Titemere = typeme.it" adds Titemere as a spelling the speech model
+    /// produces for typeme.it; a bare word is added on its own.
     private func addWordAndVerify() {
-        let w = newWord.trimmingCharacters(in: .whitespaces)
-        guard !w.isEmpty else { newWord = ""; return }
-        let existing = settings.customWords
-        settings.addCustomWord(w)
-        newWord = ""
-        // Only worth checking when the model can run. On other Macs the word
-        // is added silently.
-        if case .available = availability {
-            verifier.run(for: w, existingWords: existing, history: store.history)
+        let entry = newWord.trimmingCharacters(in: .whitespaces)
+        guard !entry.isEmpty else { newWord = ""; return }
+        var heard: String?
+        var w = entry
+        if let eq = entry.firstIndex(of: "=") {
+            heard = String(entry[..<eq]).trimmingCharacters(in: .whitespaces)
+            w = String(entry[entry.index(after: eq)...]).trimmingCharacters(in: .whitespaces)
+            guard !w.isEmpty, heard?.isEmpty == false else { return }
         }
+        let existing = store.terms(for: settings.customWords.filter { $0.caseInsensitiveCompare(w) != .orderedSame })
+        settings.addCustomWord(w)
+        if let heard { store.addAlias(heard: heard, for: w) }
+        newWord = ""
+        verifier.run(for: w, existing: existing, aliases: store.aliases(for: w), history: store.history)
     }
 
     @ViewBuilder

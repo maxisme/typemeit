@@ -64,11 +64,18 @@ actor PostProcessor {
         return instructions + "\n\nNames and terms that were on the user's screen while they spoke, with their exact spelling:\n\(screenTerms.joined(separator: ", "))\n\nThe speech-to-text model does not know these terms, so it writes what they sound like, often as several ordinary words (\"cube control\" for kubectl, \"use state\" for useState, \"centrics\" for Zentryx). Where a word or run of words in the transcript sounds like one of these terms, replace it with the exact spelling above. Do not add a term the transcript does not say, and do not change anything else because of this list."
     }
 
-    static func prompt(for transcript: String, customWords: [String]) -> String {
+    /// The custom words are applied by `CustomWordMatcher` before the
+    /// transcript gets here. The model is told only about `keep`, the terms
+    /// the transcript already contains, and the terms behind `hints`,
+    /// confident words that sound like a term, which only the sentence can
+    /// settle. Given the whole list it swapped one listed word for another.
+    /// The wording is the one the eval scored with the full list.
+    static func prompt(for transcript: String, keep: [String] = [], hints: [CustomWordMatcher.Hint] = []) -> String {
         var t = template
-        let words = customWords.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-        if !words.isEmpty {
-            t += "\n\nTerms this user says often, with their exact spelling:\n\(words.joined(separator: ", "))\n\nIf a word or phrase in the transcript is a mishearing of one of these terms, replace it with the exact spelling above. Do not change anything else because of this list."
+        var terms = keep
+        for h in hints where !terms.contains(h.term) { terms.append(h.term) }
+        if !terms.isEmpty {
+            t += "\n\nTerms this user says often, with their exact spelling:\n\(terms.joined(separator: ", "))\n\nIf a word or phrase in the transcript is a mishearing of one of these terms, replace it with the exact spelling above. Where the transcript already has one of these terms, keep it, swear words included. Do not change anything else because of this list."
         }
         return t.replacingOccurrences(of: "${output}", with: transcript)
     }
@@ -84,23 +91,29 @@ actor PostProcessor {
     /// heard otherwise, then the writing styles, the currency symbols the
     /// digits style may have just made possible, and the trailing full stop.
     /// `applied` says whether the model's output was used.
-    func clean(_ transcript: String, customWords: [String], screenTerms: [String] = [], styles: Set<WritingStyle> = []) async -> (text: String, applied: Bool) {
-        let processed = await run(transcript, customWords: customWords, screenTerms: screenTerms, styles: styles)
-        var text = WritingStyle.apply(styles, to: processed ?? transcript)
+    /// The whole clean-up after the custom words: the model, and when it has
+    /// nothing, the transcript as heard; then the local pass, the writing
+    /// styles and the finishing touches. Pipeline and the eval both call this,
+    /// so what the eval scores is what gets typed.
+    func clean(_ matched: CustomWordMatcher.Outcome, customWords: [String], screenTerms: [String] = [], styles: Set<WritingStyle> = []) async -> (text: String, applied: Bool) {
+        let keep = CustomWordMatcher.present(in: matched.text, terms: customWords)
+        let processed = await run(matched.text, keep: keep, hints: matched.hints, screenTerms: screenTerms, styles: styles)
+        var text = LocalCleanup.run(processed ?? matched.text)
+        text = WritingStyle.apply(styles, to: text)
         text = ModelText.currencySymbols(text)
         text = ModelText.stripTrailingFullStop(text)
         return (text, processed != nil)
     }
 
     /// nil means: use the locally cleaned transcript (cancelled, rejected, unavailable or failed).
-    func run(_ transcript: String, customWords: [String], screenTerms: [String] = [], styles: Set<WritingStyle> = []) async -> String? {
+    func run(_ transcript: String, keep: [String] = [], hints: [CustomWordMatcher.Hint] = [], screenTerms: [String] = [], styles: Set<WritingStyle> = []) async -> String? {
         current?.cancel()
         let transcript = ModelText.joinSpelledLetters(transcript)
         let model = self.model
         let task = Task<String?, Never> {
             guard case .available = model.availability else { return nil }
             let session = LanguageModelSession(model: model, instructions: PostProcessor.instructions(screenTerms: screenTerms, styles: styles))
-            let user = PostProcessor.prompt(for: transcript, customWords: customWords)
+            let user = PostProcessor.prompt(for: transcript, keep: keep, hints: hints)
             do {
                 let r = try await session.respond(to: user, generating: CleanedTranscript.self, options: GenerationOptions(sampling: .greedy))
                 if Task.isCancelled { return nil }
@@ -115,7 +128,7 @@ actor PostProcessor {
                     return nil
                 }
                 out = out.replacingOccurrences(of: "\u{200B}", with: "")
-                out = ModelText.fuseTerms(out, terms: screenTerms + customWords)
+                out = ModelText.fuseTerms(out, terms: screenTerms + keep + hints.map(\.term))
                 return out
             } catch is CancellationError {
                 return nil
