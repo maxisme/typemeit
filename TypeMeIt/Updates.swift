@@ -10,9 +10,11 @@ import Sparkle
 /// downloads the same notarized DMG the website hands out, so an update installs
 /// the artifact that was actually tested.
 ///
-/// Sparkle never shows its own windows here. It checks on launch and then on its
-/// hourly timer, downloads whatever it finds, and reports where it got to through
-/// `state`. Settings renders that as a line of text or an install button.
+/// Sparkle never shows its own windows here. With auto update on it checks on
+/// launch and then on its hourly timer and downloads whatever it finds; off, it
+/// checks only when Settings comes to the front and holds what it finds until
+/// the install button. Either way it reports where it got to through `state`,
+/// which Settings renders as a line of text or an install button.
 @MainActor
 @Observable
 final class Updates: NSObject, SPUUpdaterDelegate {
@@ -21,6 +23,9 @@ final class Updates: NSObject, SPUUpdaterDelegate {
     enum State: Equatable {
         case checking
         case upToDate
+        /// Found but not downloaded: auto update is off, and the version
+        /// row's button is the only way on.
+        case available(version: String)
         case downloading(version: String)
         case readyToInstall(version: String)
         case installing
@@ -43,6 +48,10 @@ final class Updates: NSObject, SPUUpdaterDelegate {
     /// once, a ready update once the user has put it off.
     @ObservationIgnored private var announced: Set<String> = []
     @ObservationIgnored private var retry: Timer?
+    /// The version row's button was clicked on an `available` update, so the
+    /// download it started installs as soon as it lands, whatever "ask before
+    /// updating" says.
+    @ObservationIgnored private var installRequested = false
     /// Ends a check that never comes back, so the row does not sit on
     /// "checking" when the feed is down.
     @ObservationIgnored private var checkTimeout: Task<Void, Never>?
@@ -53,15 +62,18 @@ final class Updates: NSObject, SPUUpdaterDelegate {
         guard !Updates.isDevBuild else { return }
         driver.owner = self
         let updater = SPUUpdater(hostBundle: .main, applicationBundle: .main, userDriver: driver, delegate: self)
-        updater.automaticallyChecksForUpdates = true
-        // Always fetched in the background; the setting decides whether the
-        // install waits for a click.
-        updater.automaticallyDownloadsUpdates = true
+        let auto = Settings.shared.autoUpdate
+        updater.automaticallyChecksForUpdates = auto
+        // With auto update on every update is fetched in the background, and
+        // "ask before updating" decides whether the install waits for a click.
+        updater.automaticallyDownloadsUpdates = auto
         do {
             try updater.start()
             self.updater = updater
-            updater.checkForUpdatesInBackground()
-            armCheckTimeout()
+            if auto {
+                updater.checkForUpdatesInBackground()
+                armCheckTimeout()
+            }
         } catch {
             Log.app.error("Updater failed to start: \(error.localizedDescription)")
             state = .unreachable
@@ -95,13 +107,14 @@ final class Updates: NSObject, SPUUpdaterDelegate {
     }
 
     /// Checks the feed again. Called when the settings window comes to the
-    /// front, so the row never shows a stale answer. A download or install
-    /// in progress is left alone.
+    /// front, so the row never shows a stale answer, and with auto update off
+    /// the only time the feed is read. A found update, a download or an
+    /// install in progress is left alone; a failed download is tried again.
     func checkNow() {
         guard let updater else { return }
         switch state {
-        case .checking, .upToDate, .unreachable: break
-        case .downloading, .readyToInstall, .installing, .downloadFailed: return
+        case .checking, .upToDate, .unreachable, .downloadFailed: break
+        case .available, .downloading, .readyToInstall, .installing: return
         }
         guard updater.canCheckForUpdates else { return }
         set(.checking)
@@ -122,19 +135,49 @@ final class Updates: NSObject, SPUUpdaterDelegate {
         }
     }
 
-    /// Installs the downloaded update and relaunches. Does nothing unless an
-    /// update is ready.
+    /// Installs the update and relaunches. An update that is only found is
+    /// downloaded first and installs as soon as it lands. Does nothing unless
+    /// an update is found or ready.
     func install() {
-        guard case .readyToInstall = state, let reply = driver.installReply else { return }
-        driver.installReply = nil
-        state = .installing
+        switch state {
+        case .available:
+            guard driver.foundReply != nil else { return }
+            installRequested = true
+            download()
+        case .readyToInstall:
+            guard let reply = driver.installReply else { return }
+            driver.installReply = nil
+            state = .installing
+            reply(.install)
+        default:
+            return
+        }
+    }
+
+    /// Answers a held `available` update: Sparkle downloads it and comes back
+    /// through the driver's `showReady`.
+    private func download() {
+        guard case .available(let version) = state, let reply = driver.foundReply else { return }
+        driver.foundReply = nil
+        set(.downloading(version: version))
         reply(.install)
+    }
+
+    /// A ready update installs itself when the version row asked for it, or
+    /// when auto update is on and the app is not to ask first.
+    private var installsUnattended: Bool {
+        installRequested || (Settings.shared.autoUpdate && !Settings.shared.askBeforeUpdating)
+    }
+
+    /// The pill only announces an update the app fetched on its own.
+    private var announcesReady: Bool {
+        !installRequested && Settings.shared.autoUpdate && Settings.shared.askBeforeUpdating
     }
 
     /// Installs a ready update once no dictation is in flight, so the relaunch
     /// never cuts off a recording or a paste.
     fileprivate func installWhenIdle() {
-        guard !Settings.shared.askBeforeUpdating, case .readyToInstall = state else { return }
+        guard installsUnattended, case .readyToInstall = state else { return }
         idleTimer?.invalidate()
         if Pipeline.shared.phase == .idle { install(); return }
         idleTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { _ in
@@ -148,9 +191,10 @@ final class Updates: NSObject, SPUUpdaterDelegate {
         switch state {
         case .readyToInstall(let version):
             AppState.shared.updateReady = version
-            if Settings.shared.askBeforeUpdating { announce(version, toast: .updateReady(version: version)) }
+            if announcesReady { announce(version, toast: .updateReady(version: version)) }
         case .downloadFailed(let version):
             AppState.shared.updateReady = nil
+            installRequested = false
             announce(version, toast: .updateFailed(version: version))
         default:
             AppState.shared.updateReady = nil
@@ -160,7 +204,7 @@ final class Updates: NSObject, SPUUpdaterDelegate {
     /// The pipeline is idle again: a ready update the user has not put off
     /// goes back on screen, since a recording takes the pill down.
     func remind() {
-        guard Settings.shared.askBeforeUpdating, case .readyToInstall(let version) = state else { return }
+        guard announcesReady, case .readyToInstall(let version) = state else { return }
         announce(version, toast: .updateReady(version: version))
     }
 
@@ -170,10 +214,17 @@ final class Updates: NSObject, SPUUpdaterDelegate {
         announced.insert(version)
     }
 
-    /// The setting was switched: on, the pill comes up for a waiting update;
-    /// off, it installs as soon as the app is idle.
-    func askPreferenceChanged() {
-        if Settings.shared.askBeforeUpdating { remind() } else { installWhenIdle() }
+    /// A setting was switched. Auto update on fetches a found update and puts
+    /// Sparkle's hourly check back; off takes the check away. Then a ready
+    /// update either goes back on the pill or installs as soon as the app is
+    /// idle, whichever the settings now say.
+    func preferencesChanged() {
+        let auto = Settings.shared.autoUpdate
+        updater?.automaticallyChecksForUpdates = auto
+        updater?.automaticallyDownloadsUpdates = auto
+        if auto { download() }
+        remind()
+        installWhenIdle()
     }
 
     /// Shows a toast for `version`, waiting for a moment when nothing else is
@@ -206,14 +257,16 @@ final class Updates: NSObject, SPUUpdaterDelegate {
 
 /// The `SPUUserDriver` that answers Sparkle without a window. Every reply is
 /// decided here except the final "install now", which waits for the user or
-/// for the automatic-install timer.
+/// for the automatic-install timer, and with auto update off the first
+/// "download it", which waits for the user.
 @MainActor
 private final class SilentDriver: NSObject, SPUUserDriver {
     weak var owner: Updates?
     var installReply: ((SPUUserUpdateChoice) -> Void)?
+    var foundReply: ((SPUUserUpdateChoice) -> Void)?
 
     func show(_ request: SPUUpdatePermissionRequest, reply: @escaping (SUUpdatePermissionResponse) -> Void) {
-        reply(SUUpdatePermissionResponse(automaticUpdateChecks: true, sendSystemProfile: false))
+        reply(SUUpdatePermissionResponse(automaticUpdateChecks: Settings.shared.autoUpdate, sendSystemProfile: false))
     }
 
     func showUserInitiatedUpdateCheck(cancellation: @escaping () -> Void) {
@@ -223,6 +276,9 @@ private final class SilentDriver: NSObject, SPUUserDriver {
     func showUpdateFound(with item: SUAppcastItem, state: SPUUserUpdateState, reply: @escaping (SPUUserUpdateChoice) -> Void) {
         let version = item.displayVersionString
         switch state.stage {
+        case .notDownloaded where !Settings.shared.autoUpdate:
+            foundReply = reply
+            owner?.set(.available(version: version))
         case .notDownloaded, .downloaded:
             owner?.set(.downloading(version: version))
             reply(.install)
@@ -275,5 +331,6 @@ private final class SilentDriver: NSObject, SPUUserDriver {
 
     func dismissUpdateInstallation() {
         installReply = nil
+        foundReply = nil
     }
 }

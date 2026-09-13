@@ -391,9 +391,15 @@ struct MainSettingsTab: View {
                     SettingsRow(label: "open at login") {
                         Toggle("", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0; AppDelegate.shared?.reconcileLaunchAtLogin() })).toggleStyle(.switch).labelsHidden()
                     }
-                    SettingsRow(label: "ask before updating", subtitle: "restarts itself when idle when turned off") {
-                        Toggle("", isOn: Binding(get: { settings.askBeforeUpdating }, set: { settings.askBeforeUpdating = $0; Updates.shared.askPreferenceChanged() })).toggleStyle(.switch).labelsHidden()
+                    SettingsRow(label: "auto update", subtitle: "off, the version row still offers updates") {
+                        Toggle("", isOn: Binding(get: { settings.autoUpdate }, set: { settings.autoUpdate = $0; Updates.shared.preferencesChanged() })).toggleStyle(.switch).labelsHidden()
                             .disabled(Updates.isDevBuild)
+                    }
+                    if settings.autoUpdate {
+                        SettingsRow(label: "ask before updating", subtitle: "restarts itself when idle when turned off") {
+                            Toggle("", isOn: Binding(get: { settings.askBeforeUpdating }, set: { settings.askBeforeUpdating = $0; Updates.shared.preferencesChanged() })).toggleStyle(.switch).labelsHidden()
+                                .disabled(Updates.isDevBuild)
+                        }
                     }
                     SettingsRow(label: "dock icon") {
                         Toggle("", isOn: Binding(get: { settings.showDockIcon }, set: { settings.showDockIcon = $0; AppDelegate.shared?.applyDockIcon() })).toggleStyle(.switch).labelsHidden()
@@ -420,8 +426,8 @@ struct MainSettingsTab: View {
     }
 
     /// Where the update check got to. It runs again each time the window
-    /// comes to the front; the only action is installing a version that is
-    /// already downloaded.
+    /// comes to the front; the only action is installing a version, which
+    /// downloads it first when auto update is off.
     @ViewBuilder
     private var updateStatus: some View {
         if Updates.isDevBuild {
@@ -431,7 +437,7 @@ struct MainSettingsTab: View {
             case .checking: statusText("checking…")
             case .upToDate: statusText("the latest version")
             case .downloading(let v): statusText("downloading \(v)…")
-            case .readyToInstall(let v):
+            case .available(let v), .readyToInstall(let v):
                 Button("install \(v)") { updates.install() }.buttonStyle(InkButtonStyle())
             case .installing: statusText("installing…")
             case .unreachable: statusText("can't reach the update server")

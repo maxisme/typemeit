@@ -93,8 +93,13 @@ final class Settings {
     var historyLimit: Int { didSet { defaults.set(historyLimit, forKey: "historyLimit") } }
     /// Keeps each dictation's audio next to its history entry.
     var keepRecordings: Bool { didSet { defaults.set(keepRecordings, forKey: "keepRecordings") } }
-    /// A ready update is announced with the pill and waits for a click. Off,
-    /// the app installs it and restarts itself once no dictation is in flight.
+    /// Checks for, downloads and installs updates on its own. Off, the app
+    /// looks for an update only when Settings comes to the front, and installs
+    /// one only from the version row's button.
+    var autoUpdate: Bool { didSet { defaults.set(autoUpdate, forKey: "autoUpdate") } }
+    /// With `autoUpdate` on: a ready update is announced with the pill and
+    /// waits for a click. Off, the app installs it and restarts itself once no
+    /// dictation is in flight.
     var askBeforeUpdating: Bool { didSet { defaults.set(askBeforeUpdating, forKey: "askBeforeUpdating") } }
     var launchAtLogin: Bool { didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin") } }
     var showDockIcon: Bool { didSet { defaults.set(showDockIcon, forKey: "showDockIcon") } }
@@ -132,6 +137,7 @@ final class Settings {
         autoSubmitKey = AutoSubmitKey(rawValue: d.string(forKey: "autoSubmitKey") ?? "") ?? .enter
         historyLimit = d.object(forKey: "historyLimit") == nil ? 500 : d.integer(forKey: "historyLimit")
         keepRecordings = bool("keepRecordings", Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true)
+        autoUpdate = bool("autoUpdate", true)
         askBeforeUpdating = bool("askBeforeUpdating", true)
         launchAtLogin = bool("launchAtLogin", true)
         showDockIcon = bool("showDockIcon", true)
