@@ -164,7 +164,9 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step mark"><canvas class="puffgl" data-state="struck" width="88" height="88" aria-hidden="true"></canvas>
     <div class="box">
       <h3>remember where you are <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/Frontmost.swift">Frontmost.capture()</a> · <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/RecordingArchive.swift">RecordingArchive.save</a></span></h3>
-      <p>the frontmost app and its focused window's title are read now and held in memory until the history entry is written at the end. read at fn up, not fn down: with pin you can switch windows while talking, and the text lands where you finish. read before anything asynchronous, so nothing during transcribe or clean-up can change it. the app and title are what insights uses to sort dictations into email, chat, code and so on, and what the screen read keys its 60 s reuse on.</p>
+      <p>the frontmost app and its focused window's title are read now and held in memory until the history entry is written at the end.</p>
+      <p>read at fn up, not fn down: with pin you can switch windows while talking, and the text lands where you finish. read before anything asynchronous, so nothing during transcribe or clean-up can change it.</p>
+      <p>the app decides the category insights files the dictation under. the title matters when the app alone cannot: in a browser, "inbox · gmail" is email and a pull request is code; in a terminal, a vim or ssh title tells them apart. the screen read also keys its 60 s reuse on the title, so a new tab in the same browser is read fresh.</p>
       <div class="disk">Recordings/&lt;entry id&gt;.m4a <em>· the audio, under the id the history entry will carry</em></div>
       <p>the recording is saved only while <span class="set"><i class="gear"></i>keep the audio</span> is on.</p>
       <div class="chips"><span class="chip"><i class="gear"></i>keep the audio<em>history › keep</em></span></div>
@@ -184,7 +186,9 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step mark"><canvas class="puffgl" data-state="struck" width="88" height="88" aria-hidden="true"></canvas>
     <div class="box">
       <h3>the model and the code around it <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">PostProcessor.clean</a></span></h3>
-      <p>the cloud shows cleaning up. about 79 ms per word with a floor of around 650 ms, so a 5-word dictation takes about 0.7 s and a 30-word one about 1.7 s; nearly all of it is the model. code before the model, the on-device model <span class="set"><i class="gear"></i>clean up with apple intelligence</span>, two guards on what it returns, code after it, then the writing styles <span class="set"><i class="gear"></i>writing style</span>. this is the one function the eval scores, so what the eval sees is what gets typed. each pass is below.</p>
+      <p>the cloud shows cleaning up. about 79 ms per word with a floor of around 650 ms, so a 5-word dictation takes about 0.7 s and a 30-word one about 1.7 s; nearly all of it is the model.</p>
+      <p>code before the model, the on-device model <span class="set"><i class="gear"></i>clean up with apple intelligence</span>, two guards on what it returns, code after it, then the writing styles <span class="set"><i class="gear"></i>writing style</span>.</p>
+      <p>this is the one function the eval scores, so what the eval sees is what gets typed. each pass is below.</p>
       <details class="evals"><summary>how the eval works</summary>
 <div class="sub">
 <div><b>what runs</b><code>make eval</code> compiles this app's own clean-up code into a small tool and runs every case in <a href="https://github.com/typemeit/typemeit/blob/main/Scripts/cleanup-eval/cases.json">cases.json</a> through <a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">PostProcessor.clean</a> on this mac's apple intelligence. the same function the pipeline calls, so the eval scores exactly what gets typed.</div>
@@ -241,7 +245,8 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step">
     <div class="box">
       <h3>build the user message <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">PostProcessor.prompt(for:customWords:)</a></span></h3>
-      <p>the transcript alone, inside <code>&lt;transcript&gt;</code> tags. without the tags the model runs on until it overflows the context. after the tags, when there are any: "terms this user says often, with their exact spelling", the custom words <span class="set"><i class="gear"></i>custom words</span> comma-separated, and the instruction to replace a mishearing of one with its spelling and change nothing else.</p>
+      <p>the transcript alone, inside <code>&lt;transcript&gt;</code> tags. without the tags the model runs on until it overflows the context.</p>
+      <p>after the tags, when there are any: "terms this user says often, with their exact spelling", the custom words <span class="set"><i class="gear"></i>custom words</span> comma-separated, and the instruction to replace a mishearing of one with its spelling and change nothing else.</p>
       <div class="chips"><span class="chip"><i class="gear"></i>custom words<em>intelligence › custom words</em></span></div>
     </div>
   </div>
@@ -250,7 +255,10 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step">
     <div class="box">
       <h3>apple intelligence <span class="mono"><a href="https://developer.apple.com/documentation/foundationmodels/languagemodelsession/respond(to:generating:includeschemainprompt:options:)">LanguageModelSession.respond</a></span></h3>
-      <p><span class="mono"><a href="https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel">SystemLanguageModel(guardrails: .permissiveContentTransformations)</a></span>, so a transcript about anything is still cleaned rather than refused. a fresh session per dictation, prewarmed at fn down so the first response is not slowed by loading. guided generation into one struct with one field, <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">CleanedTranscript.cleanedText</a></span>, so the model cannot answer in prose around the text. greedy sampling, so the same transcript gives the same answer every time; the eval relies on that.</p>
+      <p><span class="mono"><a href="https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel">SystemLanguageModel(guardrails: .permissiveContentTransformations)</a></span>, so a transcript about anything is still cleaned rather than refused.</p>
+      <p>a fresh session per dictation, prewarmed at fn down so the first response is not slowed by loading.</p>
+      <p>guided generation into one struct with one field, <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">CleanedTranscript.cleanedText</a></span>, so the model cannot answer in prose around the text.</p>
+      <p>greedy sampling, so the same transcript gives the same answer every time; the eval relies on that.</p>
       <div class="gate">exit if apple intelligence is not <span class="mono">.available</span> on this mac: returns nil, the transcript as heard is used, and the styles still run on it. a thrown error other than cancellation is logged and returns nil. the model's text passes through <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">stripThinkBlock</a></span>, which drops a leading <code>&lt;think&gt;…&lt;/think&gt;</code> if one is there, then is trimmed. empty means nil.</div>
     </div>
   </div>
@@ -273,7 +281,8 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step">
     <div class="box">
       <h3>guard two: is the opening still there? <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">lostOpening</a></span></h3>
-      <p>the model sometimes returns a sentence without its first few words: "that will be $25 please" comes back as "$25 please". the transcript's first real word, skipping um, uh, er, ah, has to be one of the output's first two words. a corrected first word still counts when it keeps its first letter and is within two edits, so "their" → "they're" and "were" → "we're" pass. a leading "hey" or "so" may be added, never taken away.</p>
+      <p>the model sometimes returns a sentence without its first few words: "that will be $25 please" comes back as "$25 please".</p>
+      <p>so the transcript's first real word, skipping um, uh, er, ah, has to be one of the output's first two words. a corrected first word still counts when it keeps its first letter and is within two edits, so "their" → "they're" and "were" → "we're" pass. a leading "hey" or "so" may be added, never taken away.</p>
       <div class="gate">the known hole: "she said ship it" → "ship it" passes, because "ship" starts with s and is two edits from "she". it is on the eval's wish list.</div>
     </div>
   </div>
@@ -282,7 +291,9 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap;color:var(--ink-3);font-famil
   <div class="step">
     <div class="box">
       <h3>after the model <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/ModelText.swift">fuseTerms</a></span></h3>
-      <p>zero-width spaces are stripped. then, for every screen term <span class="set"><i class="gear"></i>read the screen</span> and custom word <span class="set"><i class="gear"></i>custom words</span> of four or more letters, any two to four adjacent output words whose letters and digits joined equal the term's are replaced by the term as spelled: <code>lottie HQ</code> → <code>LottieHQ</code>, <code>max retries</code> → <code>MAX_RETRIES</code>, <code>parse config</code> → <code>parse_config</code>. punctuation on the last word is kept. longer matches win over shorter ones.</p>
+      <p>zero-width spaces are stripped.</p>
+      <p>then, for every screen term <span class="set"><i class="gear"></i>read the screen</span> and custom word <span class="set"><i class="gear"></i>custom words</span> of four or more letters, any two to four adjacent output words whose letters and digits joined equal the term's are replaced by the term as spelled: <code>lottie HQ</code> → <code>LottieHQ</code>, <code>max retries</code> → <code>MAX_RETRIES</code>, <code>parse config</code> → <code>parse_config</code>.</p>
+      <p>punctuation on the last word is kept. longer matches win over shorter ones.</p>
       <p>this is the point <span class="mono"><a href="https://github.com/typemeit/typemeit/blob/main/TypeMeIt/PostProcessor.swift">run</a></span> returns: the model's text, or nil.</p>
       <div class="chips"><span class="chip"><i class="gear"></i>read the screen<em>intelligence › clean-up</em></span><span class="chip"><i class="gear"></i>custom words<em>intelligence › custom words</em></span></div>
     </div>
